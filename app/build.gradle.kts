@@ -89,8 +89,10 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.compose)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.runtime.livedata)
     implementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.androidx.ui)
