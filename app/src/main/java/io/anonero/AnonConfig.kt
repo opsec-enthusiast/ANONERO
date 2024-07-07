@@ -3,8 +3,13 @@ package io.anonero
 import android.content.Context
 import io.anonero.model.NetworkType
 import java.io.File
+import kotlin.math.pow
 
 object AnonConfig {
+
+    const val XMR_DECIMALS = 12
+    val ONE_XMR = Math.round(10.0.pow(XMR_DECIMALS.toDouble()))
+
 
     fun getNetworkType(): NetworkType {
         @Suppress("KotlinConstantConditions")
