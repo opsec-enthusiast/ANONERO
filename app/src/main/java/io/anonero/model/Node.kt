@@ -78,11 +78,7 @@ class Node {
         require(!(da.size > 2 || da.isEmpty())) { "Too many ':' or too few" }
         val host = da[0]
 
-        Log.d("daParts[1] ",daParts[1])
-        Log.d("daParts[1] ", rpcPort.toString())
-        Log.d("daParts[1] ", levinPort.toString())
-        Log.d("daParts[1] ", address)
-        Log.d("daParts[1] ", host)
+
         this.networkType = if (daParts.size == 1) {
             NetworkType.NetworkType_Mainnet
         } else {

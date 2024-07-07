@@ -28,4 +28,12 @@ enum class NetworkType(val value: Int) {
             return null
         }
     }
+
+    override fun toString(): String {
+        return when (this) {
+            NetworkType_Mainnet -> "mainnet"
+            NetworkType_Testnet -> "testnet"
+            NetworkType_Stagenet -> "stagenet"
+        }
+    }
 }

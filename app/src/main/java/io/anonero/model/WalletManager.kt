@@ -91,8 +91,10 @@ class WalletManager {
 
     private external fun openWalletJ(path: String, password: String, networkType: Int): Long
     fun recoveryWallet(
-        aFile: File, password: String,
-        mnemonic: String, offset: String,
+        aFile: File,
+        password: String,
+        mnemonic: String,
+        offset: String,
         restoreHeight: Long
     ): Wallet {
         val walletHandle = recoveryWalletJ(
@@ -115,6 +117,9 @@ class WalletManager {
         aFile: File, password: String,
         mnemonic: String, offset: String
     ): Wallet {
+        Log.i("TAG", "restoreWallet poly: ${aFile.absolutePath}\n" +
+                "password: $password\n" +
+                "offset: $offset\n"  )
         val walletHandle = recoveryWalletPolyseedJ(
             aFile.absolutePath, password,
             mnemonic, offset,
@@ -214,6 +219,7 @@ class WalletManager {
             daemonUsername = node.username
             daemonPassword = node.password
             daemonAddress?.let { addr -> setDaemonAddressJ(addr) }
+            Log.i("setDaemon", "setDaemon:  $daemonAddress");
         } else {
             daemonAddress = null
             daemonUsername = ""
@@ -287,7 +293,7 @@ class WalletManager {
             private set
 
         init {
-            System.loadLibrary("monerujo")
+            System.loadLibrary("anonero")
         }
 
         fun addressPrefix(networkType: NetworkType): String {
@@ -296,6 +302,10 @@ class WalletManager {
                 NetworkType.NetworkType_Mainnet -> "4-"
                 NetworkType.NetworkType_Stagenet -> "5-"
             }
+        }
+
+        fun  resetInstance() {
+            instance = null
         }
 
         @JvmStatic

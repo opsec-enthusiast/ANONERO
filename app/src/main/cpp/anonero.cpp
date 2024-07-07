@@ -1404,7 +1404,7 @@ Java_io_anonero_model_Wallet_getCoinsJ(JNIEnv *env, jobject instance) {
 
 jobject newCoinsInfo(JNIEnv *env, Monero::CoinsInfo *info) {
     jmethodID c = env->GetMethodID(class_CoinsInfo, "<init>",
-                                   "(JZLjava/lang/String;JLjava/lang/String;Ljava/lang/String;ZJZLjava/lang/String;)V");
+                                   "(JZLjava/lang/String;JLjava/lang/String;Ljava/lang/String;ZJ)V");
     jstring _key_image = env->NewStringUTF(info->keyImage().c_str());
     jstring _pub_key = env->NewStringUTF(info->pubKey().c_str());
     jstring _hash = env->NewStringUTF(info->hash().c_str());

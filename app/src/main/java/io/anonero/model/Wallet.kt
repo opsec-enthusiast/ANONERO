@@ -17,7 +17,6 @@ package io.anonero.model
 
 import android.util.Log
 import android.util.Pair
-import net.mynero.wallet.data.Subaddress
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,6 +71,7 @@ class Wallet {
     external fun getLegacySeed(offset: String?): String?
     external fun isPolyseedSupported(offset: String?): Boolean
     external fun getSeedLanguage(): String?
+    external fun stopBackgroundSync(): String?
 
     val status: Status
         get() = statusWithErrorString()
@@ -208,17 +208,8 @@ class Wallet {
         }
 
     private external fun getConnectionStatusJ(): Int
-    fun setTrustedDaemon(trusted: Boolean) {
-        setTrustedDaemonJ(trusted)
-    }
 
-    private external fun setTrustedDaemonJ(trusted: Boolean)
-
-    fun isTrustedDaemon(): Boolean {
-        return isTrustedDaemonJ()
-    }
-
-    private external fun isTrustedDaemonJ(): Boolean
+    external fun setTrustedDaemon(trusted: Boolean)
 
     fun setProxy(address: String?): Boolean {
         return setProxyJ(address)
@@ -237,28 +228,19 @@ class Wallet {
 
     external fun getUnlockedBalance(accountIndex: Int): Long
     external fun isWatchOnly(): Boolean
-    fun getBlockChainHeight(): Long {
-        return getBlockChainHeightJ().minus(1)
-    }
 
-    private external fun getBlockChainHeightJ(): Long
+    external fun getBlockChainHeight(): Long
     external fun getApproximateBlockChainHeight(): Long
-    fun getDaemonBlockChainHeight(): Long {
-        return getDaemonBlockChainHeightJ().minus(1)
-    }
 
-    private external fun getDaemonBlockChainHeightJ(): Long
+    external fun getDaemonBlockChainHeight(): Long
     external fun getDaemonBlockChainTargetHeight(): Long
 
     fun setSynchronized() {
         isSynchronized = true
     }
 
-    fun startRefresh() {
-        startRefreshJ()
-    }
 
-    private external fun startRefreshJ()
+    external fun startRefresh()
     external fun pauseRefresh()
     external fun refresh(): Boolean
     external fun refreshAsync()
@@ -301,41 +283,15 @@ class Wallet {
         pendingTransaction = PendingTransaction(txHandle)
         return pendingTransaction
     }
-
-    fun createTransactionMultDest(
-        outputs: List<TransactionOutput>,
-        priority: PendingTransaction.Priority,
-        keyImages: ArrayList<String>
-    ): PendingTransaction? {
-        disposePendingTransaction()
-        val _priority = priority.ordinal
-        val destinations = ArrayList<String>()
-        val amounts = LongArray(outputs.size)
-        for (i in outputs.indices) {
-            val output = outputs[i]
-            destinations.add(output.destination)
-            amounts[i] = output.amount
-        }
-        val txHandle = createTransactionMultDestJ(
-            destinations, "", amounts, 0, _priority,
-            accountIndex, keyImages
-        )
-        pendingTransaction = PendingTransaction(txHandle)
-        return pendingTransaction
-    }
-
-    private external fun createTransactionMultDestJ(
-        dstAddrs: ArrayList<String>, paymentId: String,
-        amount: LongArray, mixinCount: Int,
-        priority: Int, accountIndex: Int, keyImages: ArrayList<String>
-    ): Long
-
-    private external fun createTransactionJ(
+    public  external fun createTransactionJ(
         dstAddr: String, paymentId: String,
         amount: Long, mixinCount: Int,
         priority: Int, accountIndex: Int, keyImages: ArrayList<String>
     ): Long
 
+    public fun send(pendingTransaction: PendingTransaction) : Boolean{
+       return  pendingTransaction.commit("", overwrite = true);
+    }
     private external fun createSweepTransaction(
         dstAddr: String, paymentId: String,
         mixinCount: Int,
@@ -363,6 +319,7 @@ class Wallet {
 
     fun refreshCoins() {
         if (isSynchronized) {
+            Log.d("Wallet", "refreshCoins: ${coins?.getCount()}")
             coins?.refresh()
         }
     }
@@ -477,7 +434,7 @@ class Wallet {
         private const val NEW_ACCOUNT_NAME = "Untitled account" // src/wallet/wallet2.cpp:941
 
         init {
-            System.loadLibrary("monerujo")
+            System.loadLibrary("anonero")
         }
 
         @JvmStatic

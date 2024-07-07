@@ -56,7 +56,7 @@ class PendingTransaction internal constructor(var handle: Long) {
 
     companion object {
         init {
-            System.loadLibrary("monerujo")
+            System.loadLibrary("anonero")
         }
     }
 }

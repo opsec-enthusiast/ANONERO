@@ -27,13 +27,12 @@ class Coins(private val handle: Long) {
         all = transactionInfos
     }
 
-    external fun setFrozen(publicKey: String?, frozen: Boolean)
     private external fun refreshJ(): List<CoinsInfo>
     external fun getCount(): Int
 
     companion object {
         init {
-            System.loadLibrary("monerujo")
+            System.loadLibrary("anonero")
         }
     }
 }

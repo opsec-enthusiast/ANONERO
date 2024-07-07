@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.mynero.wallet.data
+package io.anonero.model
 
 import org.json.JSONException
 import org.json.JSONObject

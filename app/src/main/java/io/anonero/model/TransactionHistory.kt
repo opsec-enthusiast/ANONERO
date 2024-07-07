@@ -58,7 +58,7 @@ class TransactionHistory(private val handle: Long, var accountIndex: Int) {
 
     companion object {
         init {
-            System.loadLibrary("monerujo")
+            System.loadLibrary("anonero")
         }
     }
 }
