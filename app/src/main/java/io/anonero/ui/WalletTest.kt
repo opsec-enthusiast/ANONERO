@@ -203,7 +203,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                 JSONObject()
                     .apply {
                         put("host", host)
-                        put("rpcPort", 38081)
+                        put("rpcPort", rpcPort)
                         put("network", AnonConfig.getNetworkType().toString())
                         put("name", "anon")
                     }
