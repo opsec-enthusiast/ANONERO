@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 message(STATUS ABI_INFO  = ${ANDROID_ABI})
 
-add_library( monerujo
+add_library( anonero
              SHARED
              src/main/cpp/anonero.cpp )
 
@@ -203,7 +203,7 @@ else()
     set(EXTRA_LIBS "")
 endif()
 
-target_link_libraries(  monerujo
+target_link_libraries(  anonero
 
                         wallet_api
                         wallet
