@@ -10,6 +10,7 @@ object AnonConfig {
     const val XMR_DECIMALS = 12
     val ONE_XMR = Math.round(10.0.pow(XMR_DECIMALS.toDouble()))
 
+    public var context:AnonApplication? = null
 
     fun getNetworkType(): NetworkType {
         @Suppress("KotlinConstantConditions")

@@ -20,13 +20,16 @@ import android.util.Log
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletListener
-import java.security.SecureRandom
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /**
  * Handy class for starting a new thread that has a looper. The looper can then be
  * used to create handler classes. Note that start() must still be called.
  * The started Thread has a stck size of STACK_SIZE (=5MB)
  */
+
+
 class MoneroHandlerThread(name: String, val listener: Listener?, private val wallet: Wallet) :
     Thread(null, null, name, THREAD_STACK_SIZE), WalletListener {
 

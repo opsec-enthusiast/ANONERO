@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">anonnero</string>
     <string name="title_activity_wallet_test">WalletTest</string>
+    <string name="title_activity_home">HomeActivity</string>
 </resources>

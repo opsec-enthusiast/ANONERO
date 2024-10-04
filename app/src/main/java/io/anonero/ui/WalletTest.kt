@@ -1,12 +1,16 @@
 package io.anonero.ui
 
+import android.Manifest
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -70,15 +74,14 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -90,11 +93,13 @@ import io.anonero.model.Node
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.services.AnonNeroService
 import io.anonero.services.MoneroHandlerThread
 import io.anonero.ui.theme.AnonTheme
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -115,11 +120,15 @@ fun Context.getActivity(): ComponentActivity? = when (this) {
 
 const val PREFS = "anonPref"
 
+ val walletSyncFlow : MutableSharedFlow<String> = MutableSharedFlow(replay = 1)
+
+@Suppress("UNUSED_EXPRESSION")
 class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 
     var isWalletCreated: MutableLiveData<Boolean> = MutableLiveData(false)
     var walletOpened: MutableLiveData<Boolean> = MutableLiveData(false)
     var inProgress = MutableLiveData(false)
+    var closingWallet = MutableLiveData(false)
     var seed = MutableLiveData(arrayOf<String>())
     var seedLegacy = MutableLiveData(arrayOf<String>())
     var broadcastStatus = MutableLiveData(BroadcastStatus.Staging)
@@ -208,7 +217,6 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                         put("name", "anon")
                     }
             )
-            Log.i("TAG", "startWalletService: Setting daemon to ${node?.host}:${node?.rpcPort}")
             postDebug("Setting daemon to ${node?.host}:${node?.rpcPort}")
             WalletManager.instance?.setDaemon(node)
             WalletManager.instance?.wallet?.init(0)
@@ -290,6 +298,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 
                     }
                 }
+                walletSyncFlow.emit("Wallet running...")
                 inProgress.postValue(false);
             }
         }
@@ -443,18 +452,28 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
     }
 
     fun closeWallet(context: Context) {
+
         viewModelScope.launch {
+
             withContext(Dispatchers.IO) {
                 WalletManager.instance?.wallet?.let {
+                    it.setListener(null)
+                    Log.i("TAG", "stopBackgroundSync: ${  it.stopBackgroundSync("12345")}")
+                    closingWallet.postValue(true)
+                    delay(500)
                     it.store()
+                    delay(500)
                     it.close()
+                    delay(500)
                     WalletManager.resetInstance();
+                    closingWallet.postValue(false)
                     isWalletCreated.postValue(true)
                     walletOpened.postValue(false)
                     seed.postValue(arrayOf())
                     seedLegacy.postValue(arrayOf())
                     address.postValue("")
-                    context.getActivity()?.finishAndRemoveTask()
+
+//                    context.getActivity()?.finishAndRemoveTask()
                 }
             }
         }
@@ -462,14 +481,26 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 
     override fun onRefresh(walletSynced: Boolean) {
         postDebug("onWalletRefresh synced ? : $walletSynced")
+
         Log.i(
             Thread.currentThread().name,
             "onRefresh getDaemonBlockChainHeight:  ${wallet?.getDaemonBlockChainHeight()}"
         )
         if (wallet != null) {
-            Log.i("TAG", "onRefresh setBalance: ${wallet?.getBalanceAll()}")
             balance.postValue(wallet!!.getBalanceAll())
             coins.postValue(wallet!!.coins?.getCount())
+
+        }
+        if(walletSynced){
+           viewModelScope.launch {
+                withContext(Dispatchers.IO){
+                    walletSyncFlow.emit("Wallet Sync Complete")
+                    AnonConfig.context?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        ?.edit()
+                        ?.putBoolean("sync", true)
+                        ?.apply()
+                }
+           }
         }
     }
 
@@ -479,11 +510,14 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
         currentBlockProgress.postValue(block)
         daemonBlockChainTargetHeightLive.postValue(wallet?.getRestoreHeight() ?: 1)
         postDebug("New Block $block")
+        viewModelScope.launch {
+            walletSyncFlow.emit("Syncing: : Scanning Block $block")
+        }
         Log.i("TAG", "onNewBlockFound balance: ${wallet?.getBalanceAll()}")
 
     }
 
-    fun postDebug(value: String) {
+    private fun postDebug(value: String) {
         walletDeubug.postValue("${walletDeubug.value}\n$value")
     }
 
@@ -547,6 +581,28 @@ class WalletTest : ComponentActivity() {
                 TestWallet()
             }
         }
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                Intent(applicationContext, AnonNeroService::class.java)
+                    .also {
+                        it.action = "start"
+                        ContextCompat.startForegroundService(applicationContext,it)
+                    }
+            }
+            //handle and show dialog
+        }
+        // Check if the permission is already granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            Intent(applicationContext, AnonNeroService::class.java)
+                .also {
+                    it.action = "start"
+                    ContextCompat.startForegroundService(applicationContext,it)
+                }
+        }
     }
 
     override fun onStart() {
@@ -569,6 +625,7 @@ fun TestWallet() {
     var doCreateWallet by remember { mutableStateOf(false) }
     val balance by vm.balance.observeAsState(0L)
     val coins by vm.coins.observeAsState(0)
+    val closingWallet by vm.closingWallet.observeAsState(false)
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -597,6 +654,16 @@ fun TestWallet() {
                         vm.restoreWallet(localContext, seed, passphrase, pin, height ?: 0)
                         restoreWalletDialog = false
                     })
+            }
+        }
+        if (closingWallet) {
+            Box {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .align(Alignment.Center),
+                    strokeWidth = 2.dp
+                )
             }
         }
         Scaffold(
@@ -647,6 +714,7 @@ fun TestWallet() {
                             NetWorkSetup()
                         }
                     } else {
+
                         Scaffold(
                             bottomBar = {
                                 Column(
@@ -1231,7 +1299,7 @@ fun NetWorkSetup() {
                         })
                     OutlinedButton(
                         onClick = {
-                            scope.launch {
+                            scope.launch(Dispatchers.IO) {
                                 val prefs =
                                     localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                                 prefs.edit()
@@ -1239,7 +1307,9 @@ fun NetWorkSetup() {
                                     .putString("rpcPort", rpcPort)
                                     .apply()
                                 expandedState = false
-                                Toast.makeText(localContext, "Saved", Toast.LENGTH_SHORT).show()
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(localContext, "Saved", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         },
                     ) {

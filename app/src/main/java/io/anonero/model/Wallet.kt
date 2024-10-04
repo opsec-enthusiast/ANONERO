@@ -71,7 +71,6 @@ class Wallet {
     external fun getLegacySeed(offset: String?): String?
     external fun isPolyseedSupported(offset: String?): Boolean
     external fun getSeedLanguage(): String?
-    external fun stopBackgroundSync(): String?
 
     val status: Status
         get() = statusWithErrorString()
@@ -317,6 +316,9 @@ class Wallet {
         history?.refreshWithNotes(this)
     }
 
+    external fun stopBackgroundSync(password: String?): Boolean
+
+
     fun refreshCoins() {
         if (isSynchronized) {
             Log.d("Wallet", "refreshCoins: ${coins?.getCount()}")
@@ -324,8 +326,8 @@ class Wallet {
         }
     }
 
-    private external fun setListenerJ(listener: WalletListener): Long
-    fun setListener(listener: WalletListener) {
+    private external fun setListenerJ(listener: WalletListener?): Long
+    fun setListener(listener: WalletListener?) {
         listenerHandle = setListenerJ(listener)
     }
 
