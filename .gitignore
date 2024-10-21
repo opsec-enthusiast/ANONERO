@@ -16,3 +16,6 @@
 local.properties
 *.apk
 *.dm
+.kotlin
+app/anon/release/*.json
+app/anon/stageNet/*.json

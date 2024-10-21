@@ -1,5 +1,6 @@
 package io.anonero.ui
 
+import AnonNeroTheme
 import android.Manifest
 import android.content.Context
 import android.content.ContextWrapper
@@ -95,7 +96,6 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.MoneroHandlerThread
-import io.anonero.ui.theme.AnonTheme
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -352,7 +352,6 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                 context.applicationContext.filesDir.deleteRecursively()
                 val walletFile = AnonConfig.getDefaultWalletFile(context)
                 val seedWords = seed.split(" ").toTypedArray()
-                Log.d("AnonMain", "Seed : $seed")
                 val recoveredWallet: Wallet?
                 Log.i(
                     "TAG", "restoreWallet: " +
@@ -458,7 +457,6 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
             withContext(Dispatchers.IO) {
                 WalletManager.instance?.wallet?.let {
                     it.setListener(null)
-                    Log.i("TAG", "stopBackgroundSync: ${  it.stopBackgroundSync("12345")}")
                     closingWallet.postValue(true)
                     delay(500)
                     it.store()
@@ -577,7 +575,7 @@ class WalletTest : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AnonTheme {
+            AnonNeroTheme {
                 TestWallet()
             }
         }
@@ -1336,7 +1334,7 @@ fun NetWorkSetup() {
 @Preview
 @Composable
 private fun DebugInfoPreview() {
-    AnonTheme {
+    AnonNeroTheme {
         Scaffold {
             Box(modifier = Modifier.padding(it)) {
                 Spend()
@@ -1562,7 +1560,7 @@ fun calculateSyncPercentage(daemonHeight: Int, targetHeight: Int): Float {
 @Preview(heightDp = 640, showBackground = true)
 @Composable
 private fun AnonMainPre() {
-    AnonTheme {
+    AnonNeroTheme {
         TestWallet()
     }
 }

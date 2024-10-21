@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -96,6 +98,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.compose.animation)
+
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.navigation.compose)
@@ -114,6 +117,8 @@ dependencies {
     implementation(libs.koin.core.coroutines)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.navigation)
+
+    implementation(libs.org.jetbrains.kotlin.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -137,7 +137,9 @@ class RestoreHeight internal constructor() {
     fun getHeight(date: Date?): Long {
         val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         cal[Calendar.DST_OFFSET] = 0
-        cal.time = date
+        if (date != null) {
+            cal.time = date
+        }
         cal.add(Calendar.DAY_OF_MONTH, -4) // give it some leeway
         if (cal[Calendar.YEAR] < 2014) return 0
         if (cal[Calendar.YEAR] == 2014 && cal[Calendar.MONTH] <= 3) // before May 2014

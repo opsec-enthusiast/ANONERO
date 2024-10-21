@@ -32,9 +32,6 @@ class AnonApplication : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             initNotificationChannels()
         }
-        Intent(this.applicationContext,AnonNeroService::class.java).apply {
-
-        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -49,11 +46,11 @@ class AnonApplication : Application() {
     }
 
     override fun onTerminate() {
-        Intent(applicationContext, AnonNeroService::class.java)
-            .also {
-                it.action = "stop"
-                startService(it)
-            }
+//        Intent(applicationContext, AnonNeroService::class.java)
+//            .also {
+//                it.action = "stop"
+//                startService(it)
+//            }
         super.onTerminate()
     }
 }
