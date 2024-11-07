@@ -30,9 +30,7 @@ fun OnboardingWelcome(
     onRestoreClick: () -> Unit = {},
 ) {
 
-    Scaffold(
-
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)

@@ -219,7 +219,7 @@ class WalletManager {
             daemonUsername = node.username
             daemonPassword = node.password
             daemonAddress?.let { addr -> setDaemonAddressJ(addr) }
-            Log.i("setDaemon", "setDaemon:  $daemonAddress");
+            Log.i("setDaemon", "setDaemon:  $daemonAddress")
         } else {
             daemonAddress = null
             daemonUsername = ""

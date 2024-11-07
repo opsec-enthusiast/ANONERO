@@ -4,23 +4,55 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import io.anonero.model.WalletManager
 import io.anonero.ui.home.HomeScreenComposable
+import io.anonero.ui.home.LockScreen
 import kotlinx.serialization.Serializable
 
 
 @Serializable
-data object HomeScreen
+data object HomeScreenRoute
+
+@Serializable
+data object LockScreenRoute
 
 @Serializable
 data object Home
 
-fun NavGraphBuilder.homeGraph(navController: NavHostController) {
+@Serializable
+data object TransactionsRoute
 
+@Serializable
+data object ReceiveRoute
+
+@Serializable
+data object SendRoute
+
+@Serializable
+data object SettingsRoute
+
+@Serializable
+data object SubAddressesRoute
+
+
+fun NavGraphBuilder.homeGraph(navController: NavHostController) {
+    val walletStatus = WalletManager.instance?.wallet?.status?.isOk
     navigation<Home>(
-        startDestination = HomeScreen
+        startDestination = if(walletStatus == true) HomeScreenRoute else LockScreenRoute
     ) {
-        composable<HomeScreen> {
+        composable<HomeScreenRoute> {
             HomeScreenComposable()
+        }
+        composable<LockScreenRoute> {
+            LockScreen(
+                onUnLocked = {
+                    navController.navigate(HomeScreenRoute) {
+                        popUpTo(LockScreenRoute) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
         }
     }
 }

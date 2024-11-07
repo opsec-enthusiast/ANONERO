@@ -4,4 +4,10 @@
     <style name="Theme.Anonnero" parent="android:Theme.Material.Light.NoActionBar" >
         <item name="android:windowBackground">@color/black</item>
     </style>
+
+    <style name="Theme.Anonnero.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="postSplashScreenTheme">@style/Theme.Anonnero</item>
+        <item name="android:windowBackground">@color/black</item>
+    </style>
 </resources>

@@ -1,4 +1,52 @@
 package io.anonero.ui.viewmodels
 
-class AppViewModel {
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import io.anonero.AnonConfig
+import io.anonero.services.AnonWalletHandler
+import io.anonero.services.InvalidPin
+import io.anonero.services.WalletRepo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
+import org.koin.java.KoinJavaComponent.inject
+
+class AppViewModel(private val walletRepo: WalletRepo) : ViewModel() {
+
+    private var splashInit = false
+    private var walletExist: MutableSharedFlow<Boolean> = MutableSharedFlow(replay = 2)
+
+    val isReady get() = splashInit
+    val existWallet get() = walletExist as SharedFlow<Boolean>
+
+    private val walletHandler: AnonWalletHandler by inject(AnonWalletHandler::class.java)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            walletExist.emit(
+                AnonConfig.getDefaultWalletFile(AnonConfig.context!!).exists()
+            )
+            delay(400)
+            splashInit = true
+        }
+    }
+
+    fun openWallet(pin: String): Boolean {
+        return try {
+            walletHandler.openWallet(pin)
+        } catch (e: InvalidPin) {
+            false
+        }
+    }
+
+    fun startService() {
+        viewModelScope.launch(Dispatchers.IO) {
+            walletHandler.startService()
+        }
+    }
+
+
 }

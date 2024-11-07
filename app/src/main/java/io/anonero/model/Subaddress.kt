@@ -41,4 +41,10 @@ class Subaddress(
         val DEFAULT_LABEL_FORMATTER: Pattern =
             Pattern.compile("^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}:[0-9]{2}:[0-9]{2}$")
     }
+
+
+    val totalAmount: Long
+        get() = amount
+
+
 }

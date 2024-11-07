@@ -1,7 +1,9 @@
-package io.anonero.ui.onboard
+package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.util.Log
 import android.view.HapticFeedbackConstants
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -31,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,20 +44,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.icons.AnonIcons
+import io.anonero.model.WalletManager
+import io.anonero.services.WalletRepo
+import io.anonero.ui.viewmodels.AppViewModel
 import io.anonero.util.ShakeConfig
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.withContext
+import org.koin.androidx.compose.koinViewModel
+import org.koin.java.KoinJavaComponent.inject
 
 const val BackSpaceKey = -2
 const val ConfirmKey = -3
@@ -64,19 +75,65 @@ val keys = listOf(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PinSetup(
-    onNext: (pin: String) -> Unit = {},
+fun LockScreen(
+    onUnLocked: () -> Unit = {}
 ) {
     val view = LocalView.current
-    val pinEntered = remember { mutableStateListOf<Int>() }
     val currentPin = remember { mutableStateListOf<Int>() }
-    var confirming by remember { mutableStateOf(false) }
-    var pinNotMatch by remember { mutableStateOf(false) }
+    var pinError by remember { mutableStateOf(false) }
     val errorColor: Color by animateColorAsState(
-        if (pinNotMatch) MaterialTheme.colorScheme.error else Color.White, label = "error_anim"
+        if (pinError) MaterialTheme.colorScheme.error else Color.White, label = "error_anim"
     )
     val errorShake = rememberShakeController()
-    val context = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val appViewModel: AppViewModel = koinViewModel()
+    val walletRepo : WalletRepo by inject(WalletRepo::class.java)
+    Log.i("TAG", "HashLock ${walletRepo.hashCode()}: ")
+
+    fun showError() {
+        errorShake.shake(
+            ShakeConfig(
+                6, translateX = 5f
+            )
+        )
+        scope.launch {
+            pinError = true
+            repeat(6) {
+                delay(50)
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.CONTEXT_CLICK
+                )
+            }
+            delay(100)
+            pinError = false
+        }
+    }
+
+    fun checkPin() {
+        val pin = currentPin.joinToString(separator = "")
+        if (pin.length >= 4) {
+            scope.launch(Dispatchers.IO){
+                try {
+                    val result = appViewModel.openWallet(pin)
+                    withContext(Dispatchers.Main) {
+                        if (result) {
+                            appViewModel.startService()
+                            onUnLocked()
+                        } else {
+                            showError()
+                        }
+                    }
+                } catch (e: Exception) {
+                    showError()
+                    Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            showError()
+        }
+
+    }
 
     Scaffold { paddingValues ->
         Column(
@@ -114,7 +171,7 @@ fun PinSetup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (confirming) "Confirm PIN" else "Please enter your PIN")
+                Text("Please enter your PIN")
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier
@@ -170,33 +227,7 @@ fun PinSetup(
                                         if (key == BackSpaceKey && currentPin.isNotEmpty()) {
                                             currentPin.removeLast()
                                         } else if (key == ConfirmKey) {
-                                            if (confirming) {
-                                                if (currentPin.joinToString() == pinEntered.joinToString()) {
-                                                    onNext.invoke(currentPin.joinToString(separator = ""))
-                                                } else {
-                                                    errorShake.shake(
-                                                        ShakeConfig(
-                                                            6, translateX = 5f
-                                                        )
-                                                    )
-                                                    context.launch {
-                                                        pinNotMatch = true
-                                                        repeat(6) {
-                                                            delay(50)
-                                                            view.performHapticFeedback(
-                                                                HapticFeedbackConstants.CONTEXT_CLICK
-                                                            )
-                                                        }
-                                                        delay(100)
-                                                        pinNotMatch = false
-                                                    }
-                                                }
-                                            } else {
-                                                pinEntered.clear()
-                                                pinEntered.addAll(currentPin)
-                                                currentPin.clear()
-                                                confirming = true
-                                            }
+                                            checkPin()
                                         } else {
                                             if (currentPin.size < 12) {
                                                 currentPin.add(key)
@@ -252,7 +283,6 @@ fun PinSetup(
 @Composable
 private fun SetupNodeComposablePreview() {
     AnonNeroTheme {
-        PinSetup(
-        )
+        LockScreen()
     }
 }

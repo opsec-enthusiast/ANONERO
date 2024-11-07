@@ -46,9 +46,9 @@ class AnonNeroService : Service() {
                     NOTIFICATION_ID,
                     foregroundNotification(),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                );
+                )
             } else {
-                startForeground(NOTIFICATION_ID, foregroundNotification());
+                startForeground(NOTIFICATION_ID, foregroundNotification())
             }
         }
         return START_STICKY
@@ -89,7 +89,6 @@ class AnonNeroService : Service() {
     }
 
     override fun onDestroy() {
-        Log.i(TAG, "onDestroy: Called")
         job.cancel()
         super.onDestroy()
     }

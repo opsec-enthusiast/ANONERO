@@ -1,8 +1,16 @@
 package io.anonero.util
 
+import android.os.Build
+import android.text.format.DateFormat
+import androidx.annotation.RequiresApi
 import io.anonero.AnonConfig
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 object Formats {
 
@@ -17,4 +25,15 @@ object Formats {
         return d.toPlainString()
     }
 
+    fun formatTransactionTime(timestamp: Long): String {
+        val instant =
+            Instant.ofEpochMilli(timestamp)
+
+        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+
+        val formatter = DateTimeFormatter.ofPattern("HH:mm\nMM/dd")
+
+        return dateTime.format(formatter)
+
+    }
 }

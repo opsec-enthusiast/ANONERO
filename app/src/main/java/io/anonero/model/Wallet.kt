@@ -24,6 +24,7 @@ import java.util.Locale
 
 class Wallet {
     var isSynchronized = false
+    var isInitialized = false
     private var accountIndex = 0
     private var handle: Long = 0
     private var listenerHandle: Long = 0
@@ -48,6 +49,7 @@ class Wallet {
     internal constructor(handle: Long) {
         this.handle = handle
     }
+
 
     internal constructor(handle: Long, accountIndex: Int) {
         this.handle = handle
@@ -185,11 +187,13 @@ class Wallet {
             proxyAddress = ""
         }
         Log.d("Wallet.kt", ");")
-        return initJ(
+
+        isInitialized =  initJ(
             daemonAddress, upperTransactionSizeLimit,
             daemonUsername, daemonPassword,
             proxyAddress
         )
+        return  isInitialized
     }
 
     private external fun initJ(
@@ -282,14 +286,14 @@ class Wallet {
         pendingTransaction = PendingTransaction(txHandle)
         return pendingTransaction
     }
-    public  external fun createTransactionJ(
+    external fun createTransactionJ(
         dstAddr: String, paymentId: String,
         amount: Long, mixinCount: Int,
         priority: Int, accountIndex: Int, keyImages: ArrayList<String>
     ): Long
 
-    public fun send(pendingTransaction: PendingTransaction) : Boolean{
-       return  pendingTransaction.commit("", overwrite = true);
+    fun send(pendingTransaction: PendingTransaction) : Boolean{
+       return  pendingTransaction.commit("", overwrite = true)
     }
     private external fun createSweepTransaction(
         dstAddr: String, paymentId: String,
@@ -419,7 +423,7 @@ class Wallet {
         var connectionStatus: ConnectionStatus? = null // optional
 
         init {
-            this.status = StatusEnum.values()[status]
+            this.status = StatusEnum.entries.toTypedArray()[status]
         }
 
         val isOk: Boolean

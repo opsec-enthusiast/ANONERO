@@ -131,9 +131,7 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 }
             )
         }
-        composable<OnboardSeedScreen>(
-
-        ) { navBackStackEntry ->
+        composable<OnboardSeedScreen> { navBackStackEntry ->
             val state = navBackStackEntry.toRoute<OnboardSeedScreen>()
             SeedSetup(
                 seed = state.seed

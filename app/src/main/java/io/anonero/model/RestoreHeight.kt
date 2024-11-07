@@ -192,7 +192,6 @@ class RestoreHeight internal constructor() {
             }
         return height
     }
-
     companion object {
         const val DIFFICULTY_TARGET = 120 // seconds
         private var Singleton: RestoreHeight? = null

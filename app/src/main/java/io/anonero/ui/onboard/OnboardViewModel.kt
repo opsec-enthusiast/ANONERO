@@ -1,11 +1,13 @@
 package io.anonero.ui.onboard
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 
@@ -30,7 +32,7 @@ class OnboardViewModel : ViewModel() {
     suspend fun create(pin: String) {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
-            val context = AnonConfig.context!!.applicationContext;
+            val context = AnonConfig.context!!.applicationContext
             context.filesDir.deleteRecursively()
             val walletFile = AnonConfig.getDefaultWalletFile(context)
             val anonWallet = WalletManager.instance?.createWallet(
@@ -41,7 +43,13 @@ class OnboardViewModel : ViewModel() {
                 1,
             )
             anonWallet?.store()
+            delay(100)
+            if (anonWallet?.status?.isOk != true) {
+                walletFile.delete()
+                throw CancellationException("unable to create wallet")
+            }
             walllet = anonWallet
+            delay(500)
         }
     }
 

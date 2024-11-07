@@ -8,4 +8,5 @@ class BalanceInfo(val rawUnlocked: Long, val rawLocked: Long) {
     val isLockedBalanceZero: Boolean
         get() = rawLocked == 0L
 
+    val total: Long get() = rawUnlocked + rawLocked
 }

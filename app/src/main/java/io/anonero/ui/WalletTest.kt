@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -34,8 +35,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Create
-import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -96,6 +97,7 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.MoneroHandlerThread
+import io.anonero.services.WalletRepo
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -103,6 +105,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.util.Locale
 
 
 enum class BroadcastStatus(val status: String?) {
@@ -140,7 +143,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
     var currentBlockProgress = MutableLiveData(1L)
     var daemonBlockChainTargetHeightLive = MutableLiveData(1L)
     var handler: MoneroHandlerThread? = null
-    var index = 1;
+    var index = 1
 
     fun checkWallet(context: Context) {
         viewModelScope.launch {
@@ -153,7 +156,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 
     fun createWallet(context: Context, passPhrase: String, pin: String) {
         viewModelScope.launch {
-            inProgress.postValue(true);
+            inProgress.postValue(true)
             withContext(Dispatchers.IO) {
                 context.applicationContext.filesDir.deleteRecursively()
                 val walletFile = AnonConfig.getDefaultWalletFile(context)
@@ -173,26 +176,25 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                     "Creating wallet Legacy Seed : ${anonWallet?.getLegacySeed(passPhrase)}"
                 )
                 anonWallet?.store()
-                inProgress.postValue(false);
+                inProgress.postValue(false)
                 anonWallet?.status?.let {
-                    walletDeubug.postValue("${walletDeubug.value}\n$it");
+                    walletDeubug.postValue("${walletDeubug.value}\n$it")
                     isWalletCreated.postValue(it.isOk)
                     walletOpened.postValue(it.isOk)
                     showSeedAndAddress(anonWallet, passPhrase)
                     withContext(Dispatchers.IO) {
-                        handler = MoneroHandlerThread(
-                            "WalletService",
-                            listener = this@WalletTestViewModel,
-                            anonWallet
-                        )
+//                        handler = MoneroHandlerThread(
+//                            "WalletService",
+//                            WalletRepo(),
+//                            listener = this@WalletTestViewModel,
+//                            anonWallet
+//                        )
                         WalletManager.instance?.wallet?.let {
                             wallet?.setListener(handler!!)
                             handler?.start()
                             startWalletService(context = context)
-                            Log.i("TAG", "openWallet: startWalletService")
                         }
                     }
-                    Log.i("TAG", "createWallet:called ");
                 }
             }
         }
@@ -200,8 +202,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 
     private fun startWalletService(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val host = prefs.getString("host", "stagenet.community.rino.io")
             val rpcPort = prefs.getString("rpcPort", "38081")
             Log.i("TAG", "startWalletService: $host $rpcPort")
@@ -234,7 +235,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
             subaddress.postValue(
                 add.toTypedArray()
             )
-            index += 1;
+            index += 1
         }
         Log.i("TAG", "generateAddress: ${this.hashCode()} ${index}")
     }
@@ -247,13 +248,13 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
         viewModelScope.launch {
 
             withContext(Dispatchers.IO) {
-                inProgress.postValue(true);
+                inProgress.postValue(true)
                 val walletFile = AnonConfig.getDefaultWalletFile(localContext)
 //                WalletManager.instance?.setDaemon()
                 val anonWallet = WalletManager.instance?.openWallet(
                     walletFile.path,
                     pin,
-                );
+                )
                 if (anonWallet?.status?.isOk != true) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
@@ -283,11 +284,13 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                     val wallet = WalletManager.instance?.wallet
                     viewModelScope.launch {
                         withContext(Dispatchers.IO) {
-                            handler = MoneroHandlerThread(
-                                "WalletService",
-                                listener = this@WalletTestViewModel,
-                                anonWallet
-                            )
+//                            handler = MoneroHandlerThread(
+//                                "WalletService",
+//                                WalletRepo(),
+//
+//                                listener = this@WalletTestViewModel,
+//                                anonWallet
+//                            )
                             WalletManager.instance?.wallet?.let {
                                 wallet?.setListener(handler!!)
                                 handler?.start()
@@ -299,7 +302,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                     }
                 }
                 walletSyncFlow.emit("Wallet running...")
-                inProgress.postValue(false);
+                inProgress.postValue(false)
             }
         }
     }
@@ -348,7 +351,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
     ) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                inProgress.postValue(true);
+                inProgress.postValue(true)
                 context.applicationContext.filesDir.deleteRecursively()
                 val walletFile = AnonConfig.getDefaultWalletFile(context)
                 val seedWords = seed.split(" ").toTypedArray()
@@ -391,8 +394,8 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
 //                    recoveredWallet.close()
                     delay(1000)
                     val reOpenedWallet = recoveredWallet
-                    Log.i("TAG", "restoreWallet networkType: ${reOpenedWallet?.networkType}")
-                    if (reOpenedWallet?.status?.isOk == true) {
+                    Log.i("TAG", "restoreWallet networkType: ${reOpenedWallet.networkType}")
+                    if (reOpenedWallet.status?.isOk == true) {
                         Log.i(
                             "TAG", "restoreWallet: ${reOpenedWallet.getRestoreHeight()}\n" +
                                     "getDaemonBlockChainHeight ${reOpenedWallet.getDaemonBlockChainHeight()}\n" +
@@ -406,11 +409,12 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                         showSeedAndAddress(reOpenedWallet, passphrase)
                         viewModelScope.launch(Dispatchers.IO) {
                             Log.i("TAG", "openWallet: startWalletService()")
-                            handler = MoneroHandlerThread(
-                                "WalletService",
-                                listener = this@WalletTestViewModel,
-                                reOpenedWallet
-                            )
+//                            handler = MoneroHandlerThread(
+//                                "WalletService",
+//                                WalletRepo(),
+//                                listener = this@WalletTestViewModel,
+//                                reOpenedWallet
+//                            )
                             reOpenedWallet.let {
                                 reOpenedWallet.setListener(handler!!)
                                 handler?.start()
@@ -426,7 +430,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(
                                 context,
-                                "Unable to restore wallet: ${recoveredWallet?.status?.errorString}",
+                                "Unable to restore wallet: ${recoveredWallet.status?.errorString}",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -463,7 +467,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                     delay(500)
                     it.close()
                     delay(500)
-                    WalletManager.resetInstance();
+                    WalletManager.resetInstance()
                     closingWallet.postValue(false)
                     isWalletCreated.postValue(true)
                     walletOpened.postValue(false)
@@ -548,7 +552,7 @@ class WalletTestViewModel : ViewModel(), MoneroHandlerThread.Listener {
                 if (txHandle != null) {
                     val pending = PendingTransaction(txHandle)
                     postDebug("Pending tx created ${pending.status}")
-                    val success = WalletManager.instance?.wallet?.send(pending);
+                    val success = WalletManager.instance?.wallet?.send(pending)
                     if (success == true) {
                         WalletManager.instance?.wallet?.refreshHistory()
                         WalletManager.instance?.wallet?.store()
@@ -593,7 +597,9 @@ class WalletTest : ComponentActivity() {
         }
         // Check if the permission is already granted
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         } else {
             Intent(applicationContext, AnonNeroService::class.java)
                 .also {
@@ -614,7 +620,7 @@ class WalletTest : ComponentActivity() {
 fun TestWallet() {
     val scope = rememberCoroutineScope()
     val localContext = LocalContext.current
-    val vm: WalletTestViewModel = viewModel();
+    val vm: WalletTestViewModel = viewModel()
     val walletCreated by vm.isWalletCreated.observeAsState(false)
     val walletOpened by vm.walletOpened.observeAsState(false)
     val inProgress by vm.inProgress.observeAsState(false)
@@ -861,10 +867,10 @@ fun TestWallet() {
 
 @Composable
 fun DebugInfo() {
-    val vm: WalletTestViewModel = viewModel();
+    val vm: WalletTestViewModel = viewModel()
     val scrollState = rememberLazyListState()
     val debugString = vm.walletDeubug.observeAsState("")
-    val strings = debugString.value.split("\n");
+    val strings = debugString.value.split("\n")
 
     LaunchedEffect(key1 = strings.size) {
         scrollState.animateScrollToItem(scrollState.layoutInfo.totalItemsCount)
@@ -930,7 +936,7 @@ fun Spend(modifier: Modifier = Modifier) {
             Text(text = "Spend")
         }, trailingContent = {
             Icon(
-                imageVector = Icons.Outlined.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 modifier = Modifier.rotate(
                     rotate
                 ),
@@ -987,7 +993,7 @@ fun Spend(modifier: Modifier = Modifier) {
                             OutlinedButton(
                                 onClick = {
                                     Log.i("TAG", "Spend:  $inputAddress $amount")
-                                    vm.makeTransaction(inputAddress, amount);
+                                    vm.makeTransaction(inputAddress, amount)
                                 },
                             ) {
                                 Text("Send")
@@ -1069,7 +1075,7 @@ fun Spend(modifier: Modifier = Modifier) {
 
 @Composable
 fun Address(modifier: Modifier = Modifier) {
-    val vm: WalletTestViewModel = viewModel();
+    val vm: WalletTestViewModel = viewModel()
     var expandedState by remember { mutableStateOf(false) }
     val rotate: Float by animateFloatAsState(if (expandedState) 90.0f else 0.0f, label = "anim")
     val addresses by vm.subaddress.observeAsState(initial = arrayOf())
@@ -1104,7 +1110,7 @@ fun Address(modifier: Modifier = Modifier) {
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     modifier = Modifier.rotate(
                         rotate
                     ),
@@ -1244,7 +1250,7 @@ fun NetWorkSetup() {
                 Text(text = "Network Setup")
             }, trailingContent = {
                 Icon(
-                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     modifier = Modifier.rotate(
                         rotate
                     ),
@@ -1318,7 +1324,8 @@ fun NetWorkSetup() {
         }
 
         Text(
-            text = "Network: ${AnonConfig.getNetworkType().toString().capitalize()}\n" +
+            text = "Network: ${AnonConfig.getNetworkType().toString()
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }}\n" +
                     "Flavour : ${BuildConfig.FLAVOR} \n" +
                     "Build Type: ${BuildConfig.BUILD_TYPE}\n" +
                     "Build Version: ${BuildConfig.VERSION_NAME}\n" +
@@ -1352,8 +1359,8 @@ fun GenerateWallet(
 ) {
     var passphrase by remember { mutableStateOf("test") }
     var pin by remember { mutableStateOf("12345") }
-    val vm: WalletTestViewModel = viewModel();
-    val context = LocalContext.current;
+    val vm: WalletTestViewModel = viewModel()
+    val context = LocalContext.current
     return AlertDialog(
         text = {
             Column(
@@ -1421,8 +1428,8 @@ fun RecoverWallet(
     var pin by remember { mutableStateOf("12345") }
     var passphrase by remember { mutableStateOf("test") }
     var height by remember { mutableStateOf("") }
-    val vm: WalletTestViewModel = viewModel();
-    val context = LocalContext.current;
+    val vm: WalletTestViewModel = viewModel()
+    val context = LocalContext.current
     return AlertDialog(
         text = {
             Column(
@@ -1500,7 +1507,7 @@ fun RecoverWallet(
 
 @Composable
 fun Sync(modifier: Modifier = Modifier) {
-    val vm: WalletTestViewModel = viewModel();
+    val vm: WalletTestViewModel = viewModel()
     val daemonHeight by vm.currentBlockProgress.observeAsState(0L)
     val targetHeight by vm.daemonBlockChainTargetHeightLive.observeAsState(0L)
 

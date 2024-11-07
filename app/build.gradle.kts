@@ -11,9 +11,9 @@ android {
 
     defaultConfig {
         applicationId = "io.anonero"
-        minSdk = 25
+        minSdk = 26
         targetSdk = 34
-        versionCode = 1
+        versionCode = 2
         versionName = "0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -31,6 +31,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
         create("stageNet") {
             isMinifyEnabled = false
@@ -75,13 +76,13 @@ android {
             applicationIdSuffix = ".anon"
             resValue("string", "app_name", "anon")
             dimension = "anon_mode"
-            buildConfigField("String", "FLAVOR", "\"anon\"");
+            buildConfigField("String", "FLAVOR", "\"anon\"")
         }
         create("nero") {
             applicationIdSuffix = ".nero"
             resValue("string", "app_name", "nero")
             dimension = "anon_mode"
-            buildConfigField("String", "FLAVOR", "\"nero\"");
+            buildConfigField("String", "FLAVOR", "\"nero\"")
         }
 
     }
@@ -92,8 +93,10 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.compose)
+    implementation(libs.androidx.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.runtime.livedata)
@@ -117,8 +120,11 @@ dependencies {
     implementation(libs.koin.core.coroutines)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.navigation)
+    implementation(libs.koin.androidx.compose)
 
     implementation(libs.org.jetbrains.kotlin.android)
+
+    implementation(libs.com.google.zxing.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -128,4 +134,5 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 }
