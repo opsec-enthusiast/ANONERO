@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.Node
+import io.anonero.model.NodeFields
 import io.anonero.model.WalletManager
 import io.anonero.ui.PREFS
 import org.json.JSONObject
@@ -41,21 +42,21 @@ class AnonWalletHandler(
         walletRepo.update()
         val prefs = AnonConfig.context!!.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         try {
-            val host = prefs.getString("host", "singapore.node.xmr.pm")
-            val rpcPort = prefs.getString("rpcPort", "38081")
-            val rpcUsername = prefs.getString("rpcUsername", "")
-            val rpcPassphrase = prefs.getString("rpcPassphrase", "")
-            val node = Node.fromJson(
-                JSONObject()
-                    .apply {
-                        put("rpcHost", host)
-                        put("rpcPort", rpcPort)
-                        put("rpcUsername", rpcUsername)
-                        put("rpcPassphrase", rpcPassphrase)
-                        put("network", AnonConfig.getNetworkType().toString())
-                        put("name", "anon")
-                    }
-            )
+            val host = prefs.getString(NodeFields.RPC_HOST.value, "")
+            val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
+            val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
+            val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value ,"")
+            val nodeObj = JSONObject()
+                .apply {
+                    put(NodeFields.RPC_HOST.value, host)
+                    put(NodeFields.RPC_PORT.value, rpcPort)
+                    put(NodeFields.RPC_USERNAME.value, rpcUsername)
+                    put(NodeFields.RPC_PASSWORD.value,rpcPassphrase)
+                    put(NodeFields.RPC_NETWORK.value, AnonConfig.getNetworkType().toString())
+                    put(NodeFields.NODE_NAME.value, "anon")
+                }
+            val node = Node.fromJson(nodeObj)
+            Log.i("TAG", "startService: Node:\n ${nodeObj.toString(2)}\n")
             WalletManager.instance?.setDaemon(node)
             wallet.init(0)
             walletRepo.update()

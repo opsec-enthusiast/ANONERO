@@ -3,6 +3,7 @@ package io.anonero.ui.onboard
 import AnonNeroTheme
 import android.content.Context
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,20 +45,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.anonero.AnonConfig
 import io.anonero.R
+import io.anonero.model.NetworkType
+import io.anonero.model.NodeFields
 import io.anonero.ui.PREFS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.net.URI
 
 
-class NodeSetupViewModel:ViewModel() {
+class NodeSetupViewModel : ViewModel() {
 
-    fun  checkRPCReachable(){
+    fun checkRPCReachable() {
         viewModelScope.launch(Dispatchers.IO) {
 
         }
     }
 }
+
 @Composable
 fun SetupNodeComposable(
     onBackPressed: () -> Unit = {},
@@ -64,16 +71,27 @@ fun SetupNodeComposable(
 ) {
     var rpcHost by remember { mutableStateOf("") }
     var rpcUsername by remember { mutableStateOf("") }
+    var rpcPort by remember { mutableStateOf("") }
     var rpcPassPhrase by remember { mutableStateOf("") }
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val defaultPort = remember {
+        when (AnonConfig.getNetworkType()) {
+            NetworkType.NetworkType_Mainnet -> "18081"
+            NetworkType.NetworkType_Testnet -> "28081"
+            NetworkType.NetworkType_Stagenet -> "38081"
+        }
+    }
+
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        rpcHost = prefs.getString("rpcHost", "") ?: ""
-        rpcUsername = prefs.getString("rpcUsername", "") ?: ""
-        rpcPassPhrase = prefs.getString("rpcPassphrase", "") ?: ""
+        rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
+        rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "") ?: ""
+        rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: ""
+        rpcPassPhrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: ""
     }
+
 
     Scaffold { paddingValues ->
         Column(
@@ -145,10 +163,30 @@ fun SetupNodeComposable(
                                 imeAction = ImeAction.Next,
                             ),
                             label = { Text(text = "http://address.onion:port") },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusable()
+                                .onFocusChanged {
+                                    if (!it.isFocused)
+                                        try {
+                                            val uri = URI(rpcHost.trim())
+                                            if (uri.port != -1) {
+                                                rpcPort = uri.port.toString()
+                                                rpcHost = rpcHost
+                                                    .replace(":${rpcPort}", "")
+                                                    .trim()
+                                            } else {
+                                                if (uri.host.isNotEmpty() && (uri.scheme.length != 0)) {
+                                                    rpcPort = defaultPort
+                                                }
+                                            }
+                                        } catch (_: Exception) {
+                                        }
+                                }
                         )
                     },
                 )
+
                 ListItem(
                     headlineContent = {
                         Text(
@@ -159,16 +197,15 @@ fun SetupNodeComposable(
                     },
                     supportingContent = {
                         OutlinedTextField(
-                            value = rpcUsername,
+                            value = rpcPort,
                             shape = MaterialTheme.shapes.medium,
-                            label = { Text(text = "(Optional)") },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Next,
                                 keyboardType = KeyboardType.Number
                             ),
                             onValueChange = {
-                                rpcPassPhrase = it
+                                rpcPort = it
                             },
 
                             )
@@ -204,9 +241,10 @@ fun SetupNodeComposable(
                     scope.launch {
                         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         val editor = prefs.edit()
-                        editor.putString("rpcHost", rpcHost)
-                        editor.putString("rpcUsername", rpcUsername)
-                        editor.putString("rpcPassphrase", rpcPassPhrase)
+                        editor.putString(NodeFields.RPC_HOST.value, rpcHost)
+                        editor.putString(NodeFields.RPC_PORT.value, rpcPort)
+                        editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
+                        editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
                         editor.apply()
                         oNextPressed()
                     }
@@ -216,6 +254,7 @@ fun SetupNodeComposable(
                     .padding(
                         horizontal = 12.dp
                     ),
+
                 shape = MaterialTheme.shapes.medium,
                 contentPadding = PaddingValues(12.dp)
             ) {

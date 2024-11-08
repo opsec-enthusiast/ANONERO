@@ -25,6 +25,20 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.net.UnknownHostException
 
+
+enum class NodeFields (val value:String){
+    RPC_HOST("host"),
+    RPC_PORT("rpcPort"),
+    RPC_USERNAME("username"),
+    RPC_PASSWORD("passphrase"),
+    RPC_NETWORK("network"),
+    NODE_TRUSTED("trusted"),
+    NODE_NAME("name");
+
+    override fun toString(): String {
+        return value
+    }
+}
 class Node {
     var networkType: NetworkType? = null
         private set
@@ -120,34 +134,34 @@ class Node {
 
     internal constructor(jsonObject: JSONObject?) {
         requireNotNull(jsonObject) { "daemon is empty" }
-        if (jsonObject.has("username")) {
-            username = jsonObject.getString("username")
+        if (jsonObject.has(NodeFields.RPC_USERNAME.value)) {
+            username = jsonObject.getString(NodeFields.RPC_USERNAME.value)
         }
-        if (jsonObject.has("password")) {
-            password = jsonObject.getString("password")
+        if (jsonObject.has(NodeFields.RPC_PASSWORD.value)) {
+            password = jsonObject.getString(NodeFields.RPC_PASSWORD.value)
         }
-        if (jsonObject.has("host")) {
-            this.host = jsonObject.getString("host")
+        if (jsonObject.has(NodeFields.RPC_HOST.value)) {
+            this.host = jsonObject.getString(NodeFields.RPC_HOST.value)
         }
-        this.rpcPort = if (jsonObject.has("rpcPort")) {
-            jsonObject.getInt("rpcPort")
+        this.rpcPort = if (jsonObject.has(NodeFields.RPC_PORT.value)) {
+            jsonObject.getInt(NodeFields.RPC_PORT.value)
         } else {
             defaultRpcPort
         }
-        if (jsonObject.has("name")) {
-            this.name = jsonObject.getString("name")
+        if (jsonObject.has(NodeFields.NODE_NAME.value)) {
+            this.name = jsonObject.getString(NodeFields.NODE_NAME.value)
         }
-        if (jsonObject.has("network")) {
-            networkType = when (jsonObject.getString("network")) {
+        if (jsonObject.has(NodeFields.RPC_NETWORK.value)) {
+            networkType = when (jsonObject.getString(NodeFields.RPC_NETWORK.value)) {
                 MAINNET -> NetworkType.NetworkType_Mainnet
                 STAGENET -> NetworkType.NetworkType_Stagenet
                 TESTNET -> NetworkType.NetworkType_Testnet
-                else -> throw IllegalArgumentException("invalid net: " + jsonObject.getString("network"))
+                else -> throw IllegalArgumentException("invalid net: " + jsonObject.getString(NodeFields.RPC_NETWORK.value))
             }
             require(networkType == WalletManager.instance?.networkType) { "wrong net: $networkType" }
         }
-        if (jsonObject.has("trusted")) {
-            this.trusted = jsonObject.getBoolean("trusted")
+        if (jsonObject.has(NodeFields.NODE_TRUSTED.value)) {
+            this.trusted = jsonObject.getBoolean(NodeFields.NODE_TRUSTED.value)
         }
     }
 
@@ -277,6 +291,7 @@ class Node {
     private val defaultRpcPort: Int
         // every node knows its network, but they are all the same
         get() {
+
             if (DEFAULT_RPC_PORT > 0) return DEFAULT_RPC_PORT
             DEFAULT_RPC_PORT = when (WalletManager.instance?.networkType) {
                 NetworkType.NetworkType_Mainnet -> 18081
