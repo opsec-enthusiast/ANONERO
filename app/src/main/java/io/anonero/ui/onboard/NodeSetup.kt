@@ -34,7 +34,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -45,9 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.anonero.AnonConfig
 import io.anonero.R
-import io.anonero.model.NetworkType
 import io.anonero.model.NodeFields
 import io.anonero.ui.PREFS
 import kotlinx.coroutines.Dispatchers
@@ -71,28 +68,23 @@ fun SetupNodeComposable(
 ) {
     var rpcHost by remember { mutableStateOf("") }
     var rpcUsername by remember { mutableStateOf("") }
-    var rpcPort by remember { mutableStateOf("") }
     var rpcPassPhrase by remember { mutableStateOf("") }
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val defaultPort = remember {
-        when (AnonConfig.getNetworkType()) {
-            NetworkType.NetworkType_Mainnet -> "18081"
-            NetworkType.NetworkType_Testnet -> "28081"
-            NetworkType.NetworkType_Stagenet -> "38081"
-        }
-    }
-
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
-        rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "") ?: ""
         rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: ""
         rpcPassPhrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: ""
+        val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "");
+        if ((rpcPort ?: "").isNotEmpty()) {
+            rpcHost = "${rpcHost}:${rpcPort}"
+        }
     }
 
 
+    val labelColor =  MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
@@ -162,27 +154,15 @@ fun SetupNodeComposable(
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Next,
                             ),
-                            label = { Text(text = "http://address.onion:port") },
+                            placeholder = {
+                                Text(
+                                    text = "http://address.onion:port",
+                                    color =labelColor
+                                )
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .focusable()
-                                .onFocusChanged {
-                                    if (!it.isFocused)
-                                        try {
-                                            val uri = URI(rpcHost.trim())
-                                            if (uri.port != -1) {
-                                                rpcPort = uri.port.toString()
-                                                rpcHost = rpcHost
-                                                    .replace(":${rpcPort}", "")
-                                                    .trim()
-                                            } else {
-                                                if (uri.host.isNotEmpty() && (uri.scheme.length != 0)) {
-                                                    rpcPort = defaultPort
-                                                }
-                                            }
-                                        } catch (_: Exception) {
-                                        }
-                                }
                         )
                     },
                 )
@@ -190,22 +170,28 @@ fun SetupNodeComposable(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "PORT",
+                            text = "Username",
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     },
                     supportingContent = {
                         OutlinedTextField(
-                            value = rpcPort,
+                            value = rpcUsername,
                             shape = MaterialTheme.shapes.medium,
+                            placeholder = {
+                                Text(
+                                    text = "(Optional)",
+                                    color = labelColor
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Next,
                                 keyboardType = KeyboardType.Number
                             ),
                             onValueChange = {
-                                rpcPort = it
+                                rpcUsername = it
                             },
 
                             )
@@ -229,7 +215,12 @@ fun SetupNodeComposable(
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Done,
                             ),
-                            label = { Text(text = "(Optional)") },
+                            placeholder = {
+                                Text(
+                                    text = "(Optional)",
+                                    color = labelColor
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
@@ -241,7 +232,20 @@ fun SetupNodeComposable(
                     scope.launch {
                         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         val editor = prefs.edit()
-                        editor.putString(NodeFields.RPC_HOST.value, rpcHost)
+
+                        var rpcPort = "";
+                        var rpcHostCopy = rpcHost;
+                        try {
+                            val uri = URI(rpcHost.trim())
+                            if (uri.port != -1) {
+                                rpcPort = uri.port.toString()
+                                rpcHostCopy = rpcHost
+                                    .replace(":${rpcPort}", "")
+                                    .trim()
+                            }
+                        } catch (_: Exception) {
+                        }
+                        editor.putString(NodeFields.RPC_HOST.value, rpcHostCopy)
                         editor.putString(NodeFields.RPC_PORT.value, rpcPort)
                         editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
                         editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
