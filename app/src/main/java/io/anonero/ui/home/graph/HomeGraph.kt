@@ -29,10 +29,16 @@ data object ReceiveRoute
 data object SendRoute
 
 @Serializable
+data class ReviewTransactionRoute(val toAddress:String)
+
+@Serializable
 data object SettingsRoute
 
 @Serializable
 data object SubAddressesRoute
+
+@Serializable
+data object SpendRoute
 
 
 fun NavGraphBuilder.homeGraph(navController: NavHostController) {

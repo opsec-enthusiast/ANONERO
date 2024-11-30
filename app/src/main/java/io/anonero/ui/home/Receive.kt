@@ -3,7 +3,6 @@ package io.anonero.ui.home
 import AnonNeroTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +38,6 @@ import org.koin.java.KoinJavaComponent.inject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiveScreen(
-    modifier: Modifier = Modifier,
     onBackPress: () -> Unit = {},
     navigateToSubAddresses: () -> Unit = {}
 ) {

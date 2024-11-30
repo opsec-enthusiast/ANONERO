@@ -19,6 +19,7 @@ import android.util.Log
 import android.util.Pair
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Collections
 import java.util.Date
 import java.util.Locale
 
@@ -50,6 +51,9 @@ class Wallet {
         this.handle = handle
     }
 
+    fun getPendingTx(): PendingTransaction? {
+        return pendingTransaction;
+    }
 
     internal constructor(handle: Long, accountIndex: Int) {
         this.handle = handle
@@ -292,6 +296,31 @@ class Wallet {
         priority: Int, accountIndex: Int, keyImages: ArrayList<String>
     ): Long
 
+
+    @Throws(Exception::class)
+    fun createTransaction(
+        dst_addr: String?,
+        amount: Long,
+        sweepAll: Boolean=false,
+        mixin_count: Int=0,
+        priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Medium,
+        selectedUtxos: ArrayList<String?> = arrayListOf()
+    ): PendingTransaction {
+        disposePendingTransaction()
+        val priority: Int = priority.ordinal
+        val preferredInputs = arrayListOf<String>()
+        val txHandle =
+            (if (sweepAll) createSweepTransaction(
+                dst_addr!!, "", mixin_count, priority,
+                accountIndex, preferredInputs
+            ) else createTransactionJ(
+                dst_addr!!, "", amount, mixin_count, priority,
+                accountIndex, preferredInputs
+            ))
+        pendingTransaction = PendingTransaction(txHandle)
+        return pendingTransaction!!
+    }
+
     fun send(pendingTransaction: PendingTransaction) : Boolean{
        return  pendingTransaction.commit("", overwrite = true)
     }
@@ -405,6 +434,15 @@ class Wallet {
 
     private external fun getDeviceTypeJ(): Int
 
+    fun validateAddress(addressField: String): Boolean {
+        return WalletManager.instance?.networkType?.value?.let {
+            isAddressValid(
+                addressField,
+                it
+            )
+        } == true
+    }
+
     enum class Device(val accountLookahead: Int, val subaddressLookahead: Int) {
         Device_Undefined(0, 0), Device_Software(50, 200), Device_Ledger(5, 20)
 
@@ -457,15 +495,6 @@ class Wallet {
 
         @JvmStatic
         external fun isPaymentIdValid(payment_id: String): Boolean
-
-        fun isAddressValid(address: String): Boolean {
-            return WalletManager.instance?.networkType?.value?.let {
-                isAddressValid(
-                    address,
-                    it
-                )
-            } == true
-        }
 
         @JvmStatic
         external fun isAddressValid(address: String?, networkType: Int): Boolean

@@ -1,6 +1,7 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,12 +24,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import io.anonero.ui.home.addresses.SubAddressesScreen
+import io.anonero.ui.home.graph.HomeScreenRoute
 import io.anonero.ui.home.graph.ReceiveRoute
+import io.anonero.ui.home.graph.ReviewTransactionRoute
 import io.anonero.ui.home.graph.SendRoute
 import io.anonero.ui.home.graph.SettingsRoute
 import io.anonero.ui.home.graph.SubAddressesRoute
 import io.anonero.ui.home.graph.TransactionsRoute
+import io.anonero.ui.home.spend.ReviewTransactionScreen
 
 @Composable
 fun HomeScreenComposable(modifier: Modifier = Modifier) {
@@ -44,68 +49,72 @@ fun HomeScreenComposable(modifier: Modifier = Modifier) {
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: TransactionsRoute
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(
-            top = 0.dp,
-            bottom = 0.dp
-        ),
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ) {
-                getRoutes().forEach { item ->
-                    NavigationBarItem(
-                        selected = currentRoute == item.getRouteAsString,
-                        colors = navigationItemColors,
-                        onClick = {
-                            if (currentRoute != item.getRouteAsString) {
-                                bottomNavController.navigate(item.route) {
-                                    popUpTo(bottomNavController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                }
+    Scaffold(contentWindowInsets = WindowInsets(
+        top = 0.dp, bottom = 0.dp
+    ), bottomBar = {
+        NavigationBar(
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.primary,
+        ) {
+            getRoutes().forEach { item ->
+                NavigationBarItem(
+                    selected = currentRoute == item.getRouteAsString,
+                    colors = navigationItemColors,
+                    onClick = {
+                        if (currentRoute != item.getRouteAsString) {
+                            bottomNavController.navigate(item.route) {
+                                popUpTo(bottomNavController.graph.startDestinationId)
+                                launchSingleTop = true
                             }
-                        },
-                        icon = { Icon(item.icon, contentDescription = item.title) },
-                    )
-                }
+                        }
+                    },
+                    icon = { Icon(item.icon, contentDescription = item.title) },
+                )
             }
         }
-    ) { paddingValues ->
+    }) { paddingValues ->
         Box(modifier = modifier.padding(paddingValues)) {
-            NavHost(bottomNavController, startDestination = TransactionsRoute,
-                exitTransition = {
-                    fadeOut(animationSpec = tween(340))
-                },
-                enterTransition = {
-                    fadeIn(animationSpec = tween(340))
-                }
-            ) {
+            NavHost(bottomNavController, startDestination = TransactionsRoute, exitTransition = {
+                fadeOut(animationSpec = tween(340))
+            }, enterTransition = {
+                fadeIn(animationSpec = tween(340))
+            }) {
                 composable<TransactionsRoute> {
                     TransactionScreen()
                 }
                 composable<ReceiveRoute> {
-                    ReceiveScreen(
-                        onBackPress = {
-                            bottomNavController.popBackStack()
-                        },
-                        navigateToSubAddresses = {
-                            bottomNavController.navigate(SubAddressesRoute)
-                        }
-                    )
+                    ReceiveScreen(onBackPress = {
+                        bottomNavController.popBackStack()
+                    }, navigateToSubAddresses = {
+                        bottomNavController.navigate(SubAddressesRoute)
+                    })
                 }
                 composable<SendRoute> {
-                    SendScreen()
+                    SendScreen(navigateToReview = {
+                        bottomNavController.navigate(it)
+                    }, onBackPress = {
+                        bottomNavController.popBackStack()
+                    })
+                }
+                composable<ReviewTransactionRoute> { backStackEntry ->
+                    val route = backStackEntry.toRoute<ReviewTransactionRoute>()
+                    ReviewTransactionScreen(route, onFinished = {
+                        bottomNavController.navigate(HomeScreenRoute) {
+                            popUpTo(TransactionsRoute) {
+                                inclusive = true
+                            }
+                        }
+                    }, onBackPressed = {
+                        bottomNavController.popBackStack()
+                    })
                 }
                 composable<SettingsRoute> {
                     SettingsScreen()
                 }
                 composable<SubAddressesRoute> {
-                    SubAddressesScreen(
-                        onBackPress = {
-                            bottomNavController.popBackStack()
-                        }
-                    )
+                    SubAddressesScreen(onBackPress = {
+                        bottomNavController.popBackStack()
+                    })
                 }
             }
         }

@@ -20,6 +20,7 @@ import android.util.Log
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletListener
+import io.anonero.model.WalletManager
 
 /**
  * Handy class for starting a new thread that has a looper. The looper can then be
@@ -30,7 +31,6 @@ import io.anonero.model.WalletListener
 
 class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: WalletRepo) :
     Thread(null, null, "MoneroHandler", THREAD_STACK_SIZE), WalletListener {
-
 
 
     @Synchronized
@@ -48,14 +48,31 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
 
     override fun moneyReceived(txId: String?, amount: Long) {
         Log.i(name, "moneyReceived: $amount")
+        WalletManager.instance?.wallet?.store()
     }
 
     override fun unconfirmedMoneyReceived(txId: String?, amount: Long) {}
+
     override fun newBlock(height: Long) {
         refresh(false)
-        val newHeight = if (wallet.isSynchronized) height else 0 // when 0 it fetches from C++
-        Log.i("moneroHandler", "newBlock: $height")
+
         walletRepo.update()
+        updateSyncProgress(height)
+    }
+
+    private fun updateSyncProgress(height: Long) {
+        val syncHeight = wallet.getBlockChainHeight()
+        val deamonHeight = wallet.getDaemonBlockChainHeight()
+        val left = deamonHeight - syncHeight
+        if (syncHeight < 0 || left < 0) {
+            return;
+        }
+        val progress = if (wallet.getDaemonBlockChainTargetHeight().toDouble() == 0.0) {
+            1f
+        } else {
+            (height.toDouble() / wallet.getDaemonBlockChainTargetHeight().toDouble()).toFloat()
+        }
+        walletRepo.syncUpdate(SyncProgress(progress, left))
     }
 
     override fun updated() {
@@ -80,6 +97,9 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
             if (heightDiff >= 2) {
                 tryRestartConnection()
             } else {
+                if(!wallet.isSynchronized){
+                    updateSyncProgress(wallet.getBlockChainHeight())
+                }
                 wallet.setSynchronized()
                 wallet.store()
                 refresh(true)

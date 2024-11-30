@@ -3,12 +3,13 @@ package io.anonero.ui.home
 import AnonNeroTheme
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -55,6 +56,7 @@ class TransactionsViewModel : ViewModel() {
     }.asLiveData()
 
     val showIndefiniteLoading = walletRepo.isLoading.asLiveData()
+    val syncProgress = walletRepo.syncProgress.asLiveData()
 
     val transactions = walletRepo.transactions.asLiveData()
 
@@ -68,6 +70,7 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
     val balance by transactionsViewModel.balance.observeAsState()
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val showIndefiniteLoading by transactionsViewModel.showIndefiniteLoading.observeAsState(false)
+    val syncProgress by transactionsViewModel.syncProgress.observeAsState(null)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -99,12 +102,48 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
                 stickyHeader {
-                    AnimatedVisibility (showIndefiniteLoading) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = Color.Transparent
-                        )
+                    AnimatedVisibility(
+                        (showIndefiniteLoading || syncProgress != null),
+                        modifier = Modifier.animateContentSize()
+                    ) {
+                        if (syncProgress != null && syncProgress!!.left != 0L) {
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(
+                                    vertical = 12.dp
+                                )
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = {
+                                        syncProgress!!.progress
+                                    },
+                                    trackColor = MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.2f
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                )
+                                Text(
+                                    "${syncProgress?.left} blocks left",
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            if (showIndefiniteLoading)
+                                LinearProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp),
+                                    trackColor = MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.2f
+                                    ),
+                                )
+                        }
+
                     }
                 }
                 item {

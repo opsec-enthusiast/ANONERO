@@ -188,7 +188,6 @@ fun SetupNodeComposable(
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Next,
-                                keyboardType = KeyboardType.Number
                             ),
                             onValueChange = {
                                 rpcUsername = it
