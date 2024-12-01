@@ -1,7 +1,6 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,8 +30,11 @@ import io.anonero.ui.home.graph.ReceiveRoute
 import io.anonero.ui.home.graph.ReviewTransactionRoute
 import io.anonero.ui.home.graph.SendRoute
 import io.anonero.ui.home.graph.SettingsRoute
+import io.anonero.ui.home.graph.SettingsViewSeedRoute
 import io.anonero.ui.home.graph.SubAddressesRoute
 import io.anonero.ui.home.graph.TransactionsRoute
+import io.anonero.ui.home.settings.SeedSettingsPage
+import io.anonero.ui.home.settings.SettingsPage
 import io.anonero.ui.home.spend.ReviewTransactionScreen
 
 @Composable
@@ -109,7 +111,20 @@ fun HomeScreenComposable(modifier: Modifier = Modifier) {
                     })
                 }
                 composable<SettingsRoute> {
-                    SettingsScreen()
+                    SettingsPage(
+                        onBackPress = {
+                            bottomNavController.popBackStack()
+                        }, navigateTo = {
+                            bottomNavController.navigate(it)
+                        }
+                    )
+                }
+                composable<SettingsViewSeedRoute> {
+                    SeedSettingsPage(
+                        onBackPress = {
+                            bottomNavController.navigate(TransactionsRoute)
+                        }
+                    )
                 }
                 composable<SubAddressesRoute> {
                     SubAddressesScreen(onBackPress = {

@@ -42,7 +42,6 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val walletExist by appViewModel.existWallet.asLiveData().observeAsState(false)
-            Log.i("TAG", "onCreate: ${walletExist}")
             AnonNeroTheme {
                 val navController = rememberNavController()
                 NavHost(

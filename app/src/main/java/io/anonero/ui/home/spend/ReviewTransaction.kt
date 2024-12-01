@@ -63,9 +63,7 @@ enum class BroadcastState {
 
 class ReviewTransactionViewModel : ViewModel() {
     private val pendingTransaction = MutableLiveData<PendingTransaction?>(null)
-    val pendingTransactionLive: LiveData<PendingTransaction?> = pendingTransaction;
-    val broadcastingTx = MutableLiveData(BroadcastState.STAGING)
-    val broadcastingTxState: LiveData<BroadcastState> = broadcastingTx
+    private val broadcastingTx = MutableLiveData(BroadcastState.STAGING)
     private var _brodcastError: Exception? = null
 
     val broadCastError get() = _brodcastError
@@ -83,7 +81,6 @@ class ReviewTransactionViewModel : ViewModel() {
         broadcastingTx.postValue(BroadcastState.IN_PROGRESS)
         return viewModelScope.launch(Dispatchers.IO) {
             try {
-                delay(2000)
                 pendingTransaction.value?.let { WalletManager.instance?.wallet?.send(it) }
                 WalletManager.instance?.wallet?.refreshHistory()
                 WalletManager.instance?.wallet?.store()
