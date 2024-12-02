@@ -1,10 +1,12 @@
 package io.anonero.ui.onboard
 
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.util.KeyStoreHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -16,7 +18,7 @@ enum class Mode {
     CREATE
 }
 
-class OnboardViewModel : ViewModel() {
+class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
 
     private var mode = Mode.CREATE
     private var passPhrase = ""
@@ -32,6 +34,7 @@ class OnboardViewModel : ViewModel() {
     suspend fun create(pin: String) {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
+            Log.i("TAG", "create: $passPhrase")
             val context = AnonConfig.context!!.applicationContext
             context.filesDir.deleteRecursively()
             val walletFile = AnonConfig.getDefaultWalletFile(context)
@@ -48,6 +51,9 @@ class OnboardViewModel : ViewModel() {
                 walletFile.delete()
                 throw CancellationException("unable to create wallet")
             }
+            val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
+            prefs.edit().putString("passPhraseHash",crazyPass)
+                .apply()
             walllet = anonWallet
             delay(500)
         }

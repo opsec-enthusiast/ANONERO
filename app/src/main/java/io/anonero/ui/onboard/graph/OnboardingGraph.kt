@@ -17,7 +17,6 @@ import io.anonero.ui.onboard.PinSetup
 import io.anonero.ui.onboard.SeedSetup
 import io.anonero.ui.onboard.SetupNodeComposable
 import io.anonero.ui.onboard.SetupPassphrase
-import io.anonero.ui.util.sharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -62,11 +61,13 @@ enum class PinEntryType {
     Create
 }
 
-@Serializable
-data class PinEntryScreen(val type: PinEntryType)
 
 //onboarding
-fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
+fun NavGraphBuilder.onboardingGraph(
+    navController: NavHostController,
+    onboardViewModel: OnboardViewModel
+) {
+
     navigation<LandingScreen>(
         startDestination = OnboardingWelcomeScreen,
     ) {
@@ -79,7 +80,6 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             OnboardLoadingComposable(loadingState = it.toRoute())
         }
         composable<OnboardingWelcomeScreen> {
-            val onboardViewModel = it.sharedViewModel<OnboardViewModel>(navController)
             OnboardingWelcome(
                 onRestoreClick = {
                     onboardViewModel.setMode(Mode.RESTORE)
@@ -101,8 +101,6 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             )
         }
         composable<OnboardPassPhraseScreen> { navBackStackEntry ->
-            val onboardViewModel =
-                navBackStackEntry.sharedViewModel<OnboardViewModel>(navController)
             SetupPassphrase(
                 onBackPressed = {
                     navController.navigateUp()
@@ -115,8 +113,6 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
         }
 
         composable<OnboardPinScreen> { navBackStackEntry ->
-            val onboardViewModel =
-                navBackStackEntry.sharedViewModel<OnboardViewModel>(navController)
             PinSetup(
                 onNext = { pin ->
                     navController.navigate(OnboardLoading("Creating wallet..."))

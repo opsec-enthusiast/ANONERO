@@ -1050,7 +1050,7 @@ Java_io_anonero_model_Wallet_getDeviceTypeJ(JNIEnv *env, jobject instance) {
 
 //void cn_slow_hash(const void *data, size_t length, char *hash); // from crypto/hash-ops.h
 JNIEXPORT jbyteArray JNICALL
-Java_io_anonero_wallet_util_KeyStoreHelper_slowHash(JNIEnv *env, jclass clazz,
+Java_io_anonero_util_KeyStoreHelper_slowHash(JNIEnv *env, jclass clazz,
                                                        jbyteArray data, jint brokenVariant) {
     char hash[HASH_SIZE];
     jsize size = env->GetArrayLength(data);

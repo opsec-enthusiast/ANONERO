@@ -1,13 +1,12 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import android.content.SharedPreferences
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,12 +55,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
+import io.anonero.AnonConfig
 import io.anonero.model.WalletManager
+import io.anonero.util.KeyStoreHelper
+import io.anonero.util.PREFS_PASSPHRASE_HASH
+import io.anonero.util.ShakeConfig
+import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
 import kotlin.random.Random
 
 
@@ -79,6 +85,9 @@ fun generatePlaceHolderSeed(): List<String> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
+
+    val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
+
     var seedWords by remember {
         mutableStateOf(
             generatePlaceHolderSeed()
@@ -104,8 +113,20 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
     }
     fun getSeed() {
         scope.launch(Dispatchers.IO) {
-            val seed = getWalletSeed(passPhrase)?.split(" ")
-            if (seed == null) {
+            val hash = prefs.getString(PREFS_PASSPHRASE_HASH, "")
+            val hashedPass = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
+            if(hash == hashedPass){
+                val seed = getWalletSeed(passPhrase)?.split(" ")
+                if(seed != null){
+                    seedWords = seed
+                    passPhraseDialog = false
+                }
+            }else{
+                errorShake.shake(
+                    ShakeConfig(
+                        6, translateX = 5f
+                    )
+                )
                 repeat(6) {
                     delay(50)
                     view.performHapticFeedback(
@@ -113,10 +134,8 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     )
                 }
                 delay(100)
-            } else {
-                seedWords = seed
-                passPhraseDialog = false
             }
+
         }
     }
     if (passPhraseDialog)
