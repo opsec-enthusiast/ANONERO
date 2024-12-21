@@ -16,7 +16,7 @@ datastorePreferencesCoreJvm = "1.1.1"
 koin-bom = "3.5.6"
 serialization = "1.7.3"
 coreSplashScreen = "1.0.0"
-hazeVersion = "0.7.3"
+okhttpVersion = "4.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +38,7 @@ androidx-navigation-fragment = { group = "androidx.navigation", name = "navigati
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navVersion" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navVersion" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStoreVersion" }
+androidx-datastore-datastore = { group = "androidx.datastore", name = "datastore", version.ref = "dataStoreVersion" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
@@ -58,6 +59,8 @@ androidx-datastore-preferences-core-jvm = { group = "androidx.datastore", name =
 org-jetbrains-kotlin-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
 com-google-zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.1" }
+com-squareup-zxing-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttpVersion" }
+io-github-rburgst-digest  = { group = "io.github.rburgst", name = "okhttp-digest", version= "3.1.1" }
 
 
 [plugins]

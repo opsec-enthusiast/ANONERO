@@ -30,6 +30,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,8 @@ class ReviewTransactionViewModel : ViewModel() {
     private var _brodcastError: Exception? = null
 
     val broadCastError get() = _brodcastError
+    val getBroadcastingTxState get() = broadcastingTx
+    val pendingTransactionLive get() = pendingTransaction
 
     init {
         WalletManager.instance?.wallet?.getPendingTx().let {
@@ -98,13 +102,11 @@ class ReviewTransactionViewModel : ViewModel() {
 fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -> Unit = {}, onBackPressed: () -> Unit = {}) {
 //
     val viewModel = viewModel<ReviewTransactionViewModel>()
-    val pendingTransaction :PendingTransaction?= null;
-//    val pendingTransaction by viewModel.pendingTransactionLive.observeAsState()
+    val pendingTransaction by viewModel.pendingTransactionLive.observeAsState()
     val scope = rememberCoroutineScope()
     val view = LocalView.current
 //
-    val broadcastState = BroadcastState.STAGING
-//    val broadcastState by viewModel.broadcastingTxState.observeAsState(BroadcastState.STAGING)
+    val broadcastState by viewModel.getBroadcastingTxState.observeAsState(BroadcastState.STAGING)
 
     val titleStyle = MaterialTheme.typography.bodyLarge.copy(
         color = MaterialTheme.colorScheme.primary,

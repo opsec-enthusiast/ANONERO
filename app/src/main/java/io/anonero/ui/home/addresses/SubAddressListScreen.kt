@@ -29,15 +29,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.anonero.services.WalletRepo
+import io.anonero.services.WalletState
 import io.anonero.util.Formats
 import org.koin.java.KoinJavaComponent.inject
 
 
 class SubAddressListViewModel : ViewModel() {
-    private val walletRepo: WalletRepo by inject(WalletRepo::class.java)
+    private val walletState: WalletState by inject(WalletState::class.java)
 
-    val subAddresses = walletRepo.subAddresses.asLiveData()
+    val subAddresses = walletState.subAddresses.asLiveData()
 
 }
 

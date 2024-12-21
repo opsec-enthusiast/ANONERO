@@ -30,7 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.anonero.icons.AnonIcons
-import io.anonero.services.WalletRepo
+import io.anonero.services.WalletState
 import io.anonero.ui.components.QrCodeImage
 import org.koin.java.KoinJavaComponent.inject
 
@@ -42,9 +42,9 @@ fun ReceiveScreen(
     navigateToSubAddresses: () -> Unit = {}
 ) {
 
-    val walletRepo: WalletRepo by inject(WalletRepo::class.java)
+    val walletState: WalletState by inject(WalletState::class.java)
 
-    val nextAddress by walletRepo.nextAddress.collectAsState(null)
+    val nextAddress by walletState.nextAddress.collectAsState(null)
 
     Scaffold(modifier = Modifier.background(Color.Red),
         topBar = {

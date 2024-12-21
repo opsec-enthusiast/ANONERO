@@ -1,0 +1,665 @@
+package io.anonero.ui.home.settings
+
+import AnonNeroTheme
+import android.content.SharedPreferences
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import io.anonero.AnonConfig
+import io.anonero.model.Wallet
+import io.anonero.model.WalletManager
+import io.anonero.model.node.Node
+import io.anonero.model.node.NodeFields
+import io.anonero.services.AnonWalletHandler
+import io.anonero.services.WalletState
+import io.anonero.store.NodesRepository
+import io.anonero.ui.components.WalletProgressIndicator
+import io.anonero.ui.theme.DangerColor
+import io.anonero.ui.theme.DarkOrange
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import org.koin.androidx.compose.koinViewModel
+import org.koin.java.KoinJavaComponent.inject
+
+private const val TAG = "NodeSettings"
+
+class NodeSettingsViewModel(
+    private val prefs: SharedPreferences,
+    private val nodesRepository: NodesRepository
+) : ViewModel() {
+    private val walletState: WalletState by inject(WalletState::class.java)
+    private val walletHandler: AnonWalletHandler by inject(AnonWalletHandler::class.java)
+    private val uriValidationError = MutableLiveData<String?>()
+    private val _nodes = MutableStateFlow<List<Node>>(emptyList())
+    private val daemonInfo = walletState.daemonInfo
+    val nodes: StateFlow<List<Node>> = _nodes
+
+
+    val activeNode: StateFlow<Node?> = combine(nodes, daemonInfo) { nodeList, daemonInfo ->
+        if (daemonInfo?.daemon == null) {
+            return@combine null
+        }
+        val uri = Uri.parse("http://${daemonInfo.daemon}");
+        nodeList.find { node ->
+            node.host == uri.host &&
+                    node.rpcPort == uri.port
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = null
+    )
+
+    init {
+        // Observe items from the repository
+        viewModelScope.launch {
+            nodesRepository.nodesFlow.collect { itemList ->
+                _nodes.value = itemList
+            }
+        }
+    }
+
+
+    fun getCurrentDaemonLive() = walletState.daemonInfo.asLiveData()
+    val connectionError: LiveData<String?> get() = uriValidationError
+
+    fun validate(rpcUrl: String, rpcUsername: String, rpcPassPhrase: String): Node? {
+        uriValidationError.postValue(null)
+        try {
+            val validatedUrl = Uri.parse(rpcUrl)
+            val nodeJson = JSONObject()
+                .apply {
+                    put(NodeFields.RPC_HOST.value, validatedUrl.host)
+                    put(
+                        NodeFields.RPC_PORT.value,
+                        if (validatedUrl.port == -1) Node.defaultRpcPort else validatedUrl.port
+                    )
+                    put(NodeFields.RPC_USERNAME.value, rpcUsername)
+                    put(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
+                    put(
+                        NodeFields.RPC_NETWORK.value,
+                        AnonConfig.getNetworkType().toString()
+                    )
+                    put(NodeFields.NODE_NAME.value, "anon")
+                }
+            return Node.fromJson(nodeJson)
+        } catch (e: Exception) {
+            uriValidationError.postValue(e.message)
+            return null
+        }
+    }
+
+    suspend fun connect(node: Node) {
+        withContext(Dispatchers.IO) {
+            val editor = prefs.edit()
+            try {
+                WalletManager.instance?.wallet?.pauseRefresh()
+                editor.putString(
+                    NodeFields.RPC_HOST.value,
+                    node.host
+                )
+                editor.putString(
+                    NodeFields.RPC_PORT.value,
+                    node.rpcPort.toString()
+                )
+                editor.putString(
+                    NodeFields.RPC_USERNAME.value,
+                    node.username
+                )
+                editor.putString(
+                    NodeFields.RPC_PASSWORD.value,
+                    node.password
+                )
+
+                editor.apply()
+                walletHandler.updateDaemon(node)
+                walletState.setLoading(false)
+                walletState.update()
+                WalletManager.instance?.wallet?.init(0)
+                WalletManager.instance?.wallet?.setTrustedDaemon(
+                    true
+                )
+                WalletManager.instance?.wallet?.startRefresh()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                uriValidationError.postValue(e.message)
+            }
+        }
+    }
+
+    // Add a new item
+    fun addItem(item: Node) {
+        viewModelScope.launch {
+            nodesRepository.addItem(item)
+        }
+    }
+
+    // Remove an item
+    fun removeItem(nodeString: String) {
+        viewModelScope.launch {
+            nodesRepository.removeItemByNodeString(nodeString)
+        }
+    }
+
+    fun disconnect() {
+        viewModelScope.launch(Dispatchers.IO) {
+            WalletManager.instance?.wallet?.pauseRefresh()
+            val editor = prefs.edit()
+            editor.putString(
+                NodeFields.RPC_HOST.value,
+                null
+            )
+            editor.putString(
+                NodeFields.RPC_PORT.value,
+                null
+
+            )
+            editor.putString(
+                NodeFields.RPC_USERNAME.value,
+                null
+
+            )
+            editor.putString(
+                NodeFields.RPC_PASSWORD.value,
+                null
+            )
+            editor.apply()
+            walletHandler.updateDaemon(null)
+            walletState.update()
+            walletState.setLoading(false)
+        }
+    }
+
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NodeSettings(onBackPress: () -> Unit = {}) {
+    val nodeSettingsVM = koinViewModel<NodeSettingsViewModel>()
+    var showNodeDetails by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val availableNodes by nodeSettingsVM.nodes.collectAsState(arrayListOf())
+    val activeNode by nodeSettingsVM.activeNode.collectAsState(null)
+    val scope = rememberCoroutineScope()
+
+    if (showNodeDetails)
+        ModalBottomSheet(
+            onDismissRequest = {
+                showNodeDetails = false
+            },
+            sheetState = sheetState,
+            dragHandle = {
+
+            },
+            contentWindowInsets = {
+                WindowInsets(
+                    bottom = 24.dp
+                )
+            },
+            containerColor = Color.Transparent,
+        ) {
+            NodeForm(onBackPress = {
+                scope.launch {
+                    sheetState.hide()
+                    showNodeDetails = false
+                }
+            }, onConnect = {
+                nodeSettingsVM.addItem(it)
+                nodeSettingsVM.viewModelScope
+                    .launch {
+                        nodeSettingsVM.connect( it)
+                    }
+            }, nodeSettingsVM)
+        }
+
+    Scaffold(
+        topBar = {
+            Column {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(
+                            onClick = onBackPress
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    actions = {
+                        TextButton(
+                            onClick = {
+                                showNodeDetails = true
+                                scope.launch {
+                                    sheetState.show()
+                                }
+                            }
+                        ) { Text("Add Node") }
+                    },
+                    title = {
+                        Text("Nodes")
+                    },
+                )
+                WalletProgressIndicator()
+            }
+        }
+    ) {
+        LazyColumn(modifier = Modifier.padding(it)) {
+            if (activeNode != null)
+                item(key = activeNode?.toNodeString() ?: "active") {
+                    NodeListItem(
+                        activeNode!!,
+                        modifier = Modifier.animateItem(),
+                        active = true,
+                        nodeSettingsVM = nodeSettingsVM,
+                        onDisconnect = {
+                            nodeSettingsVM.disconnect()
+                        })
+                }
+            if (availableNodes.isNotEmpty())
+                item(key = "header") {
+                    Column(
+                        modifier = Modifier
+                            .padding(
+                                vertical = 12.dp,
+                                horizontal = 12.dp
+                            )
+                            .background(color = Color.Black)
+                    ) {
+                        Text("Available Nodes", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.padding(4.dp))
+                        HorizontalDivider()
+                    }
+                }
+            if (availableNodes.isNotEmpty())
+                items(
+                    availableNodes.size,
+                    key = { i -> "${availableNodes[i].toNodeString()} :${i}" }) { index ->
+                    val node = availableNodes[index]
+                    if (activeNode?.toNodeString() != node.toNodeString()) {
+                        NodeListItem(node,
+                            modifier = Modifier.animateItem(),
+                            active = false,
+                            nodeSettingsVM = nodeSettingsVM,
+                            onConnect = {
+                                nodeSettingsVM.viewModelScope
+                                    .launch {
+                                        try {
+                                            nodeSettingsVM.connect(node)
+                                        } catch (ex: Exception) {
+                                            ex.printStackTrace()
+                                        }
+                                    }
+                            },
+                            onRemove = { nodeSettingsVM.removeItem(node.toNodeString()) })
+                    }
+                }
+        }
+    }
+}
+
+@Composable
+fun NodeListItem(
+    node: Node,
+    modifier: Modifier = Modifier,
+    active: Boolean = false,
+    nodeSettingsVM: NodeSettingsViewModel,
+    onDisconnect: (node: Node) -> Unit = {},
+    onConnect: (node: Node) -> Unit = {},
+    onRemove: (node: Node) -> Unit = {},
+) {
+    var menu by remember { mutableStateOf(false) }
+    val daemonStatus by nodeSettingsVM.getCurrentDaemonLive().observeAsState(null)
+
+    ListItem(
+        modifier = modifier
+            .padding(
+                vertical = 8.dp,
+                horizontal = 8.dp
+            )
+            .border(
+                1.dp,
+                color = MaterialTheme.colorScheme.onSecondary.copy(
+                    alpha = .2f
+                ),
+                shape = MaterialTheme.shapes.medium,
+            )
+            .clickable {
+                menu = !menu
+            },
+        headlineContent = {
+            Text(
+                node.toNodeString(), style = MaterialTheme
+                    .typography.labelMedium
+            )
+        },
+        supportingContent = {
+            if (active)
+                Text(
+                    "Daemon Height : ${daemonStatus?.daemonHeight?.toString() ?: ""} ",
+                    style = MaterialTheme
+                        .typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+        },
+        trailingContent = {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (active) {
+                    val color: Color = when (daemonStatus?.connectionStatus) {
+                        null -> {
+                            DarkOrange
+                        }
+
+                        Wallet.ConnectionStatus.ConnectionStatus_Disconnected -> {
+                            Color.Red
+                        }
+
+                        Wallet.ConnectionStatus.ConnectionStatus_Connected -> {
+                            Color.Green
+                        }
+
+                        Wallet.ConnectionStatus.ConnectionStatus_WrongVersion -> {
+                            DangerColor
+                        }
+
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(color, shape = CircleShape)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(Color.Gray, shape = CircleShape)
+                    )
+
+                }
+                DropdownMenu(
+                    expanded = menu,
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onSecondary.copy(
+                            alpha = .2f
+                        ),
+                    ),
+                    containerColor = Color.Black,
+                    onDismissRequest = { menu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(if (active) "Disconnect" else "Connect") },
+                        onClick = {
+                            if (active) onDisconnect(node) else onConnect(node)
+                            menu = false
+                        },
+                    )
+                    if (!active) {
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Remove") },
+                            onClick = {
+                                onRemove(node)
+                                menu = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun NodeForm(
+    onBackPress: () -> Unit = {},
+    onConnect: (node: Node) -> Unit = {},
+    nodeSettingsVM: NodeSettingsViewModel
+) {
+    val connectionError by nodeSettingsVM.connectionError.observeAsState(null)
+    var rpcHost by remember { mutableStateOf("") }
+    var rpcUsername by remember { mutableStateOf("") }
+    var rpcPassPhrase by remember { mutableStateOf("") }
+    val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+    Column(
+        modifier = Modifier
+            .fillMaxHeight(.6f)
+            .padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            )
+            .border(
+                1.dp,
+                color = MaterialTheme.colorScheme.onSecondary.copy(
+                    alpha = .2f
+                ),
+                shape = MaterialTheme.shapes.medium,
+            )
+            .background(Color.Black),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(top = 12.dp)
+                .verticalScroll(rememberScrollState())
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = "NODE",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                },
+                supportingContent = {
+                    OutlinedTextField(
+                        value = rpcHost,
+                        shape = MaterialTheme.shapes.medium,
+                        onValueChange = {
+                            rpcHost = it
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Next,
+                        ),
+                        placeholder = {
+                            Text(
+                                text = "http://address.onion:port",
+                                color = labelColor
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusable()
+                    )
+                },
+            )
+
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = "Username",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                },
+                supportingContent = {
+                    OutlinedTextField(
+                        value = rpcUsername,
+                        shape = MaterialTheme.shapes.medium,
+                        placeholder = {
+                            Text(
+                                text = "(Optional)",
+                                color = labelColor
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Next,
+                        ),
+                        onValueChange = {
+                            rpcUsername = it
+                        },
+
+                        )
+                },
+            )
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = "PASSWORD",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                },
+                supportingContent = {
+                    OutlinedTextField(
+                        value = rpcPassPhrase,
+                        shape = MaterialTheme.shapes.medium,
+                        onValueChange = {
+                            rpcPassPhrase = it
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done,
+                        ),
+                        placeholder = {
+                            Text(
+                                text = "(Optional)",
+                                color = labelColor
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (connectionError != null)
+                    Text(
+                        "Error connecting to server :$connectionError",
+                        modifier = Modifier.padding(
+                            vertical = 12.dp,
+                            horizontal = 8.dp
+                        ),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = DangerColor
+                        )
+                    )
+
+            }
+
+
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(
+                    bottom = 8.dp
+                )
+                .padding(
+                    horizontal = 8.dp
+                ), Arrangement.Bottom
+        ) {
+            OutlinedButton(
+                onClick = {
+                    onBackPress.invoke()
+                    val node = nodeSettingsVM.validate(rpcHost, rpcUsername, rpcPassPhrase);
+                    if (node != null) {
+                        onConnect(node)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 4.dp
+                    ),
+
+                shape = MaterialTheme.shapes.medium,
+                contentPadding = PaddingValues(12.dp)
+            ) {
+                Text("Connect")
+            }
+        }
+    }
+}
+
+
+@Preview(device = "id:pixel_5")
+@Composable
+private fun SeedSettingsPre() {
+    AnonNeroTheme {
+        NodeSettings()
+    }
+}

@@ -91,13 +91,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.AnonConfig
 import io.anonero.BuildConfig
 import io.anonero.R
-import io.anonero.model.Node
+import io.anonero.model.node.Node
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.MoneroHandlerThread
-import io.anonero.services.WalletRepo
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

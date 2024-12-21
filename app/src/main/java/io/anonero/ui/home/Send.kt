@@ -50,7 +50,7 @@ import io.anonero.AnonConfig.ONE_XMR
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
-import io.anonero.services.WalletRepo
+import io.anonero.services.WalletState
 import io.anonero.ui.home.graph.ReviewTransactionRoute
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
@@ -60,10 +60,10 @@ import org.koin.java.KoinJavaComponent.inject
 
 
 class SendViewModel : ViewModel() {
-    private val walletRepo: WalletRepo by inject(WalletRepo::class.java)
+    private val walletState: WalletState by inject(WalletState::class.java)
 
     private var preparingTx = MutableLiveData(false)
-    val balance = walletRepo.unLockedBalance.asLiveData()
+    val balance = walletState.unLockedBalance.asLiveData()
 
     suspend fun prepareTransaction(addressField: String, amount: String): PendingTransaction? {
         val amountFromString = Wallet.getAmountFromString(amount)

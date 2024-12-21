@@ -29,10 +29,12 @@ import io.anonero.ui.home.graph.HomeScreenRoute
 import io.anonero.ui.home.graph.ReceiveRoute
 import io.anonero.ui.home.graph.ReviewTransactionRoute
 import io.anonero.ui.home.graph.SendRoute
+import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
 import io.anonero.ui.home.graph.SubAddressesRoute
 import io.anonero.ui.home.graph.TransactionsRoute
+import io.anonero.ui.home.settings.NodeSettings
 import io.anonero.ui.home.settings.SeedSettingsPage
 import io.anonero.ui.home.settings.SettingsPage
 import io.anonero.ui.home.spend.ReviewTransactionScreen
@@ -123,6 +125,13 @@ fun HomeScreenComposable(modifier: Modifier = Modifier) {
                     SeedSettingsPage(
                         onBackPress = {
                             bottomNavController.navigate(TransactionsRoute)
+                        }
+                    )
+                }
+                composable<SettingsNodeRoute> {
+                    NodeSettings(
+                        onBackPress = {
+                            bottomNavController.popBackStack()
                         }
                     )
                 }

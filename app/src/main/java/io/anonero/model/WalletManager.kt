@@ -16,10 +16,9 @@
 package io.anonero.model
 
 import android.util.Log
-import io.anonero.AnonApplication
 import io.anonero.AnonConfig
+import io.anonero.model.node.Node
 import java.io.File
-import java.util.Calendar
 import java.util.Locale
 
 class WalletManager {

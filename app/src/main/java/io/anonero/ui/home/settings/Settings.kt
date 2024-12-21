@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
 
 
@@ -79,7 +80,9 @@ fun SettingsPage(
                         thickness = 2.5.dp
                     )
                     SettingsMenuItem(title = "Node Settings",
-                        onClick = {})
+                        onClick = {
+                            navigateTo(SettingsNodeRoute)
+                        })
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )

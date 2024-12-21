@@ -17,7 +17,6 @@ import io.anonero.ui.walletSyncFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.observeOn
 import kotlinx.coroutines.launch
 
 const val NOTIFICATION_ID = 2

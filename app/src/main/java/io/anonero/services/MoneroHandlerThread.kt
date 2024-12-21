@@ -29,7 +29,7 @@ import io.anonero.model.WalletManager
  */
 
 
-class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: WalletRepo) :
+class MoneroHandlerThread(private val wallet: Wallet, private val walletState: WalletState) :
     Thread(null, null, "MoneroHandler", THREAD_STACK_SIZE), WalletListener {
 
 
@@ -56,7 +56,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
     override fun newBlock(height: Long) {
         refresh(false)
 
-        walletRepo.update()
+        walletState.update()
         updateSyncProgress(height)
     }
 
@@ -72,13 +72,13 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
         } else {
             (height.toDouble() / wallet.getDaemonBlockChainTargetHeight().toDouble()).toFloat()
         }
-        walletRepo.syncUpdate(SyncProgress(progress, left))
+        walletState.syncUpdate(SyncProgress(progress, left))
     }
 
     override fun updated() {
         refresh(false)
         Log.i(name, "updated()")
-        walletRepo.update()
+        walletState.update()
     }
 
     override fun refreshed() {
@@ -103,17 +103,17 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
                 wallet.setSynchronized()
                 wallet.store()
                 refresh(true)
-                walletRepo.setLoading(false)
+                walletState.setLoading(false)
             }
 
         }
-        walletRepo.update()
+        walletState.update()
     }
 
     private fun tryRestartConnection() {
         wallet.init(0)
         wallet.startRefresh()
-        walletRepo.update()
+        walletState.update()
     }
 
     private fun refresh(walletSynced: Boolean) {
@@ -121,7 +121,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletRepo: Wa
         if (walletSynced) {
             wallet.refreshCoins()
         }
-        walletRepo.update()
+            walletState.update()
     }
 
     fun sendTx(pendingTx: PendingTransaction): Boolean {

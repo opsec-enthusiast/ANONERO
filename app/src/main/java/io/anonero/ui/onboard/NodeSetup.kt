@@ -39,27 +39,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.anonero.AnonConfig
 import io.anonero.R
-import io.anonero.model.NodeFields
+import io.anonero.model.node.Node
+import io.anonero.model.node.NodeFields
+import io.anonero.store.NodesRepository
 import io.anonero.ui.PREFS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.koin.compose.koinInject
 import java.net.URI
 
-
-class NodeSetupViewModel : ViewModel() {
-
-    fun checkRPCReachable() {
-        viewModelScope.launch(Dispatchers.IO) {
-
-        }
-    }
-}
 
 @Composable
 fun SetupNodeComposable(
@@ -71,7 +66,7 @@ fun SetupNodeComposable(
     var rpcPassPhrase by remember { mutableStateOf("") }
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
-
+    val nodesRepository = koinInject<NodesRepository>()
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
@@ -232,24 +227,34 @@ fun SetupNodeComposable(
                         val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         val editor = prefs.edit()
 
-                        var rpcPort = "";
-                        var rpcHostCopy = rpcHost;
+                        var rpcPort = Node.defaultRpcPort.toString();
                         try {
                             val uri = URI(rpcHost.trim())
                             if (uri.port != -1) {
                                 rpcPort = uri.port.toString()
-                                rpcHostCopy = rpcHost
-                                    .replace(":${rpcPort}", "")
-                                    .trim()
                             }
+                            editor.putString(NodeFields.RPC_HOST.value, uri.host)
+                            editor.putString(NodeFields.RPC_PORT.value, rpcPort)
+                            editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
+                            editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
+                            editor.apply()
+                            val nodeObj = JSONObject()
+                                .apply {
+                                    put(NodeFields.RPC_HOST.value, uri.host)
+                                    put(NodeFields.RPC_PORT.value, rpcPort)
+                                    put(NodeFields.RPC_USERNAME.value, rpcUsername)
+                                    put(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
+                                    put(
+                                        NodeFields.RPC_NETWORK.value,
+                                        AnonConfig.getNetworkType().toString()
+                                    )
+                                    put(NodeFields.NODE_NAME.value, "anon-${uri.host}")
+                                }
+                            Node.fromJson(nodeObj)?.let { nodesRepository.addItem(it) }
+                            oNextPressed()
                         } catch (_: Exception) {
                         }
-                        editor.putString(NodeFields.RPC_HOST.value, rpcHostCopy)
-                        editor.putString(NodeFields.RPC_PORT.value, rpcPort)
-                        editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
-                        editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
-                        editor.apply()
-                        oNextPressed()
+
                     }
                 },
                 modifier = Modifier

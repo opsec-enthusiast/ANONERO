@@ -1,15 +1,12 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import android.icu.text.CompactDecimalFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,7 +17,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -42,23 +38,25 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
-import io.anonero.services.WalletRepo
+import io.anonero.services.WalletState
+import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.util.Formats
 import kotlinx.coroutines.flow.map
 import org.koin.java.KoinJavaComponent.inject
+import java.util.Locale
 
 
 class TransactionsViewModel : ViewModel() {
-    private val walletRepo: WalletRepo by inject(WalletRepo::class.java)
+    private val walletState: WalletState by inject(WalletState::class.java)
 
-    val balance = walletRepo.balanceInfo.map {
+    val balance = walletState.balanceInfo.map {
         it ?: 0L
     }.asLiveData()
 
-    val showIndefiniteLoading = walletRepo.isLoading.asLiveData()
-    val syncProgress = walletRepo.syncProgress.asLiveData()
+    val showIndefiniteLoading = walletState.isLoading.asLiveData()
+    val syncProgress = walletState.syncProgress.asLiveData()
 
-    val transactions = walletRepo.transactions.asLiveData()
+    val transactions = walletState.transactions.asLiveData()
 
 }
 
@@ -102,49 +100,7 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
                 stickyHeader {
-                    AnimatedVisibility(
-                        (showIndefiniteLoading || syncProgress != null),
-                        modifier = Modifier.animateContentSize()
-                    ) {
-                        if (syncProgress != null && syncProgress!!.left != 0L) {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(
-                                    vertical = 12.dp
-                                )
-                            ) {
-                                LinearProgressIndicator(
-                                    progress = {
-                                        syncProgress!!.progress
-                                    },
-                                    trackColor = MaterialTheme.colorScheme.primary.copy(
-                                        alpha = 0.2f
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp),
-                                )
-                                Text(
-                                    "${syncProgress?.left} blocks left",
-                                    modifier = Modifier.padding(top = 8.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        } else {
-                            if (showIndefiniteLoading)
-                                LinearProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp),
-                                    trackColor = MaterialTheme.colorScheme.primary.copy(
-                                        alpha = 0.2f
-                                    ),
-                                )
-                        }
-
-                    }
+                    WalletProgressIndicator()
                 }
                 item {
                     Box(
@@ -172,10 +128,15 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
 }
 
 
+fun convertNumber(number: Number, locale: Locale): String? {
+    val compactDecimalFormat =
+        CompactDecimalFormat.getInstance(locale, CompactDecimalFormat.CompactStyle.SHORT);
+    return compactDecimalFormat.format(number)
+}
+
 @Composable
 fun TransactionItem(tx: TransactionInfo) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
-    Log.i("TAG", "TransactionItem: ${tx.direction}")
     val amount = if (isIncoming) tx.amount else tx.amount * -1
     Row(
         modifier = Modifier

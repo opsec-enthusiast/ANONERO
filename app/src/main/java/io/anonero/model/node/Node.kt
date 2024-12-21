@@ -1,22 +1,10 @@
-/*
- * Copyright (c) 2018 m2049r
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package io.anonero.model
+package io.anonero.model.node
 
 import android.util.Log
 import io.anonero.AnonConfig
+import io.anonero.model.NetworkType
+import io.anonero.model.WalletManager
+import kotlinx.serialization.Serializable
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
@@ -39,7 +27,9 @@ enum class NodeFields (val value:String){
         return value
     }
 }
-class Node {
+
+@Serializable
+open class Node {
     var networkType: NetworkType? = null
         private set
     var rpcPort = 0
@@ -121,7 +111,7 @@ class Node {
                 throw IllegalArgumentException("Port not numeric")
             }
         } else {
-            this.defaultRpcPort
+            defaultRpcPort
         }
         try {
             this.host = host
@@ -156,7 +146,8 @@ class Node {
                 MAINNET -> NetworkType.NetworkType_Mainnet
                 STAGENET -> NetworkType.NetworkType_Stagenet
                 TESTNET -> NetworkType.NetworkType_Testnet
-                else -> throw IllegalArgumentException("invalid net: " + jsonObject.getString(NodeFields.RPC_NETWORK.value))
+                else -> throw IllegalArgumentException("invalid net: " + jsonObject.getString(
+                    NodeFields.RPC_NETWORK.value))
             }
             require(networkType == WalletManager.instance?.networkType) { "wrong net: $networkType" }
         }
@@ -195,7 +186,7 @@ class Node {
 
 
     fun toNodeString(): String {
-        return toString()
+        return "http://${host}:${rpcPort}"
     }
 
     fun toJson(): JSONObject {
@@ -263,6 +254,21 @@ class Node {
         private var DEFAULT_LEVIN_PORT = 0
         private var DEFAULT_RPC_PORT = 0
 
+        public val defaultRpcPort: Int
+            // every node knows its network, but they are all the same
+            get() {
+
+                if (DEFAULT_RPC_PORT > 0) return DEFAULT_RPC_PORT
+                DEFAULT_RPC_PORT = when (WalletManager.instance?.networkType) {
+                    NetworkType.NetworkType_Mainnet -> 18081
+                    NetworkType.NetworkType_Testnet -> 28081
+                    NetworkType.NetworkType_Stagenet -> 38081
+                    else -> throw IllegalStateException("unsupported net " + WalletManager.instance?.networkType)
+                }
+                return DEFAULT_RPC_PORT
+            }
+
+
         fun fromString(nodeString: String?): Node? {
             return try {
                 Node(nodeString)
@@ -287,20 +293,6 @@ class Node {
             }
         }
     }
-
-    private val defaultRpcPort: Int
-        // every node knows its network, but they are all the same
-        get() {
-
-            if (DEFAULT_RPC_PORT > 0) return DEFAULT_RPC_PORT
-            DEFAULT_RPC_PORT = when (WalletManager.instance?.networkType) {
-                NetworkType.NetworkType_Mainnet -> 18081
-                NetworkType.NetworkType_Testnet -> 28081
-                NetworkType.NetworkType_Stagenet -> 38081
-                else -> throw IllegalStateException("unsupported net " + WalletManager.instance?.networkType)
-            }
-            return DEFAULT_RPC_PORT
-        }
 
     private val defaultLevinPort: Int
         // every node knows its network, but they are all the same
