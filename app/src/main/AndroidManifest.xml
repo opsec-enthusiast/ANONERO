@@ -24,11 +24,6 @@
         android:theme="@style/Theme.Anonnero.Splash"
         tools:targetApi="31">
         <activity
-            android:name=".ui.WalletTest"
-            android:exported="false"
-            android:label="@string/title_activity_wallet_test"
-            android:theme="@style/Theme.Anonnero" />
-        <activity
             android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Anonnero">
@@ -37,6 +32,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.shareProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".services.AnonNeroService"

@@ -107,7 +107,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.datastore.datastore)
 
 
     implementation(platform(libs.androidx.compose.bom))
@@ -127,8 +126,8 @@ dependencies {
     implementation(libs.org.jetbrains.kotlin.android)
 
     implementation(libs.com.google.zxing.core)
-    implementation(libs.com.squareup.zxing.core)
-    implementation(libs.io.github.rburgst.digest )
+
+    implementation(libs.com.jakewharton.timber)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
