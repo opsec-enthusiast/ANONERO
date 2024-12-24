@@ -1,6 +1,6 @@
 package io.anonero.services
 
-import io.anonero.model.DaemonInfo
+import io.anonero.model.node.DaemonInfo
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet

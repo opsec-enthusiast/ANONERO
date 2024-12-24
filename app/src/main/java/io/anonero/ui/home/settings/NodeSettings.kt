@@ -273,7 +273,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                 nodeSettingsVM.addItem(it)
                 nodeSettingsVM.viewModelScope
                     .launch {
-                        nodeSettingsVM.connect( it)
+                        nodeSettingsVM.connect(it)
                     }
             }, nodeSettingsVM)
         }

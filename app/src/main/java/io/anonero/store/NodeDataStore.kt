@@ -76,7 +76,6 @@ class NodesRepository(private val context: Context) {
     suspend fun removeItemByNodeString(nodeString: String) {
         context.nodeDataStore.updateData { currentItems ->
             currentItems.filter {
-                Log.i(TAG, "removeItemByNodeString:  ${nodeString} ${it.toNodeString()}")
                 it.toNodeString() != nodeString
             }
         }

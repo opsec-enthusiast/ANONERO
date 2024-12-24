@@ -283,7 +283,6 @@ object AnonIcons {
         }
 
 
-
     val ArrowUpRight: ImageVector
         get() {
             if (_ArrowUpRight != null) {
@@ -427,7 +426,6 @@ object AnonIcons {
         }
 
 
-
     val History: ImageVector
         get() {
             if (_History != null) {
@@ -537,6 +535,104 @@ object AnonIcons {
             return _ArrowDownLeft!!
         }
 
+
+    val Share_log: ImageVector
+        get() {
+            if (_Share != null) {
+                return _Share!!
+            }
+            _Share = ImageVector.Builder(
+                name = "Share_windows",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 960f,
+                viewportHeight = 960f
+            ).apply {
+                path(
+                    fill = SolidColor(Color.Black),
+                    fillAlpha = 1.0f,
+                    stroke = null,
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 1.0f,
+                    strokeLineCap = StrokeCap.Butt,
+                    strokeLineJoin = StrokeJoin.Miter,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(280f, 600f)
+                    verticalLineToRelative(-240f)
+                    quadToRelative(0f, -33f, 23.5f, -56.5f)
+                    reflectiveQuadTo(360f, 280f)
+                    horizontalLineToRelative(326f)
+                    lineTo(583f, 177f)
+                    lineToRelative(57f, -57f)
+                    lineToRelative(200f, 200f)
+                    lineToRelative(-200f, 200f)
+                    lineToRelative(-57f, -56f)
+                    lineToRelative(103f, -104f)
+                    horizontalLineTo(360f)
+                    verticalLineToRelative(240f)
+                    close()
+                    moveToRelative(-80f, 240f)
+                    quadToRelative(-33f, 0f, -56.5f, -23.5f)
+                    reflectiveQuadTo(120f, 760f)
+                    verticalLineToRelative(-600f)
+                    horizontalLineToRelative(80f)
+                    verticalLineToRelative(600f)
+                    horizontalLineToRelative(480f)
+                    verticalLineToRelative(-160f)
+                    horizontalLineToRelative(80f)
+                    verticalLineToRelative(160f)
+                    quadToRelative(0f, 33f, -23.5f, 56.5f)
+                    reflectiveQuadTo(680f, 840f)
+                    close()
+                }
+            }.build()
+            return _Share!!
+        }
+
+    val Clear_all: ImageVector
+        get() {
+            if (_Clear_all != null) {
+                return _Clear_all!!
+            }
+            _Clear_all = ImageVector.Builder(
+                name = "Clear_all",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 960f,
+                viewportHeight = 960f
+            ).apply {
+                path(
+                    fill = SolidColor(Color.Black),
+                    fillAlpha = 1.0f,
+                    stroke = null,
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 1.0f,
+                    strokeLineCap = StrokeCap.Butt,
+                    strokeLineJoin = StrokeJoin.Miter,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(120f, 680f)
+                    verticalLineToRelative(-80f)
+                    horizontalLineToRelative(560f)
+                    verticalLineToRelative(80f)
+                    close()
+                    moveToRelative(80f, -160f)
+                    verticalLineToRelative(-80f)
+                    horizontalLineToRelative(560f)
+                    verticalLineToRelative(80f)
+                    close()
+                    moveToRelative(80f, -160f)
+                    verticalLineToRelative(-80f)
+                    horizontalLineToRelative(560f)
+                    verticalLineToRelative(80f)
+                    close()
+                }
+            }.build()
+            return _Clear_all!!
+        }
 }
 
 private var _Backspace: ImageVector? = null
@@ -547,7 +643,6 @@ private var _QrCode: ImageVector? = null
 private var _Home: ImageVector? = null
 
 
-
 private var _History: ImageVector? = null
 
 
@@ -555,3 +650,8 @@ private var _ArrowUpRight: ImageVector? = null
 
 
 private var _ArrowDownLeft: ImageVector? = null
+
+private var _Share: ImageVector? = null
+
+
+private var _Clear_all: ImageVector? = null

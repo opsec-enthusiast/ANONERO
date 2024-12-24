@@ -55,8 +55,12 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
 
+import timber.log.Timber;
+
+
 
 public class KeyStoreHelper {
+    private static final String TAG = "KeyStoreHelper";
 
     static {
         System.loadLibrary("anonero");
@@ -234,10 +238,9 @@ public class KeyStoreHelper {
                 SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         kpGenerator.initialize(spec);
         KeyPair kp = kpGenerator.generateKeyPair();
-        Log.d("createKeysJBMR2","preM Keys created");
+        Timber.tag("createKeysJBMR2").d("preM Keys created");
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
     private static void createKeysM(String alias) throws NoSuchProviderException,
             NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
@@ -250,7 +253,7 @@ public class KeyStoreHelper {
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
                         .build());
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        Log.d("createKeysM","M Keys created");
+        Timber.tag(TAG).i("M Keys created");
     }
 
     private static PrivateKey getPrivateKey(String alias) {
@@ -262,7 +265,8 @@ public class KeyStoreHelper {
             PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
 
             if (privateKey == null) {
-                Log.d("No key found under alias: %s", alias);
+                Timber.tag("createKeysM").i( "No key found under alias: %s",alias);
+
                 return null;
             }
 
@@ -282,7 +286,6 @@ public class KeyStoreHelper {
             PublicKey publicKey = ks.getCertificate(alias).getPublicKey();
 
             if (publicKey == null) {
-                Log.e("getPublicKey","No public key");
                 return null;
             }
             return publicKey;

@@ -57,7 +57,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent.inject
+import timber.log.Timber
 
+private const val TAG = "Send"
 
 class SendViewModel : ViewModel() {
     private val walletState: WalletState by inject(WalletState::class.java)
@@ -74,13 +76,12 @@ class SendViewModel : ViewModel() {
                     amount = amountFromString
                 )
             } catch (e: Exception) {
-                e.printStackTrace()
+                Timber.tag(TAG).e(e)
                 null
             }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -255,10 +256,8 @@ fun SendScreen(onBackPress: () -> Unit = {}, navigateToReview: (route:ReviewTran
                         scope.launch {
                             try {
                                 preparingTx = true;
-                                Log.i("TAG", "SendScreen: pendingTx $")
                                 val pendingTx =
                                     sendViewModel.prepareTransaction(addressField, amountField)
-                                Log.i("TAG", "SendScreen: pendingTx ${pendingTx}")
                                 if (pendingTx != null) {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                         view.performHapticFeedback(
@@ -267,13 +266,10 @@ fun SendScreen(onBackPress: () -> Unit = {}, navigateToReview: (route:ReviewTran
                                     }
                                     navigateToReview.invoke(ReviewTransactionRoute(addressField))
                                 } else {
-                                    Log.i("TAG", "SendScreen: Pending Tx ${pendingTx}")
                                     //show error
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
-                                Log.i("TAG", "SendScreen: Pending Tx $e")
-                                TODO("Not yet implemented")
+                                Timber.tag(TAG).e(e)
                             } finally {
                                 preparingTx = false
                             }

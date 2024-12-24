@@ -2,7 +2,7 @@ package io.anonero.services
 
 import android.content.SharedPreferences
 import io.anonero.AnonConfig
-import io.anonero.model.DaemonInfo
+import io.anonero.model.node.DaemonInfo
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node

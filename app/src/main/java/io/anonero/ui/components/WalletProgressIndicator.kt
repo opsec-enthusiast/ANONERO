@@ -28,7 +28,6 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier) {
 
     val showIndefiniteLoading by walletState.isLoading.asLiveData().observeAsState(false)
     val syncProgress by walletState.syncProgress.asLiveData().observeAsState(null)
-    Log.i("TAG", "WalletProgressIndicator: ${showIndefiniteLoading}")
     AnimatedVisibility(
         (showIndefiniteLoading || syncProgress != null),
         modifier = modifier.animateContentSize()

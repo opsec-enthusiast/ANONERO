@@ -18,9 +18,11 @@ package io.anonero.model
 import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.node.Node
+import timber.log.Timber
 import java.io.File
 import java.util.Locale
 
+private const val TAG = "WalletManager"
 class WalletManager {
     var networkType = NetworkType.NetworkType_Mainnet
     var wallet: Wallet? = null
@@ -38,7 +40,7 @@ class WalletManager {
     }
 
     private fun manageWallet(wallet: Wallet) {
-        Log.d("WalletManager.kt", "Managing ${wallet.name}")
+        Timber.tag(TAG).i("Managing %s", wallet.name)
         this.wallet = wallet
     }
 
@@ -46,7 +48,7 @@ class WalletManager {
         requireNotNull(wallet) { "Cannot unmanage null!" }
         checkNotNull(this.wallet) { "No wallet under management!" }
         check(this.wallet === wallet) { wallet.name + " not under management!" }
-        Log.d("WalletManager.kt", "Unmanaging ${wallet.name}")
+        Timber.tag(TAG).i("Unmanaging ${wallet.name}")
         this.wallet = null
     }
 
@@ -116,9 +118,6 @@ class WalletManager {
         aFile: File, password: String,
         mnemonic: String, offset: String
     ): Wallet {
-        Log.i("TAG", "restoreWallet poly: ${aFile.absolutePath}\n" +
-                "password: $password\n" +
-                "offset: $offset\n"  )
         val walletHandle = recoveryWalletPolyseedJ(
             aFile.absolutePath, password,
             mnemonic, offset,
@@ -218,7 +217,7 @@ class WalletManager {
             daemonUsername = node.username
             daemonPassword = node.password
             daemonAddress?.let { addr -> setDaemonAddressJ(addr) }
-            Log.i("setDaemon", "setDaemon:  $daemonAddress")
+            Timber.tag(TAG).i("setDaemon:  %s", daemonAddress)
         } else {
             daemonAddress = null
             daemonUsername = ""
@@ -258,13 +257,8 @@ class WalletManager {
     private external fun setProxyJ(address: String?): Boolean
 
     inner class WalletInfo(wallet: File) : Comparable<WalletInfo> {
-        private val path: File
-        private val name: String
-
-        init {
-            path = wallet.parentFile
-            name = wallet.name
-        }
+        private val path: File? = wallet.parentFile
+        private val name: String = wallet.name
 
         override fun compareTo(other: WalletInfo): Int {
             return name.lowercase(Locale.getDefault())

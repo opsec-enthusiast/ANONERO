@@ -3,32 +3,55 @@ package io.anonero
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
+import io.anonero.store.LogRepository
+import io.anonero.ui.util.AnonLogTree
+import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
+import org.koin.compose.koinInject
 import org.koin.core.context.GlobalContext.startKoin
+import timber.log.Timber
+import timber.log.Timber.DebugTree
+import java.io.File
+
 
 const val FOREGROUND_CHANNEL = "anon_foreground"
 
 class AnonApplication : Application() {
 
+    lateinit var anonLogTree: AnonLogTree
+
     private val TAG = "AnonApplication"
     override fun onCreate() {
         super.onCreate()
-        initConfigs()
         AnonConfig.context = this
-//        AnonConfig.getDefaultWalletDir(this).deleteRecursively()
         startKoin {
             androidContext(this@AnonApplication)
             modules(appModule)
         }
-        Log.i(TAG, "BUILD_TYPE: ${BuildConfig.BUILD_TYPE}")
-        Log.i(TAG, "FLAVOR: ${BuildConfig.FLAVOR}")
-        Log.i(TAG, "APPLICATION_ID: ${BuildConfig.APPLICATION_ID}")
-        Log.i(TAG, "VERSION: ${BuildConfig.VERSION_NAME} ${BuildConfig.VERSION_CODE}\n\n\n")
+        initConfigs()
+        plantLog()
+
+    }
+
+    private fun plantLog() {
+
+        anonLogTree = AnonLogTree(AnonConfig.getLogFile(applicationContext), get<LogRepository>())
+
+        if (BuildConfig.DEBUG) {
+            Timber.plant(DebugTree())
+            Timber.plant(anonLogTree)
+        } else {
+            Timber.plant(anonLogTree)
+        }
+        Timber.tag(TAG).i("BUILD_TYPE: %s", BuildConfig.BUILD_TYPE)
+        Timber.tag(TAG).i("FLAVOR: %s", BuildConfig.FLAVOR)
+        Timber.tag(TAG).i("APPLICATION_ID: %s", BuildConfig.APPLICATION_ID)
+        Timber.tag(TAG)
+            .i("VERSION: ${BuildConfig.VERSION_NAME} ${BuildConfig.VERSION_CODE}\n\n")
     }
 
     private fun initConfigs() {
@@ -37,7 +60,6 @@ class AnonApplication : Application() {
         initNotificationChannels()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun initNotificationChannels() {
         val foregroundChannel = NotificationChannel(
             FOREGROUND_CHANNEL,
@@ -48,4 +70,8 @@ class AnonApplication : Application() {
         notificationManager.createNotificationChannel(foregroundChannel)
     }
 
+    override fun onTerminate() {
+        super.onTerminate()
+        anonLogTree.cleanup()
+    }
 }

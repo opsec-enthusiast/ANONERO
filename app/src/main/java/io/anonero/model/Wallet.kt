@@ -15,13 +15,14 @@
  */
 package io.anonero.model
 
-import android.util.Log
 import android.util.Pair
+import timber.log.Timber
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Collections
 import java.util.Date
 import java.util.Locale
+
+private const val TAG = "Wallet"
 
 class Wallet {
     var isSynchronized = false
@@ -52,7 +53,7 @@ class Wallet {
     }
 
     fun getPendingTx(): PendingTransaction? {
-        return pendingTransaction;
+        return pendingTransaction
     }
 
     internal constructor(handle: Long, accountIndex: Int) {
@@ -65,7 +66,6 @@ class Wallet {
     }
 
     fun setAccountIndex(accountIndex: Int) {
-        Log.d("Wallet.kt", "setAccountIndex($accountIndex)")
         this.accountIndex = accountIndex
         history?.setAccountFor(this)
     }
@@ -164,40 +164,41 @@ class Wallet {
         var daemonUsername = WalletManager.instance?.daemonUsername
         var daemonPassword = WalletManager.instance?.daemonPassword
         var proxyAddress = WalletManager.instance?.proxy
-        Log.d("Wallet.kt", "init(")
+        var message = "init("
         if (daemonAddress != null) {
-            Log.d("Wallet.kt", daemonAddress.toString())
+            message = "${message}\n$daemonAddress"
         } else {
-            Log.d("Wallet.kt", "daemon_address == null")
+            Timber.tag(TAG).i("")
+            message = "${message}\ndaemon_address == null"
             daemonAddress = ""
         }
-        Log.d("Wallet.kt", "upper_transaction_size_limit = 0 (probably)")
+        message = "${message}\nupper_transaction_size_limit = 0 (probably)"
         if (daemonUsername != null) {
-            Log.d("Wallet.kt", daemonUsername)
+            Timber.tag(TAG).i(daemonUsername)
         } else {
-            Log.d("Wallet.kt", "daemon_username == null")
+            message = "${message}\ndaemon_username == null"
             daemonUsername = ""
         }
         if (daemonPassword != null) {
-            Log.d("Wallet.kt", daemonPassword)
+            Timber.tag(TAG).i(daemonPassword)
         } else {
-            Log.d("Wallet.kt", "daemon_password == null")
+            message = "${message}daemon_password == null"
             daemonPassword = ""
         }
         if (proxyAddress != null) {
-            Log.d("Wallet.kt", proxyAddress)
+            message = "${message}\nproxy : $proxyAddress"
         } else {
-            Log.d("Wallet.kt", "proxy_address == null")
+            message = "${message}\nproxy_address = null"
             proxyAddress = ""
         }
-        Log.d("Wallet.kt", ");")
+        Timber.tag(TAG).i("${message}\n);")
 
-        isInitialized =  initJ(
+        isInitialized = initJ(
             daemonAddress, upperTransactionSizeLimit,
             daemonUsername, daemonPassword,
             proxyAddress
         )
-        return  isInitialized
+        return isInitialized
     }
 
     private external fun initJ(
@@ -290,6 +291,7 @@ class Wallet {
         pendingTransaction = PendingTransaction(txHandle)
         return pendingTransaction
     }
+
     external fun createTransactionJ(
         dstAddr: String, paymentId: String,
         amount: Long, mixinCount: Int,
@@ -301,8 +303,8 @@ class Wallet {
     fun createTransaction(
         dst_addr: String?,
         amount: Long,
-        sweepAll: Boolean=false,
-        mixin_count: Int=0,
+        sweepAll: Boolean = false,
+        mixin_count: Int = 0,
         priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Medium,
         selectedUtxos: ArrayList<String?> = arrayListOf()
     ): PendingTransaction {
@@ -321,9 +323,10 @@ class Wallet {
         return pendingTransaction!!
     }
 
-    fun send(pendingTransaction: PendingTransaction) : Boolean{
-       return  pendingTransaction.commit("", overwrite = true)
+    fun send(pendingTransaction: PendingTransaction): Boolean {
+        return pendingTransaction.commit("", overwrite = true)
     }
+
     private external fun createSweepTransaction(
         dstAddr: String, paymentId: String,
         mixinCount: Int,
@@ -354,7 +357,7 @@ class Wallet {
 
     fun refreshCoins() {
         if (isSynchronized) {
-            Log.d("Wallet", "refreshCoins: ${coins?.getCount()}")
+            Timber.tag("Wallet").d("Coin Refreshed: %s", coins?.getCount())
             coins?.refresh()
         }
     }
@@ -417,7 +420,7 @@ class Wallet {
         val timeStamp = SimpleDateFormat("yyyy-MM-dd-HH:mm:ss", Locale.US).format(Date())
         addSubaddress(accountIndex, timeStamp)
         val subaddress = getLastSubaddress(accountIndex)
-        Log.d("Wallet.kt", "${(getNumSubaddresses(accountIndex) - 1)}: $subaddress")
+        Timber.tag("Wallet").i("${getNumSubaddresses(accountIndex) - 1} : ${subaddress}")
         return subaddress
     }
 

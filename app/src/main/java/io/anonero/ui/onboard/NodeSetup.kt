@@ -41,15 +41,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import io.anonero.store.NodesRepository
-import io.anonero.ui.PREFS
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.koin.compose.koinInject
@@ -68,7 +64,7 @@ fun SetupNodeComposable(
     val scope = rememberCoroutineScope()
     val nodesRepository = koinInject<NodesRepository>()
     LaunchedEffect(true) {
-        val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
         rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: ""
         rpcPassPhrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: ""
@@ -224,7 +220,7 @@ fun SetupNodeComposable(
             OutlinedButton(
                 onClick = {
                     scope.launch {
-                        val prefs = localContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
                         val editor = prefs.edit()
 
                         var rpcPort = Node.defaultRpcPort.toString();
@@ -272,7 +268,7 @@ fun SetupNodeComposable(
     }
 }
 
-@Preview(showBackground = true, device = "id:pixel_8")
+@Preview(showBackground = true, device = "id:pixel_5")
 @Composable
 private fun SetupNodeComposablePreview() {
     AnonNeroTheme {

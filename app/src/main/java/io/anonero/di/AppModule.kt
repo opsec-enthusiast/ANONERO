@@ -5,7 +5,9 @@ import android.content.SharedPreferences
 import io.anonero.AnonConfig
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.WalletState
+import io.anonero.store.LogRepository
 import io.anonero.store.NodesRepository
+import io.anonero.ui.home.settings.LogViewModel
 import io.anonero.ui.home.settings.NodeSettingsViewModel
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.viewmodels.AppViewModel
@@ -24,10 +26,12 @@ val appModule = module {
     single(named(WALLET_PREFERENCES)) { provideWalletSharedPrefs(androidApplication()) }
     single { WalletState() }
     single { AnonWalletHandler(get(named(WALLET_PREFERENCES)), get()) }
+    single { LogRepository(get()) }
     single { NodesRepository(get()) }
     single {
         AppViewModel(get())
     }
     viewModel { OnboardViewModel(get(named(WALLET_PREFERENCES))) }
+    viewModel { LogViewModel(get()) }
     viewModel { NodeSettingsViewModel(get(named(WALLET_PREFERENCES)),get<NodesRepository>()) }
 }

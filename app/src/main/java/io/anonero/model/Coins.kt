@@ -23,7 +23,6 @@ class Coins(private val handle: Long) {
 
     fun refresh() {
         val transactionInfos = refreshJ()
-        Log.d("Coins.kt", "refresh size=${transactionInfos.size}")
         all = transactionInfos
     }
 

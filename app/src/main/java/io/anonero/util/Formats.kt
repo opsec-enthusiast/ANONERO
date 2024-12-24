@@ -36,4 +36,13 @@ object Formats {
         return dateTime.format(formatter)
 
     }
+
+    fun formatLogTime(timestamp: Long): String {
+        val instant =
+            Instant.ofEpochMilli(timestamp)
+        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+        val formatter = DateTimeFormatter.ofPattern("MMM dd hh:mm")
+        return dateTime.format(formatter)
+
+    }
 }

@@ -34,7 +34,6 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
     suspend fun create(pin: String) {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
-            Log.i("TAG", "create: $passPhrase")
             val context = AnonConfig.context!!.applicationContext
             context.filesDir.deleteRecursively()
             val walletFile = AnonConfig.getDefaultWalletFile(context)

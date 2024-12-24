@@ -7,6 +7,7 @@ import io.anonero.model.WalletManager
 import kotlinx.serialization.Serializable
 import org.json.JSONException
 import org.json.JSONObject
+import timber.log.Timber
 import java.io.UnsupportedEncodingException
 import java.net.InetSocketAddress
 import java.net.URLDecoder
@@ -100,7 +101,7 @@ open class Node {
             try {
                 name = URLDecoder.decode(daParts[2], "UTF-8")
             } catch (ex: UnsupportedEncodingException) {
-                Log.w("Node.kt", ex) // if we can't encode it, we don't use it
+                Timber.tag("Node.kt").w(ex) // if we can't encode it, we don't use it
             }
         }
         this.name = name
@@ -228,7 +229,7 @@ open class Node {
         if (name != null) try {
             sb.append("/").append(URLEncoder.encode(name, "UTF-8"))
         } catch (ex: UnsupportedEncodingException) {
-            Log.w("Node.kt", ex) // if we can't encode it, we don't store it
+            Timber.tag("Node.kt").w(ex) // if we can't encode it, we don't store it
         }
         return sb.toString()
     }
@@ -273,7 +274,7 @@ open class Node {
             return try {
                 Node(nodeString)
             } catch (ex: IllegalArgumentException) {
-                Log.w("Node.kt", ex)
+                Timber.tag("Node.kt").w(ex)
                 null
             }
         }
@@ -282,13 +283,13 @@ open class Node {
             return try {
                 Node(jsonObject)
             } catch (ex: IllegalArgumentException) {
-                Log.w("Node.kt", ex)
+                Timber.tag("Node.kt").w(ex)
                 null
             } catch (ex: UnknownHostException) {
-                Log.w("Node.kt", ex)
+                Timber.tag("Node.kt").w(ex)
                 null
             } catch (ex: JSONException) {
-                Log.w("Node.kt", ex)
+                Timber.tag("Node.kt").w(ex)
                 null
             }
         }

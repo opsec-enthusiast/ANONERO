@@ -16,6 +16,9 @@
 package io.anonero.model
 
 import android.util.Log
+import timber.log.Timber
+
+private const val TAG = "TransactionHistory"
 
 class TransactionHistory(private val handle: Long, var accountIndex: Int) {
     var all: List<TransactionInfo> = ArrayList()
@@ -43,7 +46,7 @@ class TransactionHistory(private val handle: Long, var accountIndex: Int) {
 
     private fun refresh() {
         val transactionInfos = refreshJ()
-        Log.d("TransactionHistory.kt", "refresh size=${transactionInfos.size}")
+        Timber.tag(TAG).d("refresh size=%s", transactionInfos.size)
         val iterator = transactionInfos.iterator()
         while (iterator.hasNext()) {
             val info = iterator.next()

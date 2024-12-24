@@ -24,8 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import io.anonero.ui.home.graph.SettingsLogs
 import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
+import timber.log.Timber
 
 
 class SettingsViewModel : ViewModel() {
@@ -88,7 +90,14 @@ fun SettingsPage(
                     )
                 }
                 item {
-                    SettingsMenuItem(title = "Proxy Settings")
+                    SettingsMenuItem(title = "Proxy Settings", onClick = {
+                        try {
+                            //throw error for testing
+                            val a = 1/0
+                        } catch (exception: Exception) {
+                            Timber.tag("TAG").e(exception)
+                        }
+                    })
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )
@@ -123,6 +132,14 @@ fun SettingsPage(
                 }
                 item {
                     SettingsMenuItem(title = "Secure Wipe")
+                    HorizontalDivider(
+                        thickness = 2.5.dp
+                    )
+                }
+                item {
+                    SettingsMenuItem(title = "Logs", onClick = {
+                        navigateTo(SettingsLogs)
+                    })
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )

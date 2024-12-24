@@ -13,7 +13,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import io.anonero.FOREGROUND_CHANNEL
 import io.anonero.R
-import io.anonero.ui.walletSyncFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,10 +58,7 @@ class AnonNeroService : Service() {
 
         startForeground(6, foregroundNotification())
         scope.launch {
-            walletSyncFlow
-                .collect {
-                    mNotificationManager.notify(NOTIFICATION_ID, foregroundNotification(content = it))
-                }
+
         }
     }
 

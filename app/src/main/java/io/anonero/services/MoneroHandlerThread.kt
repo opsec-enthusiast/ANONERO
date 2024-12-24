@@ -1,33 +1,16 @@
-/*
- * Copyright (C) 2006 The Android Open Source Project
- * Copyright (c) 2017 m2049r
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.anonero.services
 
-import android.util.Log
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletListener
 import io.anonero.model.WalletManager
+import timber.log.Timber
 
 /**
  * Handy class for starting a new thread that has a looper. The looper can then be
  * used to create handler classes. Note that start() must still be called.
  * The started Thread has a stck size of STACK_SIZE (=5MB)
  */
-
 
 class MoneroHandlerThread(private val wallet: Wallet, private val walletState: WalletState) :
     Thread(null, null, "MoneroHandler", THREAD_STACK_SIZE), WalletListener {
@@ -47,7 +30,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
     }
 
     override fun moneyReceived(txId: String?, amount: Long) {
-        Log.i(name, "moneyReceived: $amount")
+        Timber.tag(name).i("moneyReceived: %s", amount)
         WalletManager.instance?.wallet?.store()
     }
 
@@ -77,7 +60,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
 
     override fun updated() {
         refresh(false)
-        Log.i(name, "updated()")
+        Timber.tag(name).i("updated()")
         walletState.update()
     }
 
@@ -86,10 +69,8 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
         val daemonHeight = wallet.getDaemonBlockChainHeight()
         val chainHeight = wallet.getBlockChainHeight()
         /// height
-        Log.i(
-            name,
-            "refreshed() status: $status daemonHeight: $daemonHeight chainHeight: $chainHeight isSynchronized:${wallet.isSynchronized}  connectionStatus:${wallet.status.connectionStatus}"
-        )
+        Timber.tag(name)
+            .i("refreshed() status:${status} daemonHeight:$daemonHeight chainHeight:$chainHeight ")
         if (status === Wallet.ConnectionStatus.ConnectionStatus_Disconnected || status == null) {
             tryRestartConnection()
         } else {
@@ -97,7 +78,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
             if (heightDiff >= 2) {
                 tryRestartConnection()
             } else {
-                if(!wallet.isSynchronized){
+                if (!wallet.isSynchronized) {
                     updateSyncProgress(wallet.getBlockChainHeight())
                 }
                 wallet.setSynchronized()
@@ -121,7 +102,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
         if (walletSynced) {
             wallet.refreshCoins()
         }
-            walletState.update()
+        walletState.update()
     }
 
     fun sendTx(pendingTx: PendingTransaction): Boolean {
