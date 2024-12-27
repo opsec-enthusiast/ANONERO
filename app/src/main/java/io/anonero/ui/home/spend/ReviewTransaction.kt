@@ -4,6 +4,7 @@ import AnonNeroTheme
 import android.os.Build
 import android.util.Log
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -117,6 +118,10 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
         fontSize = 14.sp
 
     )
+
+    BackHandler {
+        onBackPressed()
+    }
 
     Scaffold(
         topBar = {

@@ -16,7 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import io.anonero.ui.home.graph.Home
 import io.anonero.ui.home.graph.homeGraph
 import io.anonero.ui.onboard.OnboardViewModel
-import io.anonero.ui.onboard.graph.LandingScreen
+import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.ui.onboard.graph.onboardingGraph
 import io.anonero.ui.viewmodels.AppViewModel
 import org.koin.android.ext.android.inject
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     popEnterTransition = {
                         EnterTransition.None
                     },
-                    startDestination = if (walletExist) Home else LandingScreen
+                    startDestination = if (walletExist) Home else LandingScreenRoute
                 ) {
                     //landing screen and onboarding screens
                     onboardingGraph(navController,onboardViewModel)

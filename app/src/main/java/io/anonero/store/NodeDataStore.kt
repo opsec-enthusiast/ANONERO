@@ -80,4 +80,10 @@ class NodesRepository(private val context: Context) {
             }
         }
     }
+
+    suspend fun clearAll(){
+        context.nodeDataStore.updateData {
+            emptyList()
+        }
+    }
 }

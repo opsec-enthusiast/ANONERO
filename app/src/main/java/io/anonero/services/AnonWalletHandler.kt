@@ -2,17 +2,21 @@ package io.anonero.services
 
 import android.content.SharedPreferences
 import io.anonero.AnonConfig
-import io.anonero.model.node.DaemonInfo
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.model.node.DaemonInfo
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
+import io.anonero.util.WALLET_PROXY
+import io.anonero.util.WALLET_PROXY_PORT
 import org.json.JSONObject
 
 
 class InvalidPin : Exception("invalid pin")
 
 private const val TAG = "AnonWalletHandler"
+
+class UnableToCloseWallet : Exception()
 
 class AnonWalletHandler(
     private val prefs: SharedPreferences,
@@ -46,8 +50,15 @@ class AnonWalletHandler(
             val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
             val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
+            val proxyHost = prefs.getString(WALLET_PROXY, "")
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
             if (host?.isEmpty() == true) {
                 throw Exception("Node not found")
+            }
+            if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+                WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
+            } else {
+                WalletManager.instance?.setProxy("")
             }
             walletState.setLoading(true)
             val nodeObj = JSONObject()
@@ -111,4 +122,52 @@ class AnonWalletHandler(
         }
 
     }
+
+    fun setProxy(proxy: String?, port: Int?) {
+        //disable proxy
+        if (proxy == null && port == null) {
+            prefs.edit().apply {
+                remove(WALLET_PROXY)
+                remove(WALLET_PROXY_PORT)
+            }.apply()
+        } else {
+            prefs.edit().apply {
+                putString(WALLET_PROXY, proxy)
+                putInt(WALLET_PROXY_PORT, port ?: -1)
+            }.apply()
+            val proxyHost = prefs.getString(WALLET_PROXY, "")
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+            if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+                WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
+            } else {
+                WalletManager.instance?.setProxy("")
+            }
+        }
+    }
+
+    fun getProxy(): Pair<String, Int>? {
+        val proxyHost = prefs.getString(WALLET_PROXY, "")
+        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+
+        if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+            return Pair(proxyHost, proxyPort);
+        }
+        return null
+    }
+
+
+    fun wipe(passPhrase:String): Boolean {
+        WalletManager.instance?.wallet?.pauseRefresh()
+        WalletManager.instance?.wallet?.stopBackgroundSync(passPhrase)
+        WalletManager.instance?.setDaemon(null)
+        if( WalletManager.instance?.wallet?.close() == true){
+            AnonConfig.context?.let { AnonConfig.getDefaultWalletDir(it) }
+                ?.deleteRecursively()
+            return true
+        }else{
+            throw UnableToCloseWallet()
+        }
+
+    }
+
 }

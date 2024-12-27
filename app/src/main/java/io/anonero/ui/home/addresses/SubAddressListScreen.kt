@@ -1,6 +1,7 @@
 package io.anonero.ui.home.addresses
 
 import AnonNeroTheme
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,9 @@ fun SubAddressesScreen(
     modifier: Modifier = Modifier,
     onBackPress: () -> Unit = {}
 ) {
+    BackHandler {
+        onBackPress()
+    }
     val vm = viewModel<SubAddressListViewModel>()
     val addresses by vm.subAddresses.observeAsState(listOf())
     Scaffold(

@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data object LandingScreen
+data object LandingScreenRoute
 
 //Onboarding
 @Serializable
@@ -68,7 +68,7 @@ fun NavGraphBuilder.onboardingGraph(
     onboardViewModel: OnboardViewModel
 ) {
 
-    navigation<LandingScreen>(
+    navigation<LandingScreenRoute>(
         startDestination = OnboardingWelcomeScreen,
     ) {
         dialog<OnboardLoading>(
@@ -136,7 +136,7 @@ fun NavGraphBuilder.onboardingGraph(
                     navController.navigate(
                         Home
                     ) {
-                        popUpTo(LandingScreen)
+                        popUpTo(LandingScreenRoute)
                     }
                 },
                 onBackPressed = {

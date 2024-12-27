@@ -9,6 +9,8 @@ import io.anonero.store.LogRepository
 import io.anonero.store.NodesRepository
 import io.anonero.ui.home.settings.LogViewModel
 import io.anonero.ui.home.settings.NodeSettingsViewModel
+import io.anonero.ui.home.settings.ProxySettingsViewModel
+import io.anonero.ui.home.settings.SecureWipeViewModel
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.viewmodels.AppViewModel
 import io.anonero.util.WALLET_PREFERENCES
@@ -16,7 +18,6 @@ import org.koin.android.ext.koin.androidApplication
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
-
 
 
 private fun provideWalletSharedPrefs(app: Context): SharedPreferences =
@@ -33,5 +34,7 @@ val appModule = module {
     }
     viewModel { OnboardViewModel(get(named(WALLET_PREFERENCES))) }
     viewModel { LogViewModel(get()) }
-    viewModel { NodeSettingsViewModel(get(named(WALLET_PREFERENCES)),get<NodesRepository>()) }
+    viewModel { SecureWipeViewModel(get(), get(named(WALLET_PREFERENCES)), get(), get()) }
+    viewModel { NodeSettingsViewModel(get(named(WALLET_PREFERENCES)), get<NodesRepository>()) }
+    viewModel { ProxySettingsViewModel(get()) }
 }

@@ -23,16 +23,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
+import io.anonero.ui.home.graph.ProxySettingsRoute
+import io.anonero.ui.home.graph.SecureWipeRoute
 import io.anonero.ui.home.graph.SettingsLogs
 import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
-import timber.log.Timber
-
-
-class SettingsViewModel : ViewModel() {
-
-}
 
 typealias NavigateTo<T> = (to: T) -> Unit
 
@@ -91,12 +86,7 @@ fun SettingsPage(
                 }
                 item {
                     SettingsMenuItem(title = "Proxy Settings", onClick = {
-                        try {
-                            //throw error for testing
-                            val a = 1/0
-                        } catch (exception: Exception) {
-                            Timber.tag("TAG").e(exception)
-                        }
+                        navigateTo(ProxySettingsRoute)
                     })
                     HorizontalDivider(
                         thickness = 2.5.dp
@@ -131,7 +121,10 @@ fun SettingsPage(
                     )
                 }
                 item {
-                    SettingsMenuItem(title = "Secure Wipe")
+                    SettingsMenuItem(title = "Secure Wipe",
+                        onClick = {
+                            navigateTo(SecureWipeRoute)
+                        })
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )

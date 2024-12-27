@@ -1,7 +1,6 @@
 package io.anonero.store
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.core.Serializer
@@ -99,5 +98,6 @@ class LogRepository(private val context: Context) {
         context.logsStore.updateData {
             listOf()
         }
+        AnonConfig.context?.let { AnonConfig.getLogFile(it).delete() }
     }
 }

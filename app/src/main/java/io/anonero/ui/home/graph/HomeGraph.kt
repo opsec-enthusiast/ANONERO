@@ -44,6 +44,12 @@ data object SettingsLogs
 data object SettingsNodeRoute
 
 @Serializable
+data object ProxySettingsRoute
+
+@Serializable
+data object SecureWipeRoute
+
+@Serializable
 data object SubAddressesRoute
 
 @Serializable
@@ -56,7 +62,7 @@ fun NavGraphBuilder.homeGraph(navController: NavHostController) {
         startDestination = if(walletStatus == true) HomeScreenRoute else LockScreenRoute
     ) {
         composable<HomeScreenRoute> {
-            HomeScreenComposable()
+            HomeScreenComposable(mainNavController=navController)
         }
         composable<LockScreenRoute> {
             LockScreen(

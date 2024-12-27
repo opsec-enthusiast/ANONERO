@@ -3,28 +3,26 @@ package io.anonero
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.util.Log
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
 import io.anonero.store.LogRepository
 import io.anonero.ui.util.AnonLogTree
 import org.koin.android.ext.android.get
-import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
-import org.koin.compose.koinInject
 import org.koin.core.context.GlobalContext.startKoin
 import timber.log.Timber
 import timber.log.Timber.DebugTree
-import java.io.File
 
 
 const val FOREGROUND_CHANNEL = "anon_foreground"
+private const val TAG = "AnonApplication"
 
-class AnonApplication : Application() {
+class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
 
-    lateinit var anonLogTree: AnonLogTree
+    private lateinit var anonLogTree: AnonLogTree
+    private val defaultHandler =
+        Thread.getDefaultUncaughtExceptionHandler()
 
-    private val TAG = "AnonApplication"
     override fun onCreate() {
         super.onCreate()
         AnonConfig.context = this
@@ -34,6 +32,8 @@ class AnonApplication : Application() {
         }
         initConfigs()
         plantLog()
+
+        Thread.setDefaultUncaughtExceptionHandler(this)
 
     }
 
@@ -74,4 +74,10 @@ class AnonApplication : Application() {
         super.onTerminate()
         anonLogTree.cleanup()
     }
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        Timber.tag(TAG).e(e)
+        defaultHandler?.uncaughtException(t, e)
+    }
+
 }
