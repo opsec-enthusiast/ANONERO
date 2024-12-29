@@ -37,9 +37,6 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
     override fun unconfirmedMoneyReceived(txId: String?, amount: Long) {}
 
     override fun newBlock(height: Long) {
-        refresh(false)
-
-        walletState.update()
         updateSyncProgress(height)
     }
 
