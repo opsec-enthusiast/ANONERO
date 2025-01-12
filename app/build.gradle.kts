@@ -129,6 +129,8 @@ dependencies {
 
     implementation(libs.com.jakewharton.timber)
 
+    implementation(libs.org.bouncycastle.bcprov)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
