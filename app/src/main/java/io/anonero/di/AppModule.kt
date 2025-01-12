@@ -20,7 +20,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 
-private fun provideWalletSharedPrefs(app: Context): SharedPreferences =
+fun provideWalletSharedPrefs(app: Context): SharedPreferences =
     app.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
 
 val appModule = module {

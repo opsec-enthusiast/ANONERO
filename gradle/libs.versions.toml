@@ -58,7 +58,7 @@ androidx-datastore-preferences-core-jvm = { group = "androidx.datastore", name =
 org-jetbrains-kotlin-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 com-google-zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.1" }
 com-jakewharton-timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
-
+org-bouncycastle-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version = "1.79" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

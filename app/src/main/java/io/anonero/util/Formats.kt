@@ -11,6 +11,9 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
+import java.util.Locale
+import kotlin.math.log10
+import kotlin.math.pow
 
 object Formats {
 
@@ -45,4 +48,12 @@ object Formats {
         return dateTime.format(formatter)
 
     }
+
+    fun formatFileSize(sizeInBytes: Long): String {
+        if (sizeInBytes <= 0) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
+        val digitGroups = (log10(sizeInBytes.toDouble()) / log10(1024.0)).toInt()
+        return String.format(Locale.US,"%.2f %s", sizeInBytes / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
+    }
+
 }
