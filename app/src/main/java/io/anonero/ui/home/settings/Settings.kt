@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.anonero.ui.home.graph.ProxySettingsRoute
 import io.anonero.ui.home.graph.SecureWipeRoute
+import io.anonero.ui.home.graph.SettingsExportBackUp
 import io.anonero.ui.home.graph.SettingsLogs
 import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
@@ -115,7 +116,9 @@ fun SettingsPage(
                     )
                 }
                 item {
-                    SettingsMenuItem(title = "Export BackUp")
+                    SettingsMenuItem(title = "Export BackUp", onClick = {
+                        navigateTo(SettingsExportBackUp)
+                    })
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )

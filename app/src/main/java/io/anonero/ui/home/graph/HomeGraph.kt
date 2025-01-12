@@ -38,6 +38,9 @@ data object SettingsRoute
 data object SettingsViewSeedRoute
 
 @Serializable
+data object SettingsExportBackUp
+
+@Serializable
 data object SettingsLogs
 
 @Serializable

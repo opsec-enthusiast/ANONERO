@@ -179,14 +179,14 @@ fun LogViewer(
                                         }
                                         // Create the share intent
                                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain" // Assuming the logs are plain text
+                                            type = "*/*"
                                             putExtra(Intent.EXTRA_STREAM, fileUri)
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Grant permission to the receiving app
                                         }
                                         context.startActivity(
                                             Intent.createChooser(
                                                 shareIntent,
-                                                "Share Logs"
+                                                "Share Encrypted Backup File"
                                             )
                                         )
                                     }
