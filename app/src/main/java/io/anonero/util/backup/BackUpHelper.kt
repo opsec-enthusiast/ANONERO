@@ -5,6 +5,7 @@ import android.icu.text.SimpleDateFormat
 import io.anonero.AnonConfig
 import io.anonero.di.provideWalletSharedPrefs
 import io.anonero.model.WalletManager
+import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import org.json.JSONObject
 import java.io.*
@@ -37,15 +38,17 @@ object BackUpHelper {
                 put("host", prefs.getString(NodeFields.RPC_HOST.value,""))
                 put("password", prefs.getString(NodeFields.RPC_PASSWORD.value,""))
                 put("username", prefs.getString(NodeFields.RPC_USERNAME.value,""))
-                put("rpcPort", prefs.getString(NodeFields.RPC_PORT.value,""))
+                put("rpcPort", prefs.getString(NodeFields.RPC_PORT.value, Node.defaultRpcPort.toString())?.toInt())
                 put("networkType", AnonConfig.getNetworkType().toString())
                 put("isOnion", false)
             }
 
         val metaPayload = JSONObject().apply {
             put("timestamp", System.currentTimeMillis())
-            put("network", AnonConfig.getNetworkType().toString())
+            put("network", AnonConfig.getNetworkType().toStringForBackUp())
         }
+
+
         val backUpPayload = JSONObject().apply {
             put("node", nodePayload)
             put("wallet", walletPayload)
