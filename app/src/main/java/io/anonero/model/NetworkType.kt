@@ -36,4 +36,13 @@ enum class NetworkType(val value: Int) {
             NetworkType_Stagenet -> "stagenet"
         }
     }
+
+
+     fun toStringForBackUp(): String {
+         return when (this) {
+             NetworkType_Mainnet -> "NetworkType_Mainnet"
+             NetworkType_Testnet -> "NetworkType_Testnet"
+             NetworkType_Stagenet -> "NetworkType_Stagenet"
+         }
+    }
 }
