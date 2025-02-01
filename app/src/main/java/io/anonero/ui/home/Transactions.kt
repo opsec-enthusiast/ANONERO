@@ -5,6 +5,7 @@ import android.icu.text.CompactDecimalFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -62,7 +63,7 @@ class TransactionsViewModel : ViewModel() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TransactionScreen(modifier: Modifier = Modifier) {
+fun TransactionScreen(modifier: Modifier = Modifier,onItemClick:(TransactionInfo)->Unit={}) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
     val balance by transactionsViewModel.balance.observeAsState()
@@ -94,8 +95,8 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
                 }
             )
         }
-    ) {
-        Box(modifier = Modifier.padding(it)) {
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
             LazyColumn(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
@@ -120,7 +121,9 @@ fun TransactionScreen(modifier: Modifier = Modifier) {
                     }
                 }
                 items(transactions.size) {
-                    TransactionItem(transactions[it])
+                    TransactionItem(transactions[it],Modifier.clickable {
+                        onItemClick(transactions[it])
+                    })
                 }
             }
         }
@@ -135,11 +138,11 @@ fun convertNumber(number: Number, locale: Locale): String? {
 }
 
 @Composable
-fun TransactionItem(tx: TransactionInfo) {
+fun TransactionItem(tx: TransactionInfo,modifier: Modifier=Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
     val amount = if (isIncoming) tx.amount else tx.amount * -1
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(
                 horizontal = 12.dp,

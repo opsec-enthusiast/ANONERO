@@ -19,7 +19,9 @@ import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
 import android.os.Parcelable.Creator
+import kotlinx.serialization.Serializable
 
+@Serializable
 class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
     var direction: Direction
     var isPending: Boolean
@@ -35,9 +37,7 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
     var confirmations: Long
     var subaddressLabel: String?
     var transfers: List<Transfer>? = listOf()
-    var txKey: String? = null
     var notes: String? = null
-    var address: String? = null
 
     constructor(
         direction: Int,
@@ -92,10 +92,7 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
                 `in`.readList(transfers, Transfer::class.java.classLoader)
             }
         }
-
-        txKey = `in`.readString()
         notes = `in`.readString()
-        address = `in`.readString()
     }
 
     val isConfirmed: Boolean
@@ -127,9 +124,7 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
         transfers?.let {
             out.writeList(transfers)
         }
-        out.writeString(txKey)
         out.writeString(notes)
-        out.writeString(address)
     }
 
     override fun describeContents(): Int {

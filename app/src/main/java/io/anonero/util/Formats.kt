@@ -34,11 +34,25 @@ object Formats {
 
         val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
 
+        val formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyy")
+
+        return dateTime.format(formatter)
+
+    }
+
+
+    fun formatTransactionDetailTime(timestamp: Long): String {
+        val instant =
+            Instant.ofEpochMilli(timestamp)
+
+        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+
         val formatter = DateTimeFormatter.ofPattern("HH:mm\nMM/dd")
 
         return dateTime.format(formatter)
 
     }
+
 
     fun formatLogTime(timestamp: Long): String {
         val instant =

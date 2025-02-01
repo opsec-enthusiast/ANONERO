@@ -17,7 +17,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +44,7 @@ import io.anonero.ui.home.graph.SettingsNodeRoute
 import io.anonero.ui.home.graph.SettingsRoute
 import io.anonero.ui.home.graph.SettingsViewSeedRoute
 import io.anonero.ui.home.graph.SubAddressesRoute
+import io.anonero.ui.home.graph.TransactionDetailRoute
 import io.anonero.ui.home.graph.TransactionsRoute
 import io.anonero.ui.home.settings.ExportBackUp
 import io.anonero.ui.home.settings.LogViewer
@@ -83,7 +83,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 targetOffsetY = { it }, // Slide out to the bottom
                 animationSpec = tween(durationMillis = 500)
             )
-            ) {
+        ) {
             NavigationBar(
                 containerColor = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.primary,
@@ -114,7 +114,17 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 fadeIn(animationSpec = tween(340))
             }) {
                 composable<TransactionsRoute> {
-                    TransactionScreen()
+                    TransactionScreen(
+                        onItemClick = {
+                            it.hash?.let { paymentId ->
+                                bottomNavController.navigate(
+                                    TransactionDetailRoute(
+                                        transactionId = paymentId
+                                    )
+                                )
+                            }
+                        }
+                    )
                 }
                 composable<ReceiveRoute> {
                     ReceiveScreen(onBackPress = {
@@ -123,6 +133,15 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         showBottomNavigation = false
                         bottomNavController.navigate(SubAddressesRoute)
                     })
+                }
+                composable<TransactionDetailRoute> { navBackStackEntry ->
+                    val txDetailRoute = navBackStackEntry.toRoute<TransactionDetailRoute>()
+                    TransactionDetailScreen(
+                        transactionId = txDetailRoute.transactionId,
+                        onBackPress = {
+                            bottomNavController.popBackStack()
+                        }
+                    )
                 }
                 composable<SendRoute> {
                     SendScreen(navigateToReview = {
@@ -209,7 +228,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 }
                 composable<SubAddressesRoute> {
                     SubAddressesScreen(onBackPress = {
-                        showBottomNavigation=true
+                        showBottomNavigation = true
                         bottomNavController.popBackStack()
                     })
                 }

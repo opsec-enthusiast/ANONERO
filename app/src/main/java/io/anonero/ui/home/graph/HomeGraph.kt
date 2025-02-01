@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import io.anonero.model.TransactionInfo
 import io.anonero.model.WalletManager
 import io.anonero.ui.home.HomeScreenComposable
 import io.anonero.ui.home.LockScreen
@@ -21,6 +22,9 @@ data object Home
 
 @Serializable
 data object TransactionsRoute
+
+@Serializable
+data class TransactionDetailRoute(val transactionId: String)
 
 @Serializable
 data object ReceiveRoute

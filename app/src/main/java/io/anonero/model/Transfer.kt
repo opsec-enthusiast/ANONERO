@@ -18,7 +18,9 @@ package io.anonero.model
 import android.os.Parcel
 import android.os.Parcelable
 import android.os.Parcelable.Creator
+import kotlinx.serialization.Serializable
 
+@Serializable
 class Transfer : Parcelable {
     var amount: Long
     var address: String?
