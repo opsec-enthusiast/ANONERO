@@ -72,7 +72,8 @@ val keys = listOf(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LockScreen(
-    onUnLocked: () -> Unit = {}
+    openWallet: Boolean = true,
+    onUnLocked: (String) -> Unit = {}
 ) {
     val view = LocalView.current
     val currentPin = remember { mutableStateListOf<Int>() }
@@ -110,14 +111,18 @@ fun LockScreen(
         if (pin.length >= 4) {
             scope.launch(Dispatchers.IO){
                 try {
+                    if(openWallet){
                     val result = appViewModel.openWallet(pin)
                     withContext(Dispatchers.Main) {
                         if (result) {
                             appViewModel.startService()
-                            onUnLocked()
+                            onUnLocked(pin)
                         } else {
                             showError()
                         }
+                    }
+                    }else{
+                        onUnLocked(pin)
                     }
                 } catch (e: Exception) {
                     showError()

@@ -1982,6 +1982,9 @@ int LedgerExchange(
     }
 }
 
+
+// from monero-core crypto/hash-ops.h - avoid #including monero code here
+
 /**
  * @brief LedgerFind - find Ledger Device and return it's name
  * @param buffer - buffer for name of found device

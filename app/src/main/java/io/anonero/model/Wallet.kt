@@ -354,6 +354,7 @@ class Wallet {
 
     external fun stopBackgroundSync(password: String?): Boolean
 
+    external fun startBackgroundSync(): Boolean
 
     fun refreshCoins() {
         if (isSynchronized) {

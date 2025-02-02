@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,22 +28,33 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
+import io.anonero.model.Wallet
+import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.util.Formats
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
 
@@ -54,23 +66,40 @@ class TransactionsViewModel : ViewModel() {
         it ?: 0L
     }.asLiveData()
 
-    val showIndefiniteLoading = walletState.isLoading.asLiveData()
-    val syncProgress = walletState.syncProgress.asLiveData()
-
     val transactions = walletState.transactions.asLiveData()
 
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TransactionScreen(modifier: Modifier = Modifier,onItemClick:(TransactionInfo)->Unit={}) {
+fun TransactionScreen(modifier: Modifier = Modifier, onItemClick: (TransactionInfo) -> Unit = {}) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
     val balance by transactionsViewModel.balance.observeAsState()
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
-    val showIndefiniteLoading by transactionsViewModel.showIndefiniteLoading.observeAsState(false)
-    val syncProgress by transactionsViewModel.syncProgress.observeAsState(null)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var showLockScreen by remember { mutableStateOf(false) }
+
+    if (showLockScreen) {
+        Dialog(
+            properties = DialogProperties(
+                decorFitsSystemWindows = false,
+                usePlatformDefaultWidth = false,
+                dismissOnClickOutside = false,
+                dismissOnBackPress = false
+            ),
+            onDismissRequest = {
+                showLockScreen = false
+            }) {
+            LockScreen(
+                openWallet = false,
+                onUnLocked = {
+                    showLockScreen = false
+                    WalletManager.instance?.wallet?.stopBackgroundSync(it)
+                }
+            )
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -85,6 +114,11 @@ fun TransactionScreen(modifier: Modifier = Modifier,onItemClick:(TransactionInfo
                     Text("[ANON]")
                 },
                 actions = {
+                    LockButton(
+                        onLock = {
+                            showLockScreen = true
+                        }
+                    )
                     IconButton(
                         onClick = {
 
@@ -121,7 +155,7 @@ fun TransactionScreen(modifier: Modifier = Modifier,onItemClick:(TransactionInfo
                     }
                 }
                 items(transactions.size) {
-                    TransactionItem(transactions[it],Modifier.clickable {
+                    TransactionItem(transactions[it], Modifier.clickable {
                         onItemClick(transactions[it])
                     })
                 }
@@ -133,12 +167,12 @@ fun TransactionScreen(modifier: Modifier = Modifier,onItemClick:(TransactionInfo
 
 fun convertNumber(number: Number, locale: Locale): String? {
     val compactDecimalFormat =
-        CompactDecimalFormat.getInstance(locale, CompactDecimalFormat.CompactStyle.SHORT);
+        CompactDecimalFormat.getInstance(locale, CompactDecimalFormat.CompactStyle.SHORT)
     return compactDecimalFormat.format(number)
 }
 
 @Composable
-fun TransactionItem(tx: TransactionInfo,modifier: Modifier=Modifier) {
+fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
     val amount = if (isIncoming) tx.amount else tx.amount * -1
     Row(
@@ -146,7 +180,7 @@ fun TransactionItem(tx: TransactionInfo,modifier: Modifier=Modifier) {
             .fillMaxWidth()
             .padding(
                 horizontal = 12.dp,
-                vertical = 12.dp
+                vertical = 8.dp
             )
             .border(
                 border = BorderStroke(
@@ -157,7 +191,7 @@ fun TransactionItem(tx: TransactionInfo,modifier: Modifier=Modifier) {
             )
             .padding(
                 horizontal = 12.dp,
-                vertical = 8.dp
+                vertical = 12.dp
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -173,6 +207,30 @@ fun TransactionItem(tx: TransactionInfo,modifier: Modifier=Modifier) {
             Formats.formatTransactionTime(tx.timestamp),
             style = MaterialTheme.typography.labelSmall
         )
+    }
+}
+
+@Composable
+fun LockButton(modifier: Modifier = Modifier, onLock: () -> Unit) {
+    val walletState = koinInject<WalletState>()
+    val scope = rememberCoroutineScope()
+    val isLoading by walletState.isLoading.asLiveData().observeAsState(false)
+    IconButton(
+        modifier = Modifier.alpha(if (isLoading) 0.2f else 1.0f),
+        onClick = {
+            if (isLoading) {
+                return@IconButton
+            }
+            scope.launch {
+                WalletManager.instance?.wallet?.let { wallet: Wallet ->
+                    onLock()
+                    wallet.pauseRefresh()
+                    wallet.startBackgroundSync()
+                }
+            }
+        }
+    ) {
+        Icon(Icons.Default.Lock, contentDescription = "Lock")
     }
 }
 
