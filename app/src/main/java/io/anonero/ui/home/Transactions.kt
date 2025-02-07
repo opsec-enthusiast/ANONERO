@@ -224,7 +224,6 @@ fun LockButton(modifier: Modifier = Modifier, onLock: () -> Unit) {
             scope.launch {
                 WalletManager.instance?.wallet?.let { wallet: Wallet ->
                     onLock()
-                    wallet.pauseRefresh()
                     wallet.startBackgroundSync()
                 }
             }
