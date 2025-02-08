@@ -635,8 +635,7 @@ object AnonIcons {
         }
 
 
-
-    public val FileEarmarkLock: ImageVector
+    val FileEarmarkLock: ImageVector
         get() {
             if (_FileEarmarkLock != null) {
                 return _FileEarmarkLock!!
@@ -674,19 +673,51 @@ object AnonIcons {
                     verticalLineToRelative(1f)
                     horizontalLineToRelative(2f)
                     verticalLineTo(7f)
-                    arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = false, -2f, 0f)
+                    arcToRelative(
+                        1f,
+                        1f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -2f,
+                        0f
+                    )
                     moveTo(6f, 9.3f)
                     verticalLineToRelative(2.4f)
                     curveToRelative(0f, 0.042f, 0.02f, 0.107f, 0.105f, 0.175f)
-                    arcTo(0.64f, 0.64f, 0f, isMoreThanHalf = false, isPositiveArc = false, 6.5f, 12f)
+                    arcTo(
+                        0.64f,
+                        0.64f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        6.5f,
+                        12f
+                    )
                     horizontalLineToRelative(3f)
-                    arcToRelative(0.64f, 0.64f, 0f, isMoreThanHalf = false, isPositiveArc = false, 0.395f, -0.125f)
+                    arcToRelative(
+                        0.64f,
+                        0.64f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        0.395f,
+                        -0.125f
+                    )
                     curveToRelative(0.085f, -0.068f, 0.105f, -0.133f, 0.105f, -0.175f)
                     verticalLineTo(9.3f)
                     curveToRelative(0f, -0.042f, -0.02f, -0.107f, -0.105f, -0.175f)
                     arcTo(0.64f, 0.64f, 0f, isMoreThanHalf = false, isPositiveArc = false, 9.5f, 9f)
                     horizontalLineToRelative(-3f)
-                    arcToRelative(0.64f, 0.64f, 0f, isMoreThanHalf = false, isPositiveArc = false, -0.395f, 0.125f)
+                    arcToRelative(
+                        0.64f,
+                        0.64f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -0.395f,
+                        0.125f
+                    )
                     curveTo(6.02f, 9.193f, 6f, 9.258f, 6f, 9.3f)
                 }
                 path(
@@ -704,18 +735,42 @@ object AnonIcons {
                     verticalLineTo(4.5f)
                     lineTo(9.5f, 0f)
                     horizontalLineTo(4f)
-                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = false, -2f, 2f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -2f,
+                        2f
+                    )
                     verticalLineToRelative(12f)
                     arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = false, 2f, 2f)
                     horizontalLineToRelative(8f)
-                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = false, 2f, -2f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        2f,
+                        -2f
+                    )
                     moveTo(9.5f, 3f)
                     arcTo(1.5f, 1.5f, 0f, isMoreThanHalf = false, isPositiveArc = false, 11f, 4.5f)
                     horizontalLineToRelative(2f)
                     verticalLineTo(14f)
                     arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, -1f, 1f)
                     horizontalLineTo(4f)
-                    arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, -1f, -1f)
+                    arcToRelative(
+                        1f,
+                        1f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        -1f,
+                        -1f
+                    )
                     verticalLineTo(2f)
                     arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 1f, -1f)
                     horizontalLineToRelative(5.5f)
@@ -723,6 +778,95 @@ object AnonIcons {
                 }
             }.build()
             return _FileEarmarkLock!!
+        }
+
+
+    val Scan: ImageVector
+        get() {
+            if (_Scan != null) {
+                return _Scan!!
+            }
+            _Scan = ImageVector.Builder(
+                name = "Scan",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f
+            ).apply {
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(3f, 7f)
+                    verticalLineTo(5f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 2f, -2f)
+                    horizontalLineToRelative(2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(17f, 3f)
+                    horizontalLineToRelative(2f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 2f, 2f)
+                    verticalLineToRelative(2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(21f, 17f)
+                    verticalLineToRelative(2f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, -2f, 2f)
+                    horizontalLineToRelative(-2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(7f, 21f)
+                    horizontalLineTo(5f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        -2f,
+                        -2f
+                    )
+                    verticalLineToRelative(-2f)
+                }
+            }.build()
+            return _Scan!!
         }
 
 }
@@ -750,3 +894,5 @@ private var _Clear_all: ImageVector? = null
 
 
 private var _FileEarmarkLock: ImageVector? = null
+
+private var _Scan: ImageVector? = null
