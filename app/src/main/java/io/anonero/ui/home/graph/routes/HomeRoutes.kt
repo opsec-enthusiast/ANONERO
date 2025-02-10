@@ -22,7 +22,7 @@ data class TransactionDetailRoute(val transactionId: String)
 data object ReceiveRoute
 
 @Serializable
-data class ReviewTransactionRoute(val toAddress:String)
+data class ReviewTransactionRoute(val toAddress: String)
 
 @Serializable
 data object SettingsRoute
@@ -47,6 +47,3 @@ data object SecureWipeRoute
 
 @Serializable
 data object SubAddressesRoute
-
-@Serializable
-data object SpendRoute
