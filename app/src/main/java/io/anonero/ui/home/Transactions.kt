@@ -9,13 +9,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,9 +51,13 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
+import io.anonero.ui.components.scanner.QRScannerDialog
+import io.anonero.ui.home.graph.routes.SendScreenRoute
 import io.anonero.util.Formats
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
@@ -72,14 +76,19 @@ class TransactionsViewModel : ViewModel() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun TransactionScreen(modifier: Modifier = Modifier, onItemClick: (TransactionInfo) -> Unit = {}) {
+fun TransactionScreen(
+    modifier: Modifier = Modifier,
+    onItemClick: (TransactionInfo) -> Unit = {},
+    navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {}
+) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
     val balance by transactionsViewModel.balance.observeAsState()
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showLockScreen by remember { mutableStateOf(false) }
-
+    var showScanner by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     if (showLockScreen) {
         Dialog(
             properties = DialogProperties(
@@ -101,6 +110,27 @@ fun TransactionScreen(modifier: Modifier = Modifier, onItemClick: (TransactionIn
         }
     }
 
+
+    QRScannerDialog(
+        show = showScanner,
+        onQRCodeScanned = {
+            if (it.isNotEmpty()) {
+                scope.launch(Dispatchers.IO) {
+                    SendScreenRoute.parse(it)?.let { paymentUri ->
+                        withContext(Dispatchers.Main) {
+                            navigateToSend(paymentUri)
+                        }
+                    }
+                }
+            }
+            showScanner = false
+        },
+        onDismiss = {
+            showScanner = false
+        }
+    )
+
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -121,10 +151,10 @@ fun TransactionScreen(modifier: Modifier = Modifier, onItemClick: (TransactionIn
                     )
                     IconButton(
                         onClick = {
-
+                            showScanner = true
                         }
                     ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More")
+                        Icon(AnonIcons.Scan, contentDescription = "")
                     }
                 }
             )
@@ -146,7 +176,7 @@ fun TransactionScreen(modifier: Modifier = Modifier, onItemClick: (TransactionIn
                             .fillParentMaxWidth()
                     ) {
                         Text(
-                            "${Formats.getDisplayAmount(balance ?: 0, 6)} XMR",
+                            Formats.getDisplayAmount(balance ?: 0),
                             style = MaterialTheme.typography
                                 .displaySmall,
                             modifier = Modifier.fillParentMaxWidth(),
@@ -196,13 +226,18 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
-            modifier = Modifier.size(28.dp),
-            tint = if (isIncoming) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-            contentDescription = ""
-        )
-        Text(Formats.getDisplayAmount(amount, 3), style = MaterialTheme.typography.titleLarge)
+        Row {
+            Icon(
+                if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
+                modifier = Modifier.size(28.dp),
+                tint = if (isIncoming) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                contentDescription = ""
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(Formats.getDisplayAmount(amount),
+                textAlign = TextAlign.Start,
+                style = MaterialTheme.typography.titleMedium)
+        }
         Text(
             Formats.formatTransactionTime(tx.timestamp),
             style = MaterialTheme.typography.labelSmall
@@ -237,6 +272,8 @@ fun LockButton(modifier: Modifier = Modifier, onLock: () -> Unit) {
 @Composable
 private fun TransactionScreenReview() {
     AnonNeroTheme {
-        TransactionScreen()
+        TransactionScreen(
+
+        )
     }
 }

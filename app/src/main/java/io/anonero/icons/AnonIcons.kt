@@ -13,6 +13,155 @@ import androidx.compose.ui.unit.dp
 object AnonIcons {
 
 
+
+
+    public val ScanQrCode: ImageVector
+        get() {
+            if (_ScanQrCode != null) {
+                return _ScanQrCode!!
+            }
+            _ScanQrCode = ImageVector.Builder(
+                name = "ScanQrCode",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f
+            ).apply {
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(17f, 12f)
+                    verticalLineToRelative(4f)
+                    arcToRelative(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, -1f, 1f)
+                    horizontalLineToRelative(-4f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(17f, 3f)
+                    horizontalLineToRelative(2f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 2f, 2f)
+                    verticalLineToRelative(2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(17f, 8f)
+                    verticalLineTo(7f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(21f, 17f)
+                    verticalLineToRelative(2f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, -2f, 2f)
+                    horizontalLineToRelative(-2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(3f, 7f)
+                    verticalLineTo(5f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 2f, -2f)
+                    horizontalLineToRelative(2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(7f, 17f)
+                    horizontalLineToRelative(0.01f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(7f, 21f)
+                    horizontalLineTo(5f)
+                    arcToRelative(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, -2f, -2f)
+                    verticalLineToRelative(-2f)
+                }
+                path(
+                    fill = null,
+                    fillAlpha = 1.0f,
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeAlpha = 1.0f,
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 1.0f,
+                    pathFillType = PathFillType.NonZero
+                ) {
+                    moveTo(8f, 7f)
+                    horizontalLineTo(11f)
+                    arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 12f, 8f)
+                    verticalLineTo(11f)
+                    arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 11f, 12f)
+                    horizontalLineTo(8f)
+                    arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 7f, 11f)
+                    verticalLineTo(8f)
+                    arcTo(1f, 1f, 0f, isMoreThanHalf = false, isPositiveArc = true, 8f, 7f)
+                    close()
+                }
+            }.build()
+            return _ScanQrCode!!
+        }
+
+
     val Backspace: ImageVector
         get() {
             if (_Backspace != null) {
@@ -896,3 +1045,6 @@ private var _Clear_all: ImageVector? = null
 private var _FileEarmarkLock: ImageVector? = null
 
 private var _Scan: ImageVector? = null
+
+private var _ScanQrCode: ImageVector? = null
+
