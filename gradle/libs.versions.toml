@@ -1,22 +1,23 @@
 [versions]
 agp = "8.6.1"
 kotlin = "2.0.20"
-coreKtx = "1.13.1"
+coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.6"
-activityCompose = "1.9.3"
-composeRuntime = "1.7.4"
-composeBom = "2024.10.01"
-composeAnimation = "1.7.5"
-navVersion = "2.8.3"
-dataStoreVersion = "1.1.1"
-datastorePreferencesCoreJvm = "1.1.1"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.10.0"
+composeRuntime = "1.7.7"
+composeBom = "2025.01.01"
+composeAnimation = "1.7.7"
+navVersion = "2.8.6"
+dataStoreVersion = "1.1.2"
+datastorePreferencesCoreJvm = "1.1.2"
 koin-bom = "3.5.6"
 serialization = "1.7.3"
-coreSplashScreen = "1.0.0"
-okhttpVersion = "4.12.0"
+coreSplashScreen = "1.0.1"
+cameraXversion = "1.4.1"
+accompanistVersion = "0.37.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -54,6 +55,15 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-datastore-preferences-core-jvm = { group = "androidx.datastore", name = "datastore-preferences-core-jvm", version.ref = "datastorePreferencesCoreJvm" }
+
+androidx-camera-core = {group="androidx.camera",name="camera-core",version.ref = "cameraXversion"}
+androidx-camera-camera2 = {group="androidx.camera",name="camera-camera2",version.ref = "cameraXversion"}
+androidx-camera-lifecycle = {group="androidx.camera",name="camera-lifecycle",version.ref = "cameraXversion"}
+androidx-camera-camera-view = {group="androidx.camera",name="camera-view",version.ref = "cameraXversion"}
+
+com-google-accompanist-permissions = {group="com.google.accompanist",name="accompanist-permissions",version.ref = "accompanistVersion"}
+
+org-boofcv-boofcv-core = { group = "org.boofcv", name = "boofcv-core", version = "1.1.7" }
 
 org-jetbrains-kotlin-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 com-google-zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.1" }

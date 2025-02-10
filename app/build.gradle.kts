@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "io.anonero"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "io.anonero"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 2
         versionName = "0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -25,6 +25,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".stagenet.debug"
+            versionNameSuffix = "-stagenet"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -116,6 +120,11 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.datastore.preferences.core.jvm)
 
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.camera.view)
+
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.core.coroutines)
@@ -125,7 +134,9 @@ dependencies {
 
     implementation(libs.org.jetbrains.kotlin.android)
 
+    implementation(libs.org.boofcv.boofcv.core)
     implementation(libs.com.google.zxing.core)
+    implementation(libs.com.google.accompanist.permissions)
 
     implementation(libs.com.jakewharton.timber)
 
