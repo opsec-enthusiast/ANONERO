@@ -11,8 +11,10 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.ChecksumException
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
+import timber.log.Timber
 import java.nio.ByteBuffer
 
+private const val TAG = "QrCodeAnalyzerBoofcv"
 
 class QrCodeAnalyzerBoofcv(
     private val onQrCodesDetected: (qrCode: Result) -> Unit
@@ -97,7 +99,7 @@ class QrCodeAnalyzerBoofcv(
 
     override fun analyze(imageProxy: ImageProxy) {
         if (debugI % 100 == 10) {
-            Log.d("QrCodeAnalyzerBoofcv.kt", "$debugI analyze(image: ImageProxy)")
+            Timber.tag("QrCodeAnalyzerBoofcv.kt").d( "$debugI analyze(image: ImageProxy)")
         }
         debugI++
         // We are using YUV format because, ImageProxy internally uses ImageReader to get the image
@@ -153,7 +155,7 @@ class QrCodeAnalyzerBoofcv(
 
 
         for (det in detector.detections) {
-            Log.d("QrCodeAnalyzerBoofcv.kt", det.message)
+            Timber.tag(TAG).d(det.message)
             onQrCodesDetected(Result(det.message, det.rawbits, null, BarcodeFormat.QR_CODE))
         }
         imageProxy.close()

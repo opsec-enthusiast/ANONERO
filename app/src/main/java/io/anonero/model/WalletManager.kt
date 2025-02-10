@@ -15,7 +15,6 @@
  */
 package io.anonero.model
 
-import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.node.Node
 import timber.log.Timber
@@ -23,6 +22,7 @@ import java.io.File
 import java.util.Locale
 
 private const val TAG = "WalletManager"
+
 class WalletManager {
     var networkType = NetworkType.NetworkType_Mainnet
     var wallet: Wallet? = null
@@ -52,8 +52,15 @@ class WalletManager {
         this.wallet = null
     }
 
-    fun createWallet(aFile: File, password: String, passphrase: String, language: String, height: Long): Wallet {
-        val walletHandle = createWalletJ(aFile.absolutePath, password,passphrase, language, networkType.value)
+    fun createWallet(
+        aFile: File,
+        password: String,
+        passphrase: String,
+        language: String,
+        height: Long
+    ): Wallet {
+        val walletHandle =
+            createWalletJ(aFile.absolutePath, password, passphrase, language, networkType.value)
         val wallet = Wallet(walletHandle)
         manageWallet(wallet)
         if (wallet.status.isOk) {
@@ -297,7 +304,7 @@ class WalletManager {
             }
         }
 
-        fun  resetInstance() {
+        fun resetInstance() {
             instance = null
         }
 

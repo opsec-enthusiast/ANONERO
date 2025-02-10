@@ -38,11 +38,11 @@ enum class NetworkType(val value: Int) {
     }
 
 
-     fun toStringForBackUp(): String {
-         return when (this) {
-             NetworkType_Mainnet -> "NetworkType_Mainnet"
-             NetworkType_Testnet -> "NetworkType_Testnet"
-             NetworkType_Stagenet -> "NetworkType_Stagenet"
-         }
+    fun toStringForBackUp(): String {
+        return when (this) {
+            NetworkType_Mainnet -> "NetworkType_Mainnet"
+            NetworkType_Testnet -> "NetworkType_Testnet"
+            NetworkType_Stagenet -> "NetworkType_Stagenet"
+        }
     }
 }

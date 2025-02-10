@@ -5,10 +5,10 @@ import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.anonero.icons.AnonIcons
-import io.anonero.ui.home.graph.ReceiveRoute
-import io.anonero.ui.home.graph.SendRoute
-import io.anonero.ui.home.graph.SettingsRoute
-import io.anonero.ui.home.graph.TransactionsRoute
+import io.anonero.ui.home.graph.routes.ReceiveRoute
+import io.anonero.ui.home.graph.routes.SendScreenRoute
+import io.anonero.ui.home.graph.routes.SettingsRoute
+import io.anonero.ui.home.graph.routes.TransactionsRoute
 
 
 data class BottomNavigationItem(
@@ -38,7 +38,7 @@ fun getRoutes(): ArrayList<BottomNavigationItem> {
         BottomNavigationItem(
             title = "Send",
             icon = Icons.AutoMirrored.Outlined.Send,
-            route = SendRoute
+            route = SendScreenRoute("")
         ),
         BottomNavigationItem(
             title = "Settings",

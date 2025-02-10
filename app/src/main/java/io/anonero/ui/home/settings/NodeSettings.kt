@@ -104,7 +104,7 @@ class NodeSettingsViewModel(
         if (daemonInfo?.daemon == null) {
             return@combine null
         }
-        val uri = Uri.parse("http://${daemonInfo.daemon}");
+        val uri = Uri.parse("http://${daemonInfo.daemon}")
         nodeList.find { node ->
             node.host == uri.host &&
                     node.rpcPort == uri.port
@@ -635,7 +635,7 @@ fun NodeForm(
             OutlinedButton(
                 onClick = {
                     onBackPress.invoke()
-                    val node = nodeSettingsVM.validate(rpcHost, rpcUsername, rpcPassPhrase);
+                    val node = nodeSettingsVM.validate(rpcHost, rpcUsername, rpcPassPhrase)
                     if (node != null) {
                         onConnect(node)
                     }

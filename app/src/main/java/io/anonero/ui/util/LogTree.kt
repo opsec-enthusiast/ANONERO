@@ -1,6 +1,5 @@
 package io.anonero.ui.util
 
-import android.util.Log
 import io.anonero.store.AnonLog
 import io.anonero.store.LogRepository
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +31,7 @@ class AnonLogTree(
 
 
     private fun appendLog(tag: String?, message: String, t: Throwable?, priority: Int) {
-        var errorMessage = message;
+        var errorMessage = message
         t?.let { throwable ->
             errorMessage = "${message}\n ${throwable.stackTraceToString()}\n"
         }

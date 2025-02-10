@@ -5,7 +5,12 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import io.anonero.R
-import io.anonero.ui.theme.*
+import io.anonero.ui.theme.Black
+import io.anonero.ui.theme.DarkGray
+import io.anonero.ui.theme.DarkOrange
+import io.anonero.ui.theme.Orange
+import io.anonero.ui.theme.Typography
+import io.anonero.ui.theme.White
 
 private val DarkColorScheme = darkColorScheme(
     primary = Orange,

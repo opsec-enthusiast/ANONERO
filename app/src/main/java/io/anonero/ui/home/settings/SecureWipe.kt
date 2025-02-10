@@ -195,7 +195,7 @@ fun SecureWipe(
                                 }
                             } else {
                                 Timber.tag(TAG).e(it)
-                                error = it.message;
+                                error = it.message
                                 requestClearScreen(false)
                             }
                         }

@@ -15,8 +15,6 @@
  */
 package io.anonero.model
 
-import android.util.Log
-
 class Coins(private val handle: Long) {
     var all: List<CoinsInfo> = ArrayList()
         private set

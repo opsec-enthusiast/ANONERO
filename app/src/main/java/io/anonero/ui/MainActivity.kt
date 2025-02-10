@@ -13,8 +13,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.asLiveData
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import io.anonero.ui.home.graph.Home
 import io.anonero.ui.home.graph.homeGraph
+import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.ui.onboard.graph.onboardingGraph
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
 
         val content: View = this.findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener {
-             appViewModel.isReady
+            appViewModel.isReady
         }
         setContent {
             val walletExist by appViewModel.existWallet.asLiveData().observeAsState(false)
@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                     startDestination = if (walletExist) Home else LandingScreenRoute
                 ) {
                     //landing screen and onboarding screens
-                    onboardingGraph(navController,onboardViewModel)
+                    onboardingGraph(navController, onboardViewModel)
                     //home bottom navigation
                     homeGraph(navController)
                 }

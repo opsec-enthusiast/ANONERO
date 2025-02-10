@@ -8,7 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
-import io.anonero.ui.home.graph.Home
+import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.onboard.Mode
 import io.anonero.ui.onboard.OnboardLoadingComposable
 import io.anonero.ui.onboard.OnboardViewModel

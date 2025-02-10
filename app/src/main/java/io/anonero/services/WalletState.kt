@@ -1,10 +1,10 @@
 package io.anonero.services
 
-import io.anonero.model.node.DaemonInfo
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.model.node.DaemonInfo
 import io.anonero.ui.util.getAllUsedSubAddresses
 import io.anonero.ui.util.getLatestSubAddress
 import kotlinx.coroutines.flow.Flow

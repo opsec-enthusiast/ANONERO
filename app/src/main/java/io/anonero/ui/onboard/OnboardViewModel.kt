@@ -1,7 +1,6 @@
 package io.anonero.ui.onboard
 
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
@@ -51,7 +50,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 throw CancellationException("unable to create wallet")
             }
             val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
-            prefs.edit().putString("passPhraseHash",crazyPass)
+            prefs.edit().putString("passPhraseHash", crazyPass)
                 .apply()
             walllet = anonWallet
             delay(500)

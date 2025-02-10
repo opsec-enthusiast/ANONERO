@@ -45,7 +45,7 @@ import io.anonero.R
 @Composable
 fun SetupPassphrase(
     onBackPressed: () -> Unit = {},
-    oNextPressed: (passphrase:String) -> Unit = {},
+    oNextPressed: (passphrase: String) -> Unit = {},
 ) {
     var passPhraseMatched by remember { mutableStateOf(false) }
     var passPhrase by remember { mutableStateOf("") }
@@ -53,9 +53,9 @@ fun SetupPassphrase(
 
 
     LaunchedEffect(passPhraseConfirm) {
-        passPhraseMatched = if(passPhraseConfirm.isNotEmpty()){
+        passPhraseMatched = if (passPhraseConfirm.isNotEmpty()) {
             passPhraseConfirm == passPhrase
-        }else{
+        } else {
             false
         }
     }

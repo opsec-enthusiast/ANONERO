@@ -93,14 +93,19 @@ fun SubAddressesScreen(
                                 address.displayLabel, color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
-                                "${Formats.getDisplayAmount(address.totalAmount, 3)} XMR",
+                                Formats.getDisplayAmount(address.totalAmount),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     },
                     supportingContent = {
-                        Text(address.address, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, textAlign = TextAlign.Justify)
+                        Text(
+                            address.address,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Justify
+                        )
                     },
                 )
             }

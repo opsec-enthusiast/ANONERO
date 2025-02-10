@@ -32,20 +32,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.anonero.ui.home.addresses.SubAddressesScreen
-import io.anonero.ui.home.graph.HomeScreenRoute
-import io.anonero.ui.home.graph.ProxySettingsRoute
-import io.anonero.ui.home.graph.ReceiveRoute
-import io.anonero.ui.home.graph.ReviewTransactionRoute
-import io.anonero.ui.home.graph.SecureWipeRoute
-import io.anonero.ui.home.graph.SendRoute
-import io.anonero.ui.home.graph.SettingsExportBackUp
-import io.anonero.ui.home.graph.SettingsLogs
-import io.anonero.ui.home.graph.SettingsNodeRoute
-import io.anonero.ui.home.graph.SettingsRoute
-import io.anonero.ui.home.graph.SettingsViewSeedRoute
-import io.anonero.ui.home.graph.SubAddressesRoute
-import io.anonero.ui.home.graph.TransactionDetailRoute
-import io.anonero.ui.home.graph.TransactionsRoute
+import io.anonero.ui.home.graph.routes.HomeScreenRoute
+import io.anonero.ui.home.graph.routes.ProxySettingsRoute
+import io.anonero.ui.home.graph.routes.ReceiveRoute
+import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
+import io.anonero.ui.home.graph.routes.SecureWipeRoute
+import io.anonero.ui.home.graph.routes.SendScreenRoute
+import io.anonero.ui.home.graph.routes.SettingsExportBackUp
+import io.anonero.ui.home.graph.routes.SettingsLogs
+import io.anonero.ui.home.graph.routes.SettingsNodeRoute
+import io.anonero.ui.home.graph.routes.SettingsRoute
+import io.anonero.ui.home.graph.routes.SettingsViewSeedRoute
+import io.anonero.ui.home.graph.routes.SubAddressesRoute
+import io.anonero.ui.home.graph.routes.TransactionDetailRoute
+import io.anonero.ui.home.graph.routes.TransactionsRoute
 import io.anonero.ui.home.settings.ExportBackUp
 import io.anonero.ui.home.settings.LogViewer
 import io.anonero.ui.home.settings.NodeSettings
@@ -74,7 +74,8 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
     Scaffold(contentWindowInsets = WindowInsets(
         top = 0.dp, bottom = 0.dp
     ), bottomBar = {
-        AnimatedVisibility(visible = showBottomNavigation,
+        AnimatedVisibility(
+            visible = showBottomNavigation,
             enter = slideInVertically(
                 initialOffsetY = { it }, // Slide in from the bottom
                 animationSpec = tween(durationMillis = 500)
@@ -123,7 +124,10 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                                     )
                                 )
                             }
-                        }
+                        },
+                        navigateToSend = {
+                            bottomNavController.navigate(it)
+                        },
                     )
                 }
                 composable<ReceiveRoute> {
@@ -143,26 +147,29 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         }
                     )
                 }
-                composable<SendRoute> {
+                composable<SendScreenRoute> { backStackEntry ->
+                    val params = backStackEntry.toRoute<SendScreenRoute>()
                     SendScreen(navigateToReview = {
-                        showBottomNavigation = false
                         bottomNavController.navigate(it)
                     }, onBackPress = {
                         bottomNavController.popBackStack()
-                    })
+                    }, paymentUri = params)
                 }
                 composable<ReviewTransactionRoute> { backStackEntry ->
                     val route = backStackEntry.toRoute<ReviewTransactionRoute>()
-                    ReviewTransactionScreen(route, onFinished = {
-                        bottomNavController.navigate(HomeScreenRoute) {
-                            popUpTo(TransactionsRoute) {
-                                inclusive = true
+                    ReviewTransactionScreen(
+                        route,
+                        onFinished = {
+                            bottomNavController.navigate(HomeScreenRoute) {
+                                popUpTo(TransactionsRoute) {
+                                    inclusive = true
+                                }
                             }
-                        }
-                    }, onBackPressed = {
-                        showBottomNavigation = true
-                        bottomNavController.popBackStack()
-                    })
+                        },
+                        onBackPressed = {
+                            bottomNavController.popBackStack()
+                        },
+                    )
                 }
                 composable<SettingsRoute> {
                     SettingsPage(

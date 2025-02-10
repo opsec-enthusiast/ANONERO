@@ -23,12 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.anonero.ui.home.graph.ProxySettingsRoute
-import io.anonero.ui.home.graph.SecureWipeRoute
-import io.anonero.ui.home.graph.SettingsExportBackUp
-import io.anonero.ui.home.graph.SettingsLogs
-import io.anonero.ui.home.graph.SettingsNodeRoute
-import io.anonero.ui.home.graph.SettingsViewSeedRoute
+import io.anonero.ui.home.graph.routes.ProxySettingsRoute
+import io.anonero.ui.home.graph.routes.SecureWipeRoute
+import io.anonero.ui.home.graph.routes.SettingsExportBackUp
+import io.anonero.ui.home.graph.routes.SettingsLogs
+import io.anonero.ui.home.graph.routes.SettingsNodeRoute
+import io.anonero.ui.home.graph.routes.SettingsViewSeedRoute
 
 typealias NavigateTo<T> = (to: T) -> Unit
 

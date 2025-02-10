@@ -50,6 +50,7 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         Timber.tag(TAG).i("BUILD_TYPE: %s", BuildConfig.BUILD_TYPE)
         Timber.tag(TAG).i("FLAVOR: %s", BuildConfig.FLAVOR)
         Timber.tag(TAG).i("APPLICATION_ID: %s", BuildConfig.APPLICATION_ID)
+        Timber.tag(TAG).i("MONERO_NETWORK: %s", AnonConfig.getNetworkType())
         Timber.tag(TAG)
             .i("VERSION: ${BuildConfig.VERSION_NAME} ${BuildConfig.VERSION_CODE}\n\n")
     }

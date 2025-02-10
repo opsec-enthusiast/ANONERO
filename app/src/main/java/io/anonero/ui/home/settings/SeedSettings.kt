@@ -2,7 +2,6 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import android.content.SharedPreferences
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -72,7 +71,7 @@ import kotlin.random.Random
 
 
 fun getWalletSeed(passPhrase: String): String? {
-    return WalletManager.instance?.wallet?.getSeed(passPhrase);
+    return WalletManager.instance?.wallet?.getSeed(passPhrase)
 }
 
 fun generatePlaceHolderSeed(): List<String> {
@@ -115,13 +114,13 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
         scope.launch(Dispatchers.IO) {
             val hash = prefs.getString(PREFS_PASSPHRASE_HASH, "")
             val hashedPass = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
-            if(hash == hashedPass){
+            if (hash == hashedPass) {
                 val seed = getWalletSeed(passPhrase)?.split(" ")
-                if(seed != null){
+                if (seed != null) {
                     seedWords = seed
                     passPhraseDialog = false
                 }
-            }else{
+            } else {
                 errorShake.shake(
                     ShakeConfig(
                         6, translateX = 5f

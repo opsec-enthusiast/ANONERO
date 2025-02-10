@@ -1,29 +1,24 @@
 package io.anonero.util
 
-import android.os.Build
-import android.text.format.DateFormat
-import androidx.annotation.RequiresApi
 import io.anonero.AnonConfig
+import io.anonero.model.Wallet
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.pow
 
 object Formats {
 
-    fun getDisplayAmount(amount: Long, maxDecimals: Int): String {
+    fun getDisplayAmount(amount: Long): String {
 
-        // a Java bug does not strip zeros properly if the value is 0
-        if (amount == 0L) return "0.00"
+        if (amount == 0L) return "0.00000000"
         var d = BigDecimal(amount).scaleByPowerOfTen(-AnonConfig.XMR_DECIMALS)
-            .setScale(maxDecimals, RoundingMode.HALF_UP)
-            .stripTrailingZeros()
+            .setScale(8, RoundingMode.HALF_UP)
         if (d.scale() < 2) d = d.setScale(2, RoundingMode.UNNECESSARY)
         return d.toPlainString()
     }
@@ -67,7 +62,12 @@ object Formats {
         if (sizeInBytes <= 0) return "0 B"
         val units = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
         val digitGroups = (log10(sizeInBytes.toDouble()) / log10(1024.0)).toInt()
-        return String.format(Locale.US,"%.2f %s", sizeInBytes / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
+        return String.format(
+            Locale.US,
+            "%.2f %s",
+            sizeInBytes / 1024.0.pow(digitGroups.toDouble()),
+            units[digitGroups]
+        )
     }
 
 }

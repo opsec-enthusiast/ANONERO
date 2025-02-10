@@ -29,19 +29,21 @@ fun OnboardLoadingComposable(
     Card(
         modifier = modifier.size(width = 300.dp, height = 250.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onBackground
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onBackground
         )
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .align(Alignment.CenterHorizontally),
-             contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator(
                 strokeCap = StrokeCap.Round,
-                modifier =  Modifier.size(200.dp),
+                modifier = Modifier.size(200.dp),
 
-            )
+                )
             Text(loadingState.message, style = MaterialTheme.typography.labelSmall)
         }
     }

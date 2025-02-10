@@ -8,8 +8,13 @@ import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import org.json.JSONObject
-import java.io.*
-import java.util.*
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.Date
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -35,10 +40,13 @@ object BackUpHelper {
             }
         val nodePayload = JSONObject()
             .apply {
-                put("host", prefs.getString(NodeFields.RPC_HOST.value,""))
-                put("password", prefs.getString(NodeFields.RPC_PASSWORD.value,""))
-                put("username", prefs.getString(NodeFields.RPC_USERNAME.value,""))
-                put("rpcPort", prefs.getString(NodeFields.RPC_PORT.value, Node.defaultRpcPort.toString())?.toInt())
+                put("host", prefs.getString(NodeFields.RPC_HOST.value, ""))
+                put("password", prefs.getString(NodeFields.RPC_PASSWORD.value, ""))
+                put("username", prefs.getString(NodeFields.RPC_USERNAME.value, ""))
+                put("rpcPort",
+                    prefs.getString(NodeFields.RPC_PORT.value, Node.defaultRpcPort.toString())
+                        ?.toInt()
+                )
                 put("networkType", AnonConfig.getNetworkType().toString())
                 put("isOnion", false)
             }
@@ -61,9 +69,9 @@ object BackUpHelper {
             put("backup", backUpPayload)
         }.toString()
 
-        context.cacheDir.deleteRecursively();
+        context.cacheDir.deleteRecursively()
 
-        val tmpBackupDir = File(context.cacheDir, "tmp_backup");
+        val tmpBackupDir = File(context.cacheDir, "tmp_backup")
         if (tmpBackupDir.exists()) {
             tmpBackupDir.deleteRecursively()
         }
@@ -72,14 +80,14 @@ object BackUpHelper {
         val timeStamp: String = sdf.format(date)
         val backupFile = File(context.cacheDir, "anon_backup_$timeStamp.zip")
         tmpBackupDir.mkdirs()
-        val tmpBackupFile = File(tmpBackupDir, "anon.json");
+        val tmpBackupFile = File(tmpBackupDir, "anon.json")
         tmpBackupFile.writeText(json)
         val walletDir = File(context.filesDir, "wallets")
         walletDir.copyRecursively(tmpBackupDir, true)
         val list = tmpBackupDir.listFiles()
         val files = list?.map { it.absolutePath }?.toTypedArray()
-        val backupCacheDir = File(context.cacheDir,"backup")
-        if(!backupCacheDir.exists()){
+        val backupCacheDir = File(context.cacheDir, "backup")
+        if (!backupCacheDir.exists()) {
             backupCacheDir.mkdirs()
         }
         val backupFileEncrypted = File(backupCacheDir, "anon_backup_$timeStamp.anon")

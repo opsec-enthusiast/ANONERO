@@ -85,6 +85,7 @@ import java.io.File
 
 
 private const val TAG = "ExportBackUp"
+
 class ExportBackUpViewModel : ViewModel() {
 
     private val backupFile = MutableLiveData<File?>(null)
@@ -153,8 +154,8 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
 
 
     fun exportToExternDir() {
-        if(backupFile==null){
-            return;
+        if (backupFile == null) {
+            return
         }
         val fileUri: Uri = try {
             FileProvider.getUriForFile(
@@ -164,7 +165,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            return;
+            return
         }
         // Create the share intent
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -250,7 +251,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
             dismissButton = {
                 Button(
                     onClick = {
-                        passPhraseDialog = false;
+                        passPhraseDialog = false
                         onBackPress.invoke()
                     },
                     shape = MaterialTheme.shapes.small,
@@ -314,11 +315,11 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
             } else {
                 if (backupFile != null) {
 
-                    Column (
+                    Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
-                    ){
+                    ) {
                         Spacer(Modifier.fillMaxWidth())
                         Column {
 
@@ -350,25 +351,30 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                                     )
                                 }
                             )
-                            Text("Backup Generated Successfully!", textAlign = TextAlign.Center,
+                            Text(
+                                "Backup Generated Successfully!", textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(
                                         top = 24.dp,
                                         bottom = 4.dp
-                                    ))
-                            Text("Save it to a secure location, such as an external drive or encrypted storage, to keep it safe",
-                                textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall.copy(
+                                    )
+                            )
+                            Text(
+                                "Save it to a secure location, such as an external drive or encrypted storage, to keep it safe",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color.Gray
-                                ))
+                                )
+                            )
                         }
                         Button(
                             shape = MaterialTheme.shapes.small,
                             modifier = Modifier
                                 .padding(
                                     horizontal = 24.dp,
-                                )                             ,
+                                ),
                             border = BorderStroke(
                                 1.dp,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -393,6 +399,6 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
 @Composable
 private fun SeedSettingsPre() {
     AnonNeroTheme {
-        
+
     }
 }

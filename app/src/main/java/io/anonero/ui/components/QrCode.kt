@@ -30,7 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-
 @Composable
 fun QrCodeImage(
     modifier: Modifier = Modifier,
@@ -43,7 +42,7 @@ fun QrCodeImage(
             .background(Color.Transparent),
         contentAlignment = Alignment.Center,
     ) {
-         val bitmap = rememberQrBitmap(content = content, size = size)
+        val bitmap = rememberQrBitmap(content = content, size = size)
 
 
         if (bitmap != null) {
@@ -108,7 +107,8 @@ private fun rememberQrBitmap(content: String, size: Dp): Bitmap? {
             for (x in 0 until matrixWidth) {
                 for (y in 0 until matrixHeight) {
                     val shouldColorPixel = bitmapMatrix?.get(x, y) ?: false
-                    val pixelColor = if (shouldColorPixel) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+                    val pixelColor =
+                        if (shouldColorPixel) android.graphics.Color.WHITE else android.graphics.Color.BLACK
                     pixels[y * matrixWidth + x] = pixelColor
                 }
             }

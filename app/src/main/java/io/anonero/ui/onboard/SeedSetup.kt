@@ -1,7 +1,6 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -84,10 +82,11 @@ fun SeedSetup(
             ) {
                 items(seed.size) { index ->
                     Box(
-                        modifier = Modifier.width(60.dp)
+                        modifier = Modifier
+                            .width(60.dp)
                             .padding(start = 24.dp)
                             .align(Alignment.CenterHorizontally)
-                    ){
+                    ) {
                         Text(
                             text = "${index + 1}. ${seed[index]}",
                             style = MaterialTheme.typography.titleMedium,

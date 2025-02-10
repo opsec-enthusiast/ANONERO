@@ -1,6 +1,5 @@
 package io.anonero.model.node
 
-import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.NetworkType
 import io.anonero.model.WalletManager
@@ -15,7 +14,7 @@ import java.net.URLEncoder
 import java.net.UnknownHostException
 
 
-enum class NodeFields (val value:String){
+enum class NodeFields(val value: String) {
     RPC_HOST("host"),
     RPC_PORT("rpcPort"),
     RPC_USERNAME("username"),
@@ -147,8 +146,11 @@ open class Node {
                 MAINNET -> NetworkType.NetworkType_Mainnet
                 STAGENET -> NetworkType.NetworkType_Stagenet
                 TESTNET -> NetworkType.NetworkType_Testnet
-                else -> throw IllegalArgumentException("invalid net: " + jsonObject.getString(
-                    NodeFields.RPC_NETWORK.value))
+                else -> throw IllegalArgumentException(
+                    "invalid net: " + jsonObject.getString(
+                        NodeFields.RPC_NETWORK.value
+                    )
+                )
             }
             require(networkType == WalletManager.instance?.networkType) { "wrong net: $networkType" }
         }
@@ -255,7 +257,7 @@ open class Node {
         private var DEFAULT_LEVIN_PORT = 0
         private var DEFAULT_RPC_PORT = 0
 
-        public val defaultRpcPort: Int
+        val defaultRpcPort: Int
             // every node knows its network, but they are all the same
             get() {
 

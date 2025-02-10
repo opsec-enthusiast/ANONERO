@@ -2,7 +2,6 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,7 +42,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.anonero.services.AnonWalletHandler
-import io.anonero.ui.components.WalletProgressIndicator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -92,7 +90,7 @@ class ProxySettingsViewModel(
             anonWalletHandler.setProxy(proxy = proxy, port = port)
             updateProxyState()
         }.invokeOnCompletion {
-            if(it!=null){
+            if (it != null) {
                 Timber.tag(TAG).e(it)
             }
             _proxyLoading.postValue(false)
@@ -123,8 +121,8 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
 
     LaunchedEffect(proxy) {
         if (proxy != null) {
-            proxyAddress = proxy?.first.toString();
-            proxyPort = proxy?.second;
+            proxyAddress = proxy?.first.toString()
+            proxyPort = proxy?.second
         }
     }
 
@@ -155,7 +153,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         Text("Proxy")
                     },
                 )
-                if(loading){
+                if (loading) {
                     LinearProgressIndicator(
                         trackColor = MaterialTheme.colorScheme.primary.copy(
                             alpha = 0.2f

@@ -85,7 +85,7 @@ fun LockScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val appViewModel: AppViewModel = koinViewModel()
-    val walletState : WalletState by inject(WalletState::class.java)
+    val walletState: WalletState by inject(WalletState::class.java)
 
     fun showError() {
         errorShake.shake(
@@ -109,19 +109,19 @@ fun LockScreen(
     fun checkPin() {
         val pin = currentPin.joinToString(separator = "")
         if (pin.length >= 4) {
-            scope.launch(Dispatchers.IO){
+            scope.launch(Dispatchers.IO) {
                 try {
-                    if(openWallet){
-                    val result = appViewModel.openWallet(pin)
-                    withContext(Dispatchers.Main) {
-                        if (result) {
-                            appViewModel.startService()
-                            onUnLocked(pin)
-                        } else {
-                            showError()
+                    if (openWallet) {
+                        val result = appViewModel.openWallet(pin)
+                        withContext(Dispatchers.Main) {
+                            if (result) {
+                                appViewModel.startService()
+                                onUnLocked(pin)
+                            } else {
+                                showError()
+                            }
                         }
-                    }
-                    }else{
+                    } else {
                         onUnLocked(pin)
                     }
                 } catch (e: Exception) {

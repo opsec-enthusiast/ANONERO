@@ -14,7 +14,7 @@ object AnonConfig {
     val ONE_XMR = Math.round(10.0.pow(XMR_DECIMALS.toDouble()))
     const val MAX_LOG_SIZE = 250
     const val PREFS = "anonPref"
-    var context:AnonApplication? = null
+    var context: AnonApplication? = null
 
     fun getNetworkType(): NetworkType {
         @Suppress("KotlinConstantConditions")
@@ -25,7 +25,7 @@ object AnonConfig {
     }
 
     fun getDefaultWalletFile(context: Context): File {
-        val walletDir =  getDefaultWalletDir(context)
+        val walletDir = getDefaultWalletDir(context)
         val anonWallet = File(walletDir, "anon")
         return anonWallet
     }
@@ -37,10 +37,10 @@ object AnonConfig {
             logDir.mkdirs() // Create the directory if it doesn't exist
         }
         val logFile = File(logDir, "anon_log")
-        if(!logFile.exists()){
+        if (!logFile.exists()) {
             logFile.createNewFile()
         }
-        return  logFile;
+        return logFile
     }
 
     fun getDefaultWalletDir(context: Context): File {

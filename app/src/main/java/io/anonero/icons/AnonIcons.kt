@@ -15,7 +15,7 @@ object AnonIcons {
 
 
 
-    public val ScanQrCode: ImageVector
+    val ScanQrCode: ImageVector
         get() {
             if (_ScanQrCode != null) {
                 return _ScanQrCode!!

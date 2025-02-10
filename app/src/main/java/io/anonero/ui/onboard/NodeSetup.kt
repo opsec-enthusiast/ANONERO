@@ -68,14 +68,14 @@ fun SetupNodeComposable(
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
         rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: ""
         rpcPassPhrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: ""
-        val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "");
+        val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
         if ((rpcPort ?: "").isNotEmpty()) {
             rpcHost = "${rpcHost}:${rpcPort}"
         }
     }
 
 
-    val labelColor =  MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+    val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
@@ -148,7 +148,7 @@ fun SetupNodeComposable(
                             placeholder = {
                                 Text(
                                     text = "http://address.onion:port",
-                                    color =labelColor
+                                    color = labelColor
                                 )
                             },
                             modifier = Modifier
@@ -220,10 +220,13 @@ fun SetupNodeComposable(
             OutlinedButton(
                 onClick = {
                     scope.launch {
-                        val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
+                        val prefs = localContext.getSharedPreferences(
+                            AnonConfig.PREFS,
+                            Context.MODE_PRIVATE
+                        )
                         val editor = prefs.edit()
 
-                        var rpcPort = Node.defaultRpcPort.toString();
+                        var rpcPort = Node.defaultRpcPort.toString()
                         try {
                             val uri = URI(rpcHost.trim())
                             if (uri.port != -1) {

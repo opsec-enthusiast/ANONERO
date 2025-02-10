@@ -50,7 +50,9 @@ fun OnboardingWelcome(
                 )
             }
             Column(
-                modifier=Modifier.fillMaxHeight(0.5f).weight(1.2f),
+                modifier = Modifier
+                    .fillMaxHeight(0.5f)
+                    .weight(1.2f),
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.Bottom),
             ) {
                 OutlinedButton(

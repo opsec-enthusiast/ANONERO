@@ -2,7 +2,6 @@ package io.anonero.ui.home.spend
 
 import AnonNeroTheme
 import android.os.Build
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -33,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -41,20 +39,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.model.PendingTransaction
 import io.anonero.model.WalletManager
-import io.anonero.ui.home.graph.ReviewTransactionRoute
+import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.theme.DangerColor
 import io.anonero.ui.theme.SuccessColor
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class BroadcastState {
@@ -67,9 +63,9 @@ enum class BroadcastState {
 class ReviewTransactionViewModel : ViewModel() {
     private val pendingTransaction = MutableLiveData<PendingTransaction?>(null)
     private val broadcastingTx = MutableLiveData(BroadcastState.STAGING)
-    private var _brodcastError: Exception? = null
+    private var _broadcastError: Exception? = null
 
-    val broadCastError get() = _brodcastError
+    val broadCastError get() = _broadcastError
     val getBroadcastingTxState get() = broadcastingTx
     val pendingTransactionLive get() = pendingTransaction
 
@@ -91,7 +87,7 @@ class ReviewTransactionViewModel : ViewModel() {
                 WalletManager.instance?.wallet?.store()
                 broadcastingTx.postValue(BroadcastState.SUCCESS)
             } catch (ex: Exception) {
-                _brodcastError = ex
+                _broadcastError = ex
                 broadcastingTx.postValue(BroadcastState.ERROR)
             }
         }
@@ -100,11 +96,14 @@ class ReviewTransactionViewModel : ViewModel() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -> Unit = {}, onBackPressed: () -> Unit = {}) {
+fun ReviewTransactionScreen(
+    reviewParams: ReviewTransactionRoute,
+    onFinished: () -> Unit = {},
+    onBackPressed: () -> Unit = {}
+) {
 //
     val viewModel = viewModel<ReviewTransactionViewModel>()
     val pendingTransaction by viewModel.pendingTransactionLive.observeAsState()
-    val scope = rememberCoroutineScope()
     val view = LocalView.current
 //
     val broadcastState by viewModel.getBroadcastingTxState.observeAsState(BroadcastState.STAGING)
@@ -132,9 +131,9 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            if(broadcastState == BroadcastState.SUCCESS){
+                            if (broadcastState == BroadcastState.SUCCESS) {
                                 onFinished.invoke()
-                            }else{
+                            } else {
                                 onBackPressed.invoke()
                             }
                         }
@@ -152,28 +151,49 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
             modifier = Modifier.padding(it)
         ) {
             if (pendingTransaction != null) {
-                AnimatedVisibility(visible = broadcastState == BroadcastState.ERROR, enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(
+                    visible = broadcastState == BroadcastState.ERROR,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column(
                         Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Unable to broadcast transaction\n ${viewModel.broadCastError?.message}", style = MaterialTheme.typography.bodyMedium.copy(
-                            color = DangerColor
-                        ), textAlign = TextAlign.Center)
+                        Text(
+                            "Unable to broadcast transaction\n ${viewModel.broadCastError?.message}",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = DangerColor
+                            ),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
-                AnimatedVisibility(visible = broadcastState == BroadcastState.SUCCESS,enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(
+                    visible = broadcastState == BroadcastState.SUCCESS,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column(
                         Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Check" , tint = SuccessColor, modifier = Modifier.size(44.dp))
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Check",
+                            tint = SuccessColor,
+                            modifier = Modifier.size(44.dp)
+                        )
                         Text("Success")
                     }
                 }
-                AnimatedVisibility(visible = broadcastState == BroadcastState.IN_PROGRESS,enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(
+                    visible = broadcastState == BroadcastState.IN_PROGRESS,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column(
                         Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
@@ -187,7 +207,11 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                         Text("Broadcast in progress...", modifier = Modifier.padding(top = 12.dp))
                     }
                 }
-                AnimatedVisibility(visible = broadcastState == BroadcastState.STAGING,enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(
+                    visible = broadcastState == BroadcastState.STAGING,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column(
                         verticalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
@@ -212,8 +236,7 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getAmount(),
-                                                8
+                                                pendingTransaction!!.getAmount()
                                             ),
                                             style = subTitleStyle
                                         )
@@ -227,8 +250,7 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getFee(),
-                                                8
+                                                pendingTransaction!!.getFee()
                                             ),
                                             style = subTitleStyle
                                         )
@@ -241,8 +263,7 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getFee() + pendingTransaction!!.getAmount(),
-                                                8
+                                                pendingTransaction!!.getFee() + pendingTransaction!!.getAmount()
                                             ),
                                             textAlign = TextAlign.Center,
                                             style = MaterialTheme.typography.titleLarge,
@@ -258,13 +279,13 @@ fun ReviewTransactionScreen(reviewParams: ReviewTransactionRoute,onFinished:() -
                         }
                         OutlinedButton(
                             onClick = {
-                                viewModel.broadCast()?.invokeOnCompletion { error->
+                                viewModel.broadCast()?.invokeOnCompletion { error ->
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                         if (error == null) {
                                             view.performHapticFeedback(
                                                 HapticFeedbackConstants.CONFIRM
                                             )
-                                        }else{
+                                        } else {
                                             view.performHapticFeedback(
                                                 HapticFeedbackConstants.REJECT
                                             )

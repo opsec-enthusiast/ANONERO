@@ -25,7 +25,6 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -58,7 +57,6 @@ import javax.security.auth.x500.X500Principal;
 import timber.log.Timber;
 
 
-
 public class KeyStoreHelper {
     private static final String TAG = "KeyStoreHelper";
 
@@ -82,8 +80,8 @@ public class KeyStoreHelper {
             }
             return CrazyPassEncoder.encode(hash);
         } catch (NoSuchProviderException | NoSuchAlgorithmException |
-                InvalidAlgorithmParameterException | KeyStoreException |
-                InvalidKeyException | SignatureException ex) {
+                 InvalidAlgorithmParameterException | KeyStoreException |
+                 InvalidKeyException | SignatureException ex) {
             throw new IllegalStateException(ex);
         }
     }
@@ -127,7 +125,7 @@ public class KeyStoreHelper {
             e.putString(wallet, Base64.encodeToString(encrypted, Base64.DEFAULT)).apply();
             return true;
         } catch (NoSuchProviderException | NoSuchAlgorithmException |
-                InvalidAlgorithmParameterException | KeyStoreException ex) {
+                 InvalidAlgorithmParameterException | KeyStoreException ex) {
             ex.printStackTrace();
             return false;
         }
@@ -213,7 +211,8 @@ public class KeyStoreHelper {
             KeyStore keyStore = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
             keyStore.load(null);
             return keyStore.containsAlias(SecurityConstants.WALLET_PASS_KEY_PREFIX + wallet);
-        } catch (IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException ex) {
+        } catch (IOException | NoSuchAlgorithmException | CertificateException |
+                 KeyStoreException ex) {
             throw new BrokenPasswordStoreException(ex);
         }
     }
@@ -253,7 +252,6 @@ public class KeyStoreHelper {
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
                         .build());
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        Timber.tag(TAG).i("M Keys created");
     }
 
     private static PrivateKey getPrivateKey(String alias) {
@@ -265,14 +263,14 @@ public class KeyStoreHelper {
             PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
 
             if (privateKey == null) {
-                Timber.tag("createKeysM").i( "No key found under alias: %s",alias);
+                Timber.tag("createKeysM").i("No key found under alias: %s", alias);
 
                 return null;
             }
 
             return privateKey;
         } catch (IOException | NoSuchAlgorithmException | CertificateException
-                | UnrecoverableEntryException | KeyStoreException ex) {
+                 | UnrecoverableEntryException | KeyStoreException ex) {
             throw new IllegalStateException(ex);
         }
     }
@@ -285,12 +283,9 @@ public class KeyStoreHelper {
 
             PublicKey publicKey = ks.getCertificate(alias).getPublicKey();
 
-            if (publicKey == null) {
-                return null;
-            }
             return publicKey;
         } catch (IOException | NoSuchAlgorithmException | CertificateException
-                | KeyStoreException ex) {
+                 | KeyStoreException ex) {
             throw new IllegalStateException(ex);
         }
     }
@@ -303,7 +298,7 @@ public class KeyStoreHelper {
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipher.doFinal(data);
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException
-                | NoSuchAlgorithmException | NoSuchPaddingException ex) {
+                 | NoSuchAlgorithmException | NoSuchPaddingException ex) {
             ex.printStackTrace();
             return null;
         }
@@ -318,7 +313,7 @@ public class KeyStoreHelper {
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             return cipher.doFinal(data);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-                IllegalBlockSizeException | BadPaddingException ex) {
+                 IllegalBlockSizeException | BadPaddingException ex) {
             ex.printStackTrace();
             return null;
         }

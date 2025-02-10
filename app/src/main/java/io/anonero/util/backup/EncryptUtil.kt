@@ -4,7 +4,11 @@ import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator
 import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.util.encoders.Base64
-import java.io.*
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
@@ -25,12 +29,12 @@ object EncryptUtil {
     ): String {
         val salt = SecureRandom().generateSeed(8)
         // Derive 48 byte key
-        var keySpec: SecretKeySpec?;
-        var ivSpec: IvParameterSpec?;
+        var keySpec: SecretKeySpec?
+        var ivSpec: IvParameterSpec?
         PKCS5S2ParametersGenerator(SHA256Digest()).let { generator ->
             generator.init(password.toByteArray(), salt, DEFAULT_ITR)
             (generator.generateDerivedMacParameters(48 * 8) as KeyParameter).key.let { secretKey ->
-                val bytes = secretKey.copyOfRange(0, 32);
+                val bytes = secretKey.copyOfRange(0, 32)
                 keySpec = SecretKeySpec(bytes, "AES")
                 ivSpec = IvParameterSpec(secretKey.copyOfRange(32, secretKey.size))
                 generator.password.fill('*'.code.toByte())
@@ -53,18 +57,18 @@ object EncryptUtil {
         val encryptedBytes = Base64.decode(toDecrypt.lines().joinToString(""))
         val salt = encryptedBytes.copyOfRange(8, 16)
         // Derive 48 byte key
-        var keySpec: SecretKeySpec?;
-        var ivSpec: IvParameterSpec?;
+        var keySpec: SecretKeySpec?
+        var ivSpec: IvParameterSpec?
         PKCS5S2ParametersGenerator(SHA256Digest()).let { generator ->
             generator.init(password.toByteArray(), salt, DEFAULT_ITR)
             (generator.generateDerivedMacParameters(48 * 8) as KeyParameter).key.let { secretKey ->
                 // Decryption Key is bytes 0 - 31 of the derived secret key
-                val bytes = secretKey.copyOfRange(0, 32);
+                val bytes = secretKey.copyOfRange(0, 32)
                 keySpec = SecretKeySpec(bytes, "AES")
                 // Input Vector is bytes 32 - 47 of the derived secret key
                 ivSpec = IvParameterSpec(secretKey.copyOfRange(32, secretKey.size))
-                generator.password.fill('*'.toByte())
-                secretKey.fill('*'.toByte())
+                generator.password.fill('*'.code.toByte())
+                secretKey.fill('*'.code.toByte())
             }
         }
         val cipherText = encryptedBytes.copyOfRange(16, encryptedBytes.size)
@@ -81,12 +85,12 @@ object EncryptUtil {
     fun encryptFile(key: String, inputFile: File, outputFile: File) {
         val salt = SecureRandom().generateSeed(8)
         // Derive 48 byte key
-        var keySpec: SecretKeySpec?;
-        var ivSpec: IvParameterSpec?;
+        var keySpec: SecretKeySpec?
+        var ivSpec: IvParameterSpec?
         PKCS5S2ParametersGenerator(SHA256Digest()).let { generator ->
             generator.init(key.toByteArray(), salt, DEFAULT_ITR)
             (generator.generateDerivedMacParameters(48 * 8) as KeyParameter).key.let { secretKey ->
-                val bytes = secretKey.copyOfRange(0, 32);
+                val bytes = secretKey.copyOfRange(0, 32)
                 keySpec = SecretKeySpec(bytes, "AES")
                 ivSpec = IvParameterSpec(secretKey.copyOfRange(32, secretKey.size))
                 generator.password.fill('*'.code.toByte())
@@ -96,7 +100,7 @@ object EncryptUtil {
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
         val fileInputStream = FileInputStream(inputFile)
-        val fileOutputStream = FileOutputStream(outputFile);
+        val fileOutputStream = FileOutputStream(outputFile)
         val cipherOutputStream = CipherOutputStream(BufferedOutputStream(fileOutputStream), cipher)
         fileOutputStream.write((SALT_PREFIX.toByteArray() + salt))
         fileInputStream.copyTo(cipherOutputStream, BUFFER_SIZE)
@@ -116,7 +120,7 @@ object EncryptUtil {
         PKCS5S2ParametersGenerator(SHA256Digest()).let { generator ->
             generator.init(key.toByteArray(), salt, DEFAULT_ITR)
             (generator.generateDerivedMacParameters(48 * 8) as KeyParameter).key.let { secretKey ->
-                val bytes = secretKey.copyOfRange(0, 32);
+                val bytes = secretKey.copyOfRange(0, 32)
                 keySpec = SecretKeySpec(bytes, "AES")
                 ivSpec = IvParameterSpec(secretKey.copyOfRange(32, secretKey.size))
                 generator.password.fill('*'.code.toByte())

@@ -88,8 +88,8 @@ class AnonWalletHandler(
 
     fun updateDaemon(node: Node?) {
         walletState.setLoading(true)
-        val wallet = WalletManager.instance?.wallet;
-        val walletManager = WalletManager.instance;
+        val wallet = WalletManager.instance?.wallet
+        val walletManager = WalletManager.instance
         wallet?.pauseRefresh()
         try {
             if (node != null) {
@@ -150,21 +150,21 @@ class AnonWalletHandler(
         val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
 
         if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
-            return Pair(proxyHost, proxyPort);
+            return Pair(proxyHost, proxyPort)
         }
         return null
     }
 
 
-    fun wipe(passPhrase:String): Boolean {
+    fun wipe(passPhrase: String): Boolean {
         WalletManager.instance?.wallet?.pauseRefresh()
         WalletManager.instance?.wallet?.stopBackgroundSync(passPhrase)
         WalletManager.instance?.setDaemon(null)
-        if( WalletManager.instance?.wallet?.close() == true){
+        if (WalletManager.instance?.wallet?.close() == true) {
             AnonConfig.context?.let { AnonConfig.getDefaultWalletDir(it) }
                 ?.deleteRecursively()
             return true
-        }else{
+        } else {
             throw UnableToCloseWallet()
         }
 
