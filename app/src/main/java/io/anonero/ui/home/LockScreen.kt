@@ -1,6 +1,7 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.content.SharedPreferences
 import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
@@ -32,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,17 +53,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.anonero.R
 import io.anonero.icons.AnonIcons
-import io.anonero.services.WalletState
+import io.anonero.model.WalletManager
 import io.anonero.ui.viewmodels.AppViewModel
 import io.anonero.util.ShakeConfig
+import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
+import io.anonero.util.shuffleExcept
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
-import org.koin.java.KoinJavaComponent.inject
+import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
 
 const val BackSpaceKey = -2
 const val ConfirmKey = -3
@@ -69,15 +74,20 @@ val keys = listOf(
     1, 2, 3, 4, 5, 6, 7, 8, 9, BackSpaceKey, 0, ConfirmKey
 )
 
+enum class LockScreenMode {
+    OPEN_WALLET, LOCK_SCREEN
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LockScreen(
-    openWallet: Boolean = true,
+    mode: LockScreenMode = LockScreenMode.OPEN_WALLET,
     onUnLocked: (String) -> Unit = {}
 ) {
     val view = LocalView.current
     val currentPin = remember { mutableStateListOf<Int>() }
     var pinError by remember { mutableStateOf(false) }
+    var pinKeys by remember { mutableStateOf(keys) }
     val errorColor: Color by animateColorAsState(
         if (pinError) MaterialTheme.colorScheme.error else Color.White, label = "error_anim"
     )
@@ -85,7 +95,11 @@ fun LockScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val appViewModel: AppViewModel = koinViewModel()
-    val walletState: WalletState by inject(WalletState::class.java)
+    val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
+
+    LaunchedEffect(true) {
+        pinKeys = keys.shuffleExcept(keys.indexOf(BackSpaceKey), keys.indexOf(ConfirmKey))
+    }
 
     fun showError() {
         errorShake.shake(
@@ -111,7 +125,7 @@ fun LockScreen(
         if (pin.length >= 4) {
             scope.launch(Dispatchers.IO) {
                 try {
-                    if (openWallet) {
+                    if (mode == LockScreenMode.OPEN_WALLET) {
                         val result = appViewModel.openWallet(pin)
                         withContext(Dispatchers.Main) {
                             if (result) {
@@ -122,7 +136,12 @@ fun LockScreen(
                             }
                         }
                     } else {
-                        onUnLocked(pin)
+                        //if wallet is already open, stop background sync from lock screen
+                        if (WalletManager.instance?.wallet?.stopBackgroundSync(pin) == true) {
+                            onUnLocked(pin)
+                        } else {
+                            showError()
+                        }
                     }
                 } catch (e: Exception) {
                     showError()
@@ -207,8 +226,8 @@ fun LockScreen(
                     contentPadding = PaddingValues(8.dp)
                 ) {
 
-                    items(keys.size) { index ->
-                        val key = keys[index]
+                    items(pinKeys.size) { index ->
+                        val key = pinKeys[index]
                         if (currentPin.size == 0 && key == BackSpaceKey) {
                             return@items
                         }
@@ -223,7 +242,7 @@ fun LockScreen(
                                 .combinedClickable(
                                     onClick = {
                                         if (key == BackSpaceKey && currentPin.isNotEmpty()) {
-                                            currentPin.removeLast()
+                                            currentPin.removeAt(currentPin.size - 1)
                                         } else if (key == ConfirmKey) {
                                             checkPin()
                                         } else {
