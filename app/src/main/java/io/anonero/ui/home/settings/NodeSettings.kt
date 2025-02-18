@@ -131,7 +131,18 @@ class NodeSettingsViewModel(
     fun validate(rpcUrl: String, rpcUsername: String, rpcPassPhrase: String): Node? {
         uriValidationError.postValue(null)
         try {
-            val validatedUrl = Uri.parse(rpcUrl)
+            val urlForParsing =
+                if (!rpcUrl.startsWith("http://") || !rpcUrl.startsWith("https://")) {
+                    "http://$rpcUrl"
+                } else {
+                    rpcUrl
+                }
+
+            val validatedUrl = Uri.parse(urlForParsing)
+            if (validatedUrl.host == null) {
+                uriValidationError.postValue("Invalid Url")
+                return null
+            }
             val nodeJson = JSONObject()
                 .apply {
                     put(NodeFields.RPC_HOST.value, validatedUrl.host)
@@ -147,7 +158,9 @@ class NodeSettingsViewModel(
                     )
                     put(NodeFields.NODE_NAME.value, "anon")
                 }
+
             return Node.fromJson(nodeJson)
+
         } catch (e: Exception) {
             uriValidationError.postValue(e.message)
             return null
