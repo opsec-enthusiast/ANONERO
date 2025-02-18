@@ -49,7 +49,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.anonero.AnonConfig.ONE_XMR
 import io.anonero.icons.AnonIcons
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
@@ -68,25 +67,36 @@ import timber.log.Timber
 private const val TAG = "Send"
 
 
+enum class SpendType {
+    NORMAL,
+    SWEEP
+}
+
 class SendViewModel : ViewModel() {
     private val walletState: WalletState by inject(WalletState::class.java)
     val balance = walletState.unLockedBalance.asLiveData()
     private val _paymentUri = MutableLiveData<SendScreenRoute?>(null)
+    private val _spendType = MutableLiveData(SpendType.NORMAL)
     val paymentUri = _paymentUri as LiveData<SendScreenRoute?>
+    val spendType = _spendType as LiveData<SpendType>
 
     suspend fun prepareTransaction(addressField: String, amount: String): PendingTransaction? {
-        val amountFromString = Wallet.getAmountFromString(amount)
-
+        val amountFromString: Long = Wallet.getAmountFromString(amount)
+        val wallet = WalletManager.instance?.wallet
         return withContext(Dispatchers.IO) {
             try {
-                if (amountFromString == balance.value) {
-                    WalletManager.instance?.wallet?.createSweepTransaction(
+                val balance = wallet?.unlockedBalance ?: 0L
+                if (spendType.value == SpendType.SWEEP) {
+                    if (wallet?.unlockedBalance != wallet?.balance) {
+                        return@withContext null
+                    }
+                    wallet?.createSweepTransaction(
                         dstAddr = addressField,
                         priority = PendingTransaction.Priority.Priority_Medium,
                         keyImages = arrayListOf()
                     )
                 } else {
-                    WalletManager.instance?.wallet?.createTransaction(
+                    wallet?.createTransaction(
                         dst_addr = addressField,
                         amount = amountFromString
                     )
@@ -104,6 +114,10 @@ class SendViewModel : ViewModel() {
                 _paymentUri.postValue(it)
             }
         }
+    }
+
+    fun setSpendType(type: SpendType) {
+        _spendType.postValue(type)
     }
 }
 
@@ -125,6 +139,7 @@ fun SendScreen(
     val sendViewModel = viewModel<SendViewModel>()
     val unlockedBalance by sendViewModel.balance.observeAsState(0L)
     val paymentUriFromScanner by sendViewModel.paymentUri.observeAsState(null)
+    val spendType by sendViewModel.spendType.observeAsState(SpendType.NORMAL)
     val view = LocalView.current
     val unLockedAmount = Formats.getDisplayAmount(
         unlockedBalance ?: 0L
@@ -149,17 +164,22 @@ fun SendScreen(
                     Wallet.getDisplayAmount(Wallet.getAmountFromString(it.amount.toString()))
         }
     }
-
-    val sweep = amountField == unLockedAmount
+    val sweep = spendType == SpendType.SWEEP
 
     LaunchedEffect(addressField, amountField) {
         scope.launch {
-            unlockedBalance?.let { balance ->
-                val maxFunds = 1.0 * balance / ONE_XMR
+            unlockedBalance?.let { maxSpendableBalance ->
                 val amountFromString = Wallet.getAmountFromString(amountField)
-                if (inValidAddress != true && balance != 0L && amountFromString <= maxFunds) {
-                    validSpend = true
+                validSpend = when {
+                    inValidAddress == true -> false
+                    amountFromString == 0L || maxSpendableBalance == 0L -> false
+                    amountFromString > maxSpendableBalance -> false
+                    else -> true
                 }
+            }
+        }.invokeOnCompletion {
+            if (it != null) {
+                Timber.tag(TAG).e(it)
             }
         }
     }
@@ -308,10 +328,12 @@ fun SendScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                amountField = if(amountField == unLockedAmount){
-                                    ""
-                                }else{
+                                amountField = if (!sweep) {
+                                    sendViewModel.setSpendType(SpendType.SWEEP)
                                     unLockedAmount
+                                } else {
+                                    sendViewModel.setSpendType(SpendType.NORMAL)
+                                    ""
                                 }
                             },
                         textAlign = TextAlign.Center,

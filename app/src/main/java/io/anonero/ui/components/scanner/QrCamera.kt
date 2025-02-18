@@ -13,6 +13,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -303,6 +304,14 @@ fun QRScanner(
                             previewView
                         },
                         update = { })
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+
+                    ) {
+                         drawRect(
+                            color = Color.Black.copy(alpha = 0.4f))
+                    }
                     Canvas(
                         modifier = Modifier
                             .size(240.dp)

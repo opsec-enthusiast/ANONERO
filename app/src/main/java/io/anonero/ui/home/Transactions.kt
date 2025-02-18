@@ -1,6 +1,7 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.content.SharedPreferences
 import android.icu.text.CompactDecimalFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -45,6 +46,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -54,11 +56,15 @@ import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.SendScreenRoute
 import io.anonero.util.Formats
+import io.anonero.util.KeyStoreHelper
+import io.anonero.util.PREFS_PASSPHRASE_HASH
+import io.anonero.util.WALLET_PREFERENCES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
 
@@ -88,6 +94,7 @@ fun TransactionScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showLockScreen by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
+
     val scope = rememberCoroutineScope()
     if (showLockScreen) {
         Dialog(
@@ -101,10 +108,9 @@ fun TransactionScreen(
                 showLockScreen = false
             }) {
             LockScreen(
-                openWallet = false,
+                mode = LockScreenMode.LOCK_SCREEN,
                 onUnLocked = {
-                    showLockScreen = false
-                    WalletManager.instance?.wallet?.stopBackgroundSync(it)
+                        showLockScreen = false
                 }
             )
         }
@@ -234,9 +240,11 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 contentDescription = ""
             )
             Spacer(modifier = Modifier.size(8.dp))
-            Text(Formats.getDisplayAmount(amount),
+            Text(
+                Formats.getDisplayAmount(amount),
                 textAlign = TextAlign.Start,
-                style = MaterialTheme.typography.titleMedium)
+                style = MaterialTheme.typography.titleMedium
+            )
         }
         Text(
             Formats.formatTransactionTime(tx.timestamp),
