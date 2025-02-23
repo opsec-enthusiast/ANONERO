@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">anonnero</string>
-    <string name="title_activity_wallet_test">WalletTest</string>
-    <string name="title_activity_home">HomeActivity</string>
+    <string name="in_order_for_to_function_properly">In order for <b>ΛИ0ИΞR0</b> to function properly in the background, it is recommended to disable battery optimization.\nYou can change this setting anytime in Android\'s app settings.\n\nWould you like to proceed?</string>
+
 </resources>
