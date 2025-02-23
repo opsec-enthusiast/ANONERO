@@ -3,6 +3,8 @@ package io.anonero.ui.components.scanner
 import android.graphics.ImageFormat
 import android.media.Image
 import android.util.Log
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import boofcv.factory.fiducial.FactoryFiducial
@@ -97,6 +99,7 @@ class QrCodeAnalyzerBoofcv(
         return invertedImage
     }
 
+    @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         if (debugI % 100 == 10) {
             Timber.tag("QrCodeAnalyzerBoofcv.kt").d( "$debugI analyze(image: ImageProxy)")

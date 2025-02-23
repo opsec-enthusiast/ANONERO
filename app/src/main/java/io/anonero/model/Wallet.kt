@@ -217,7 +217,7 @@ class Wallet {
 
     private external fun getConnectionStatusJ(): Int
 
-    external fun setTrustedDaemon(trusted: Boolean)
+    external fun setTrustedDaemon(trusted: Boolean): Boolean
 
     fun setProxy(address: String?): Boolean {
         return setProxyJ(address)

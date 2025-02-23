@@ -2,6 +2,7 @@ package io.anonero.ui.onboard
 
 import AnonNeroTheme
 import android.content.Context
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +51,6 @@ import io.anonero.store.NodesRepository
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.koin.compose.koinInject
-import java.net.URI
 
 
 @Composable
@@ -63,6 +64,8 @@ fun SetupNodeComposable(
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
     val nodesRepository = koinInject<NodesRepository>()
+    val nodes by nodesRepository.nodesFlow.collectAsState(listOf())
+
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
@@ -226,20 +229,27 @@ fun SetupNodeComposable(
                         )
                         val editor = prefs.edit()
 
-                        var rpcPort = Node.defaultRpcPort.toString()
+                        val rpcPort = Node.defaultRpcPort.toString()
                         try {
-                            val uri = URI(rpcHost.trim())
-                            if (uri.port != -1) {
-                                rpcPort = uri.port.toString()
+                            val cleanURL = rpcHost.trim().lowercase()
+                            val urlForParsing = if (cleanURL.startsWith("http")) {
+                                cleanURL
+                            } else {
+                                if (cleanURL.startsWith("https")) {
+                                    cleanURL
+                                } else {
+                                    "http://$cleanURL"
+                                }
                             }
-                            editor.putString(NodeFields.RPC_HOST.value, uri.host)
+                            val validatedUrl = Uri.parse(urlForParsing)
+                            editor.putString(NodeFields.RPC_HOST.value, validatedUrl.host)
                             editor.putString(NodeFields.RPC_PORT.value, rpcPort)
                             editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
                             editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
                             editor.apply()
                             val nodeObj = JSONObject()
                                 .apply {
-                                    put(NodeFields.RPC_HOST.value, uri.host)
+                                    put(NodeFields.RPC_HOST.value, validatedUrl.host)
                                     put(NodeFields.RPC_PORT.value, rpcPort)
                                     put(NodeFields.RPC_USERNAME.value, rpcUsername)
                                     put(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
@@ -247,9 +257,11 @@ fun SetupNodeComposable(
                                         NodeFields.RPC_NETWORK.value,
                                         AnonConfig.getNetworkType().toString()
                                     )
-                                    put(NodeFields.NODE_NAME.value, "anon-${uri.host}")
+                                    put(NodeFields.NODE_NAME.value, validatedUrl.host)
                                 }
-                            Node.fromJson(nodeObj)?.let { nodesRepository.addItem(it) }
+                            Node.fromJson(nodeObj)?.let {
+                                nodesRepository.addItem(it)
+                            }
                             oNextPressed()
                         } catch (_: Exception) {
                         }

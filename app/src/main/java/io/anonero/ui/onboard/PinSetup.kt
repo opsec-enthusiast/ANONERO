@@ -168,7 +168,7 @@ fun PinSetup(
                                 .combinedClickable(
                                     onClick = {
                                         if (key == BackSpaceKey && currentPin.isNotEmpty()) {
-                                            currentPin.removeLast()
+                                            currentPin.removeAt(currentPin.size - 1)
                                         } else if (key == ConfirmKey) {
                                             if (confirming) {
                                                 if (currentPin.joinToString() == pinEntered.joinToString()) {

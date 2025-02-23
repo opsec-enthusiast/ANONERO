@@ -19,6 +19,7 @@ data class BottomNavigationItem(
 
     val getRouteAsString
         get(): String {
+
             return route::class.qualifiedName ?: ""
         }
 }

@@ -86,12 +86,11 @@ import org.json.JSONObject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.java.KoinJavaComponent.inject
 
-private const val TAG = "NodeSettings"
-
 class NodeSettingsViewModel(
     private val prefs: SharedPreferences,
     private val nodesRepository: NodesRepository
 ) : ViewModel() {
+
     private val walletState: WalletState by inject(WalletState::class.java)
     private val walletHandler: AnonWalletHandler by inject(AnonWalletHandler::class.java)
     private val uriValidationError = MutableLiveData<String?>()
@@ -131,13 +130,16 @@ class NodeSettingsViewModel(
     fun validate(rpcUrl: String, rpcUsername: String, rpcPassPhrase: String): Node? {
         uriValidationError.postValue(null)
         try {
-            val urlForParsing =
-                if (!rpcUrl.startsWith("http://") || !rpcUrl.startsWith("https://")) {
-                    "http://$rpcUrl"
+            val cleanURL = rpcUrl.trim().lowercase()
+            val urlForParsing = if (cleanURL.startsWith("http")) {
+                cleanURL
+            } else {
+                if (cleanURL.startsWith("https")) {
+                    cleanURL
                 } else {
-                    rpcUrl
+                    "http://$cleanURL"
                 }
-
+            }
             val validatedUrl = Uri.parse(urlForParsing)
             if (validatedUrl.host == null) {
                 uriValidationError.postValue("Invalid Url")

@@ -1,7 +1,6 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.content.SharedPreferences
 import android.icu.text.CompactDecimalFormat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -11,12 +10,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,7 +47,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -56,15 +56,12 @@ import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.SendScreenRoute
 import io.anonero.util.Formats
-import io.anonero.util.KeyStoreHelper
-import io.anonero.util.PREFS_PASSPHRASE_HASH
-import io.anonero.util.WALLET_PREFERENCES
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
-import org.koin.core.qualifier.named
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
 
@@ -85,7 +82,8 @@ class TransactionsViewModel : ViewModel() {
 fun TransactionScreen(
     modifier: Modifier = Modifier,
     onItemClick: (TransactionInfo) -> Unit = {},
-    navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {}
+    navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {},
+    navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {}
 ) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
@@ -93,29 +91,41 @@ fun TransactionScreen(
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showLockScreen by remember { mutableStateOf(false) }
+    var settingBSync by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
+    val walletState = koinInject<WalletState>()
 
     val scope = rememberCoroutineScope()
     if (showLockScreen) {
         Dialog(
             properties = DialogProperties(
-                decorFitsSystemWindows = false,
                 usePlatformDefaultWidth = false,
                 dismissOnClickOutside = false,
-                dismissOnBackPress = false
+                dismissOnBackPress = false,
+                decorFitsSystemWindows = false
             ),
             onDismissRequest = {
                 showLockScreen = false
             }) {
             LockScreen(
                 mode = LockScreenMode.LOCK_SCREEN,
-                onUnLocked = {
+                modifier = Modifier.fillMaxHeight(0.95f),
+                onUnLocked = { _, shortCut ->
+                    scope.launch {
+                        walletState.setBackGroundSync(false)
+                        if (shortCut != LockScreenShortCut.HOME) {
+                            navigateToShortCut(shortCut)
+                            delay(130)
+                        }
                         showLockScreen = false
+                        withContext(Dispatchers.IO) {
+                            walletState.update()
+                        }
+                    }
                 }
             )
         }
     }
-
 
     QRScannerDialog(
         show = showScanner,
@@ -152,8 +162,24 @@ fun TransactionScreen(
                 actions = {
                     LockButton(
                         onLock = {
-                            showLockScreen = true
-                        }
+                            scope.launch {
+                                try {
+                                    settingBSync = true
+                                    walletState.blockUpdates(true)
+                                    withContext(Dispatchers.IO) {
+                                        WalletManager.instance?.wallet?.let { wallet: Wallet ->
+                                            if (wallet.startBackgroundSync()) {
+                                                walletState.setBackGroundSync(true)
+                                                showLockScreen = true
+                                            }
+                                        }
+                                    }
+                                } finally {
+                                    walletState.blockUpdates(false)
+                                    settingBSync = false
+                                }
+                            }
+                        }, loading = settingBSync
                     )
                     IconButton(
                         onClick = {
@@ -254,25 +280,23 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun LockButton(modifier: Modifier = Modifier, onLock: () -> Unit) {
+fun LockButton(onLock: () -> Unit, loading: Boolean = false) {
     val walletState = koinInject<WalletState>()
-    val scope = rememberCoroutineScope()
-    val isLoading by walletState.isLoading.asLiveData().observeAsState(false)
+    val walletLoading by walletState.isLoading.asLiveData().observeAsState(false)
     IconButton(
-        modifier = Modifier.alpha(if (isLoading) 0.2f else 1.0f),
+        modifier = Modifier.alpha(if (walletLoading) 0.2f else 1.0f),
         onClick = {
-            if (isLoading) {
+            if (walletLoading || loading) {
                 return@IconButton
             }
-            scope.launch {
-                WalletManager.instance?.wallet?.let { wallet: Wallet ->
-                    onLock()
-                    wallet.startBackgroundSync()
-                }
-            }
+            onLock()
         }
     ) {
-        Icon(Icons.Default.Lock, contentDescription = "Lock")
+        if (loading) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Default.Lock, contentDescription = "Lock")
+        }
     }
 }
 

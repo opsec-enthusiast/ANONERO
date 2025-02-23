@@ -38,8 +38,6 @@ class TransactionHistory(private val handle: Long, var accountIndex: Int) {
 
     external fun getCount(): Int
 
-    external fun parseUri(): Int
-
     fun refreshWithNotes(wallet: Wallet) {
         refresh()
         loadNotes(wallet)

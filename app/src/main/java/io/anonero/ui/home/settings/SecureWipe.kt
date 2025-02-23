@@ -1,9 +1,11 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import android.app.Activity
 import android.content.SharedPreferences
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -61,6 +63,7 @@ import io.anonero.AnonConfig
 import io.anonero.services.AnonWalletHandler
 import io.anonero.store.LogRepository
 import io.anonero.store.NodesRepository
+import io.anonero.ui.MainActivity
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.ShakeConfig
@@ -92,8 +95,9 @@ class SecureWipeViewModel(
     private val _wipeProgress = MutableLiveData(0.1f)
     val wipeProgress: LiveData<Float> = _wipeProgress
 
-    fun wipe(passPhrase: String): Job {
+    fun wipe(passPhrase: String, activity: Activity): Job {
         return viewModelScope.launch(Dispatchers.IO) {
+            (activity as MainActivity).stopNotificationService()
             _wipeProgress.postValue(.3f)
             _wipeProgressMessage.postValue("Wiping Wallet")
             anonWalletHandler.wipe(passPhrase)
@@ -142,6 +146,7 @@ fun SecureWipe(
     val progressMessage by secureWipeViewModel.wipeProgressMessage.observeAsState(null)
     val wipeProgress by secureWipeViewModel.wipeProgress.observeAsState(.1f)
     val view = LocalView.current
+    val activity = LocalActivity.current
 
     BackHandler {
         progressMessage != null
@@ -184,21 +189,23 @@ fun SecureWipe(
                 if (seed != null) {
                     passPhraseDialog = false
                     HapticFeedbackConstants.CONTEXT_CLICK
-                    secureWipeViewModel.wipe(passPhrase)
-                        .invokeOnCompletion {
-                            if (it == null) {
-                                view.performHapticFeedback(
-                                    HapticFeedbackConstants.CONTEXT_CLICK
-                                )
-                                scope.launch(Dispatchers.Main) {
-                                    goToHome()
+                    activity?.let { activity ->
+                        secureWipeViewModel.wipe(passPhrase, activity)
+                            .invokeOnCompletion {
+                                if (it == null) {
+                                    view.performHapticFeedback(
+                                        HapticFeedbackConstants.CONTEXT_CLICK
+                                    )
+                                    scope.launch(Dispatchers.Main) {
+                                        goToHome()
+                                    }
+                                } else {
+                                    Timber.tag(TAG).e(it)
+                                    error = it.message
+                                    requestClearScreen(false)
                                 }
-                            } else {
-                                Timber.tag(TAG).e(it)
-                                error = it.message
-                                requestClearScreen(false)
                             }
-                        }
+                    }
                 }
             } else {
                 errorShake.shake(

@@ -1,10 +1,11 @@
 package io.anonero.ui.home.graph.routes
 
+import io.anonero.ui.home.LockScreenShortCut
 import kotlinx.serialization.Serializable
 
 
 @Serializable
-data object HomeScreenRoute
+data class HomeScreenRoute(val lockScreenShortCut: LockScreenShortCut? = null)
 
 @Serializable
 data object LockScreenRoute

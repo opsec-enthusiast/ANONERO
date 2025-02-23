@@ -3,6 +3,7 @@ package io.anonero
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.util.Log
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
 import io.anonero.store.LogRepository
@@ -37,6 +38,7 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
 
     }
 
+
     private fun plantLog() {
 
         anonLogTree = AnonLogTree(AnonConfig.getLogFile(applicationContext), get<LogRepository>())
@@ -65,7 +67,7 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         val foregroundChannel = NotificationChannel(
             FOREGROUND_CHANNEL,
             "AnonNero Service",
-            NotificationManager.IMPORTANCE_HIGH,
+            NotificationManager.IMPORTANCE_LOW,
         )
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(foregroundChannel)

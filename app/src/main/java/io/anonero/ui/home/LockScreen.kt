@@ -1,9 +1,9 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.content.SharedPreferences
+import android.util.Log
 import android.view.HapticFeedbackConstants
-import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,9 +44,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,9 +56,10 @@ import androidx.compose.ui.unit.dp
 import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.WalletManager
+import io.anonero.services.WalletState
+import io.anonero.ui.MainActivity
 import io.anonero.ui.viewmodels.AppViewModel
 import io.anonero.util.ShakeConfig
-import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
 import io.anonero.util.shuffleExcept
@@ -64,9 +67,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
-import org.koin.core.qualifier.named
+import timber.log.Timber
 
 const val BackSpaceKey = -2
 const val ConfirmKey = -3
@@ -74,28 +78,37 @@ val keys = listOf(
     1, 2, 3, 4, 5, 6, 7, 8, 9, BackSpaceKey, 0, ConfirmKey
 )
 
+@Serializable
 enum class LockScreenMode {
     OPEN_WALLET, LOCK_SCREEN
 }
 
+@Serializable
+enum class LockScreenShortCut {
+    HOME, RECEIVE, SEND
+}
+
+private const val TAG = "LockScreen"
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LockScreen(
+    modifier: Modifier = Modifier,
     mode: LockScreenMode = LockScreenMode.OPEN_WALLET,
-    onUnLocked: (String) -> Unit = {}
+    onUnLocked: (String, LockScreenShortCut) -> Unit = { _, _ -> }
 ) {
     val view = LocalView.current
+    val activity = LocalActivity.current
     val currentPin = remember { mutableStateListOf<Int>() }
     var pinError by remember { mutableStateOf(false) }
     var pinKeys by remember { mutableStateOf(keys) }
+    val walletState = koinInject<WalletState>()
     val errorColor: Color by animateColorAsState(
         if (pinError) MaterialTheme.colorScheme.error else Color.White, label = "error_anim"
     )
     val errorShake = rememberShakeController()
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val appViewModel: AppViewModel = koinViewModel()
-    val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
 
     LaunchedEffect(true) {
         pinKeys = keys.shuffleExcept(keys.indexOf(BackSpaceKey), keys.indexOf(ConfirmKey))
@@ -120,7 +133,7 @@ fun LockScreen(
         }
     }
 
-    fun checkPin() {
+    fun checkPin(shortCut: LockScreenShortCut) {
         val pin = currentPin.joinToString(separator = "")
         if (pin.length >= 4) {
             scope.launch(Dispatchers.IO) {
@@ -130,22 +143,35 @@ fun LockScreen(
                         withContext(Dispatchers.Main) {
                             if (result) {
                                 appViewModel.startService()
-                                onUnLocked(pin)
+                                withContext(Dispatchers.Main) {
+                                    onUnLocked(pin, shortCut)
+                                    (activity as MainActivity).startNotificationService()
+                                }
                             } else {
-                                showError()
+                                withContext(Dispatchers.Main) {
+                                    showError()
+                                }
                             }
                         }
                     } else {
                         //if wallet is already open, stop background sync from lock screen
-                        if (WalletManager.instance?.wallet?.stopBackgroundSync(pin) == true) {
-                            onUnLocked(pin)
-                        } else {
-                            showError()
+                        try {
+                            walletState.blockUpdates(true)
+                            if (WalletManager.instance?.wallet?.stopBackgroundSync(pin) == true) {
+                                onUnLocked(pin, shortCut)
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    showError()
+                                }
+                            }
+                        } finally {
+                            walletState.blockUpdates(false)
                         }
                     }
                 } catch (e: Exception) {
+                    e.printStackTrace()
+                    Timber.tag(TAG).i("checkPin: %s", e.message)
                     showError()
-                    Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         } else {
@@ -154,13 +180,12 @@ fun LockScreen(
 
     }
 
-    Scaffold { paddingValues ->
+    Scaffold(modifier = modifier) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.SpaceAround,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
@@ -210,22 +235,22 @@ fun LockScreen(
                 }
 
             }
-            Box(
+            Column(
                 modifier = Modifier
-                    .weight(.9f)
-                    .wrapContentHeight()
+                    .weight(.8f)
+                    .wrapContentHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 LazyVerticalGrid(
                     modifier = Modifier
-                        .padding(top = 34.dp)
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 24.dp, vertical = 0.dp),
                     columns = GridCells.Fixed(3),
                     verticalArrangement = Arrangement.Top,
                     horizontalArrangement = Arrangement.Center,
-                    contentPadding = PaddingValues(8.dp)
+                    contentPadding = PaddingValues(
+                        vertical = 8.dp,
+                    )
                 ) {
-
                     items(pinKeys.size) { index ->
                         val key = pinKeys[index]
                         if (currentPin.size == 0 && key == BackSpaceKey) {
@@ -236,15 +261,14 @@ fun LockScreen(
                         }
                         Column(
                             modifier = Modifier
-                                .size(120.dp)
+                                .size(100.dp)
                                 .clip(shape = CircleShape)
-                                .align(Alignment.Center)
                                 .combinedClickable(
                                     onClick = {
                                         if (key == BackSpaceKey && currentPin.isNotEmpty()) {
                                             currentPin.removeAt(currentPin.size - 1)
                                         } else if (key == ConfirmKey) {
-                                            checkPin()
+                                            checkPin(LockScreenShortCut.HOME)
                                         } else {
                                             if (currentPin.size < 12) {
                                                 currentPin.add(key)
@@ -263,7 +287,6 @@ fun LockScreen(
                                                 HapticFeedbackConstants.LONG_PRESS
                                             )
                                         }
-
                                     },
                                 ),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -291,6 +314,35 @@ fun LockScreen(
                     }
                 }
 
+                Row(
+                    modifier = Modifier
+                        .alpha(if (currentPin.size > 4) 1f else 0f)
+                        .wrapContentHeight(),
+                ) {
+                    IconButton(onClick = {
+                        if (currentPin.size > 4)
+                            checkPin(LockScreenShortCut.RECEIVE)
+                    }) {
+                        Icon(
+                            AnonIcons.ArrowDownLeft,
+                            contentDescription = "Receive",
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(24.dp))
+                    IconButton(onClick = {
+                        if (currentPin.size > 4)
+                            checkPin(LockScreenShortCut.SEND)
+                    }) {
+                        Icon(
+                            AnonIcons.ArrowUpRight,
+                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = "Send",
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+
+                }
             }
         }
     }

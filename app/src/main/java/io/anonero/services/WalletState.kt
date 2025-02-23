@@ -11,14 +11,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import timber.log.Timber
 
 data class SyncProgress(val progress: Float, val left: Long)
 
 private const val TAG = "WalletState"
 
 class WalletState {
-    private val _wallet = MutableStateFlow<Wallet?>(null)
+    private var _blockUpdates = false
     private val _isLoading = MutableStateFlow(false)
+    private var _isSyncing = false
+    private var _backgroundSync = false
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
     private val _subAddresses = MutableStateFlow<List<Subaddress>>(listOf())
     private val _balanceInfo = MutableStateFlow<Long?>(null)
@@ -33,6 +36,8 @@ class WalletState {
     val balanceInfo: Flow<Long?> = _balanceInfo
     val unLockedBalance: Flow<Long?> = _unLockedBalance
     val isLoading: Flow<Boolean> = _isLoading
+    val isSyncing get():Boolean = _isSyncing
+    val backgroundSync get():Boolean = _backgroundSync
 
     val walletStatus: Flow<Wallet.Status?> = _walletStatus
     val syncProgress: Flow<SyncProgress?> = _syncProgress
@@ -47,11 +52,15 @@ class WalletState {
     val daemonInfo: Flow<DaemonInfo?> = _connectedDaemon
 
     fun update() {
+        if (_blockUpdates) return
         getWallet?.let { wallet ->
             if (wallet.isInitialized) {
                 _balanceInfo.update { wallet.balance }
                 _unLockedBalance.update { wallet.unlockedBalance }
                 _walletStatus.update { wallet.fullStatus }
+                if (wallet.status.errorString.isNotEmpty()) {
+                    Timber.tag(TAG).i("StatusError %s", wallet.status.errorString)
+                }
                 val address = try {
                     WalletManager.instance?.getDaemonAddress()
                 } catch (_: Exception) {
@@ -75,9 +84,10 @@ class WalletState {
                     )
                 }) ?: listOf())
             }
-            _nextAddress.update { (wallet.getLatestSubAddress()) }
-            _subAddresses.update { (wallet.getAllUsedSubAddresses().reversed()) }
-
+            if (!backgroundSync) {
+                _nextAddress.update { (wallet.getLatestSubAddress()) }
+                _subAddresses.update { (wallet.getAllUsedSubAddresses().reversed()) }
+            }
         }
     }
 
@@ -91,6 +101,15 @@ class WalletState {
 
     fun syncUpdate(syncProgress: SyncProgress) {
         _syncProgress.update { syncProgress }
+        _isSyncing = !(syncProgress.progress == 1f || syncProgress.left == 0L)
+    }
+
+    fun blockUpdates(update: Boolean) {
+        _blockUpdates = update
+    }
+
+    fun setBackGroundSync(startBackgroundSync: Boolean) {
+        _backgroundSync = startBackgroundSync
     }
 
     private val getWallet get() = WalletManager.instance?.wallet

@@ -1,5 +1,6 @@
 package io.anonero.ui.home.graph
 
+import android.util.Log
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -15,15 +16,15 @@ import io.anonero.ui.home.graph.routes.LockScreenRoute
 fun NavGraphBuilder.homeGraph(navController: NavHostController) {
     val walletStatus = WalletManager.instance?.wallet?.status?.isOk
     navigation<Home>(
-        startDestination = if (walletStatus == true) HomeScreenRoute else LockScreenRoute
+        startDestination = if (walletStatus == true) HomeScreenRoute() else LockScreenRoute
     ) {
         composable<HomeScreenRoute> {
             HomeScreenComposable(mainNavController = navController)
         }
         composable<LockScreenRoute> {
             LockScreen(
-                onUnLocked = {
-                    navController.navigate(HomeScreenRoute) {
+                onUnLocked =  { _, shortCut ->
+                    navController.navigate(HomeScreenRoute(shortCut)) {
                         popUpTo(LockScreenRoute) {
                             inclusive = true
                         }

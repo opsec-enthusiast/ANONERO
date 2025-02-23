@@ -34,8 +34,9 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
             val context = AnonConfig.context!!.applicationContext
-            context.filesDir.deleteRecursively()
             val walletFile = AnonConfig.getDefaultWalletFile(context)
+            AnonConfig.getDefaultWalletDir(context).deleteRecursively()
+            AnonConfig.getDefaultWalletDir(context).mkdirs()
             val anonWallet = WalletManager.instance?.createWallet(
                 walletFile,
                 pin,

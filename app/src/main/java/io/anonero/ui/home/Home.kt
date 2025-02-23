@@ -1,28 +1,43 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -31,6 +46,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import io.anonero.R
 import io.anonero.ui.home.addresses.SubAddressesScreen
 import io.anonero.ui.home.graph.routes.HomeScreenRoute
 import io.anonero.ui.home.graph.routes.ProxySettingsRoute
@@ -55,7 +71,9 @@ import io.anonero.ui.home.settings.SeedSettingsPage
 import io.anonero.ui.home.settings.SettingsPage
 import io.anonero.ui.home.spend.ReviewTransactionScreen
 import io.anonero.ui.onboard.graph.LandingScreenRoute
+import io.anonero.util.isIgnoringBatteryOptimizations
 
+@SuppressLint("BatteryLife")
 @Composable
 fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHostController?) {
 
@@ -68,8 +86,72 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
     )
     var showBottomNavigation by remember { mutableStateOf(true) }
     val bottomNavController = rememberNavController()
+    val context = LocalContext.current
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: TransactionsRoute
+    var showBatteryManagerDialog by remember { mutableStateOf(false) }
+
+    val homeScreenRoute =
+        mainNavController?.currentBackStackEntryAsState()?.value?.toRoute<HomeScreenRoute>()
+
+    val startDestination: Any = when( homeScreenRoute?.lockScreenShortCut){
+        LockScreenShortCut.HOME -> TransactionsRoute
+        LockScreenShortCut.RECEIVE -> ReceiveRoute
+        LockScreenShortCut.SEND -> SendScreenRoute(address = "")
+        null -> TransactionsRoute
+    }
+
+    LaunchedEffect(true) {
+        if (!context.isIgnoringBatteryOptimizations()) {
+            showBatteryManagerDialog = true
+        }
+    }
+
+    if (showBatteryManagerDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showBatteryManagerDialog = false
+            },
+            title = {
+                Text("Battery Optimization")
+            },
+            text = {
+                Text(
+                    stringResource(R.string.in_order_for_to_function_properly),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val intent = Intent()
+                        intent.action = ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        intent.data = Uri.parse("package:${context.packageName}")
+                        context.startActivity(intent)
+                        showBatteryManagerDialog = false
+                    }
+                ) {
+                    Text("Enable")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showBatteryManagerDialog = false
+                    }
+                ) {
+                    Text("Cancel", style = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSecondary))
+                }
+            },
+            modifier = Modifier.border(
+                1.dp,
+                color = MaterialTheme.colorScheme.onSecondary.copy(
+                    alpha = .2f
+                ),
+                shape = MaterialTheme.shapes.medium,
+            ),
+            containerColor = MaterialTheme.colorScheme.secondary,
+        )
+    }
 
     Scaffold(contentWindowInsets = WindowInsets(
         top = 0.dp, bottom = 0.dp
@@ -90,11 +172,16 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 contentColor = MaterialTheme.colorScheme.primary,
             ) {
                 getRoutes().forEach { item ->
+                    val isSelected = if (currentRoute is String) {
+                        currentRoute.contains(item.getRouteAsString)
+                    } else {
+                        currentRoute == item.getRouteAsString
+                    }
                     NavigationBarItem(
-                        selected = currentRoute == item.getRouteAsString,
+                        selected = isSelected,
                         colors = navigationItemColors,
                         onClick = {
-                            if (currentRoute != item.getRouteAsString) {
+                            if (!isSelected) {
                                 bottomNavController.navigate(item.route) {
                                     popUpTo(bottomNavController.graph.startDestinationId)
                                     launchSingleTop = true
@@ -109,7 +196,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
 
     }) { paddingValues ->
         Box(modifier = modifier.padding(paddingValues)) {
-            NavHost(bottomNavController, startDestination = TransactionsRoute, exitTransition = {
+            NavHost(bottomNavController, startDestination = startDestination, exitTransition = {
                 fadeOut(animationSpec = tween(340))
             }, enterTransition = {
                 fadeIn(animationSpec = tween(340))
@@ -123,6 +210,18 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                                         transactionId = paymentId
                                     )
                                 )
+                            }
+                        },
+                        navigateToShortCut = {
+                            when (it) {
+                                LockScreenShortCut.HOME -> {}
+                                LockScreenShortCut.RECEIVE -> {
+                                    bottomNavController.navigate(ReceiveRoute)
+                                }
+
+                                LockScreenShortCut.SEND -> {
+                                    bottomNavController.navigate(SendScreenRoute(""))
+                                }
                             }
                         },
                         navigateToSend = {
@@ -160,7 +259,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     ReviewTransactionScreen(
                         route,
                         onFinished = {
-                            bottomNavController.navigate(HomeScreenRoute) {
+                            bottomNavController.navigate(HomeScreenRoute()) {
                                 popUpTo(TransactionsRoute) {
                                     inclusive = true
                                 }

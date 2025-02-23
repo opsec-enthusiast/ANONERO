@@ -1,6 +1,7 @@
 package io.anonero.store
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.core.Serializer
@@ -67,7 +68,11 @@ class NodesRepository(private val context: Context) {
     // Add a new item to the list
     suspend fun addItem(item: Node) {
         context.nodeDataStore.updateData { currentItems ->
-            currentItems + item
+            if(currentItems.find { it.toNodeString() == item.toNodeString() } == null) {
+                currentItems + item
+            } else {
+                currentItems
+            }
         }
     }
 
