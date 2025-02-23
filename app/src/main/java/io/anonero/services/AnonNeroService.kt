@@ -173,7 +173,7 @@ class AnonNeroService : Service() {
                 }
             }
             .setGroup("BackgroundService")
-            .setContentIntent(resultPendingIntent)
+//            .setContentIntent(resultPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
