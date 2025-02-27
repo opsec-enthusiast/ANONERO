@@ -48,3 +48,6 @@ data object SecureWipeRoute
 
 @Serializable
 data object SubAddressesRoute
+
+@Serializable
+data  class SubAddressDetailRoute(val subAddress: String)

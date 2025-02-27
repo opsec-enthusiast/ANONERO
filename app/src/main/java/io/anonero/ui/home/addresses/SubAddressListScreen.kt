@@ -2,11 +2,17 @@ package io.anonero.ui.home.addresses
 
 import AnonNeroTheme
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.anonero.model.Subaddress
+import io.anonero.model.TransactionInfo
 import io.anonero.services.WalletState
 import io.anonero.util.Formats
 import org.koin.java.KoinJavaComponent.inject
@@ -42,11 +50,14 @@ class SubAddressListViewModel : ViewModel() {
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun SubAddressesScreen(
     modifier: Modifier = Modifier,
-    onBackPress: () -> Unit = {}
+    onBackPress: () -> Unit = {},
+    navigateToDetails: (Subaddress) -> Unit = {},
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
 ) {
     BackHandler {
         onBackPress()
@@ -75,48 +86,62 @@ fun SubAddressesScreen(
                 }
             )
         }
-    ) {
-        LazyColumn(modifier = Modifier.padding(it)) {
+    ) { paddingValues ->
+        LazyColumn(modifier = Modifier.padding(paddingValues)) {
             items(addresses.size) {
                 val address = addresses[it]
-                ListItem(
-                    modifier = Modifier.padding(
-                        horizontal = 4.dp,
-                        vertical = 6.dp
-                    ),
-                    headlineContent = {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                address.displayLabel, color = MaterialTheme.colorScheme.primary,
+                with(sharedTransitionScope) {
+                    ListItem(
+                        modifier = Modifier
+                            .sharedElement(
+                                sharedTransitionScope.rememberSharedContentState(key = "${address.address}:${address.addressIndex}"),
+                                animatedVisibilityScope = animatedContentScope
                             )
-                            Text(
-                                Formats.getDisplayAmount(address.totalAmount),
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
+                            .padding(
+                                horizontal = 4.dp,
+                                vertical = 6.dp
                             )
-                        }
-                    },
-                    supportingContent = {
-                        Text(
-                            address.address,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Justify
-                        )
-                    },
-                )
+
+                            .clickable {
+                                navigateToDetails(address)
+                            },
+                        headlineContent = {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    address.displayLabel, color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    Formats.getDisplayAmount(address.totalAmount),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        },
+                        supportingContent = {
+                            SelectionContainer {
+                                Text(
+                                    address.squashedAddress,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Justify
+                                )
+                            }
+                        },
+                    )
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(device = "id:pixel_7_pro")
 @Composable
 private fun SubAddressScreenPrev() {
     AnonNeroTheme {
-        SubAddressesScreen()
+
     }
 }
