@@ -1,0 +1,157 @@
+package io.anonero.ui.home.addresses
+
+import AnonNeroTheme
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.anonero.model.Subaddress
+import io.anonero.model.TransactionInfo
+import io.anonero.services.WalletState
+import io.anonero.ui.home.TransactionItem
+import io.anonero.util.Formats
+import kotlinx.coroutines.flow.map
+import org.koin.java.KoinJavaComponent.inject
+
+class SubAddressDetail(subAddress: Subaddress) : ViewModel() {
+    private val walletState: WalletState by inject(WalletState::class.java)
+
+    val transactions = walletState.transactions
+        .map {
+            it.filter { txInfo ->
+                return@filter txInfo.addressIndex == subAddress.addressIndex
+                        && txInfo.direction == TransactionInfo.Direction.Direction_In
+            }
+        }.asLiveData()
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@Composable
+fun SubAddressDetailScreen(
+    modifier: Modifier = Modifier,
+    onBackPress: () -> Unit = {},
+    onTransactionClick: (TransactionInfo) -> Unit = {},
+    subAddress: Subaddress,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope
+) {
+
+    val subAddressDetailVm = viewModel {
+        SubAddressDetail(subAddress)
+    }
+    val transactions by subAddressDetailVm.transactions.observeAsState(listOf())
+
+    BackHandler {
+        onBackPress()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBackPress
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                title = {},
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(modifier = Modifier.padding(paddingValues)) {
+            item {
+                with(sharedTransitionScope) {
+                    ListItem(
+                        modifier = Modifier
+                            .sharedElement(
+                                sharedTransitionScope.rememberSharedContentState(key = "${subAddress.address}:${subAddress.addressIndex}"),
+                                animatedVisibilityScope = animatedContentScope
+                            )
+                            .padding(
+                                horizontal = 4.dp,
+                                vertical = 6.dp
+                            ),
+                        headlineContent = {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    subAddress.displayLabel,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    Formats.getDisplayAmount(subAddress.totalAmount),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        },
+                        supportingContent = {
+                            SelectionContainer {
+                                Text(
+                                    subAddress.address,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Justify
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+            items(transactions.size) {
+                with(sharedTransitionScope) {
+                    TransactionItem(transactions[it], Modifier
+                        .clickable {
+                            onTransactionClick(transactions[it])
+                        }.sharedElement(
+                            sharedTransitionScope.rememberSharedContentState(key = "${transactions[it].hash}"),
+                            animatedVisibilityScope = animatedContentScope
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(device = "id:pixel_7_pro")
+@Composable
+private fun SubAddressScreenPrev() {
+    AnonNeroTheme {
+
+    }
+}
