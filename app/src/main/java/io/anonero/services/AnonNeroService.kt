@@ -2,20 +2,16 @@ package io.anonero.services
 
 import android.app.Notification
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.provider.Settings
-import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.TaskStackBuilder
 import io.anonero.FOREGROUND_CHANNEL
 import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
-import io.anonero.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +20,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent.inject
-import timber.log.Timber
 
 const val NOTIFICATION_ID = 2
 
@@ -111,7 +106,11 @@ class AnonNeroService : Service() {
                         }
 
                         Wallet.ConnectionStatus.ConnectionStatus_Connected -> {
-                            "Synced: ${wallet.getBlockChainHeight()}"
+                            if (wallet.getBlockChainHeight() > 1) {
+                                "Synced: ${wallet.getBlockChainHeight()}"
+                            } else {
+                                "Syncing..."
+                            }
                         }
                     }
                 }
@@ -145,19 +144,20 @@ class AnonNeroService : Service() {
         progress: SyncProgress? = null
     ): Notification {
 
-        val mainActivityIndent = Intent(this, MainActivity::class.java)
-            .apply {
-                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("notification", true)
-            }
-
-        val resultPendingIntent: PendingIntent? = TaskStackBuilder.create(this).run {
-            addNextIntentWithParentStack(mainActivityIndent)
-            getPendingIntent(
-                0,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
+        //TODO: Add pending intent to open the app
+//        val mainActivityIndent = Intent(this, MainActivity::class.java)
+//            .apply {
+//                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+//                putExtra("notification", true)
+//            }
+//
+////        val resultPendingIntent: PendingIntent? = TaskStackBuilder.create(this).run {
+////            addNextIntentWithParentStack(mainActivityIndent)
+////            getPendingIntent(
+////                0,
+////                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+////            )
+////        }
 
         return NotificationCompat.Builder(this.applicationContext, FOREGROUND_CHANNEL)
             .setSmallIcon(R.drawable.anon_notification)
