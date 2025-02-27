@@ -186,23 +186,17 @@ public class KeyStoreHelper {
             throw new IllegalStateException("Could not load KeySotre", ex);
         }
         if (!keyStore.containsAlias(alias)) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                createKeysJBMR2(context, alias);
-            } else {
-                createKeysM(alias);
-            }
+            createKeysM(alias);
         }
     }
 
-    private static boolean deleteKeys(String alias) throws KeyStoreException {
+    private static void deleteKeys(String alias) throws KeyStoreException {
         KeyStore keyStore = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         try {
             keyStore.load(null);
             keyStore.deleteEntry(alias);
-            return true;
         } catch (IOException | NoSuchAlgorithmException | CertificateException ex) {
             ex.printStackTrace();
-            return false;
         }
     }
 

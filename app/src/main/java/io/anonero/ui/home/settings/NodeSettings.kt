@@ -265,6 +265,8 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
 
     if (showNodeDetails)
         ModalBottomSheet(
+            scrimColor = Color.Black.copy(alpha = .8f),
+            containerColor = Color.Transparent,
             onDismissRequest = {
                 showNodeDetails = false
             },
@@ -277,7 +279,6 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                     bottom = 24.dp
                 )
             },
-            containerColor = Color.Transparent,
         ) {
             NodeForm(onBackPress = {
                 scope.launch {

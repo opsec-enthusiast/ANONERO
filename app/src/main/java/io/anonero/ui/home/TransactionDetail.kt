@@ -2,8 +2,12 @@ package io.anonero.ui.home
 
 import AnonNeroTheme
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,12 +63,14 @@ import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun TransactionDetailScreen(
     modifier: Modifier = Modifier,
     transactionId: String,
-    onBackPress: () -> Unit = {}
+    onBackPress: () -> Unit = {},
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var transactionInfo: TransactionInfo? by remember { mutableStateOf(null) }
@@ -246,7 +252,20 @@ fun TransactionDetailScreen(
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 ) {
                     item {
-                        TransactionItem(tx = transactionInfo!!)
+                        with(sharedTransitionScope) {
+                            TransactionItem(
+                                tx = transactionInfo!!,
+                                modifier = Modifier
+                                    .clickable {
+
+                                    }.sharedElement(
+                                    sharedTransitionScope.rememberSharedContentState(
+                                        key = "${transactionInfo!!.hash}",
+                                    ),
+                                    animatedVisibilityScope = animatedContentScope
+                                )
+                            )
+                        }
                     }
                     item {
                         DetailItem(

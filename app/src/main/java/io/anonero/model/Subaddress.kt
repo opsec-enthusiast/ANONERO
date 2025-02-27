@@ -15,8 +15,10 @@
  */
 package io.anonero.model
 
+import kotlinx.serialization.Serializable
 import java.util.regex.Pattern
 
+@Serializable
 class Subaddress(
     private val accountIndex: Int,
     val addressIndex: Int,

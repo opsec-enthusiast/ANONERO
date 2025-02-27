@@ -25,20 +25,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object LandingScreenRoute
 
-//Onboarding
-@Serializable
-data object OnboardingScreen
-
-//nested onboarding screens
-
 @Serializable
 data object OnboardingWelcomeScreen
-
-@Serializable
-data class OnboardingNodeSetupScreen(val restoreWallet: Boolean)
-
-@Serializable
-data object OnboardMnemonicScreen
 
 @Serializable
 data object OnboardPassPhraseScreen
@@ -54,13 +42,6 @@ data object OnboardPinScreen
 
 @Serializable
 data object OnboardNodeSetupScreen
-
-//End onboarding
-enum class PinEntryType {
-    Verify,
-    Create
-}
-
 
 //onboarding
 fun NavGraphBuilder.onboardingGraph(
@@ -100,7 +81,7 @@ fun NavGraphBuilder.onboardingGraph(
                 }
             )
         }
-        composable<OnboardPassPhraseScreen> { navBackStackEntry ->
+        composable<OnboardPassPhraseScreen> {
             SetupPassphrase(
                 onBackPressed = {
                     navController.navigateUp()
@@ -112,7 +93,7 @@ fun NavGraphBuilder.onboardingGraph(
             )
         }
 
-        composable<OnboardPinScreen> { navBackStackEntry ->
+        composable<OnboardPinScreen> {
             PinSetup(
                 onNext = { pin ->
                     navController.navigate(OnboardLoading("Creating wallet..."))

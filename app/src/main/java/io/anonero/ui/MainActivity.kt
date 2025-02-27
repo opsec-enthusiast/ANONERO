@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,7 +20,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.asLiveData
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.WalletState
 import io.anonero.services.startAnonService
@@ -46,8 +46,6 @@ class MainActivity : ComponentActivity() {
             appViewModel.isReady
         }
         if (intent.hasExtra("notification")) {
-            stopNotificationService()
-            WalletManager.instance?.wallet?.close()
             walletState.setBackGroundSync(false)
             walletState.update()
         }

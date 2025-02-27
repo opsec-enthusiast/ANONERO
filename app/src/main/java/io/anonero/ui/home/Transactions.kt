@@ -2,6 +2,9 @@ package io.anonero.ui.home
 
 import AnonNeroTheme
 import android.icu.text.CompactDecimalFormat
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
@@ -77,13 +80,18 @@ class TransactionsViewModel : ViewModel() {
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
 fun TransactionScreen(
     modifier: Modifier = Modifier,
     onItemClick: (TransactionInfo) -> Unit = {},
     navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {},
-    navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {}
+    navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {},
+    animatedContentScope: AnimatedContentScope,
+    sharedTransitionScope: SharedTransitionScope
 ) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
@@ -217,9 +225,20 @@ fun TransactionScreen(
                     }
                 }
                 items(transactions.size) {
-                    TransactionItem(transactions[it], Modifier.clickable {
-                        onItemClick(transactions[it])
-                    })
+                    with(sharedTransitionScope) {
+                        TransactionItem(
+                            transactions[it],  modifier = Modifier
+                                .clickable {
+                                    onItemClick(transactions[it])
+                                }
+                                .sharedElement(
+                                sharedTransitionScope.rememberSharedContentState(
+                                    key = "${transactions[it].hash}",
+                                ),
+                                animatedVisibilityScope = animatedContentScope
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -304,8 +323,9 @@ fun LockButton(onLock: () -> Unit, loading: Boolean = false) {
 @Composable
 private fun TransactionScreenReview() {
     AnonNeroTheme {
-        TransactionScreen(
-
-        )
+//        TransactionScreen(
+//            animatedContentScope = this@composable,
+//            sharedTransitionScope = this@SharedTransitionLayout
+//        )
     }
 }

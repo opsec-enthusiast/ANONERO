@@ -17,8 +17,7 @@ object AnonConfig {
     var context: AnonApplication? = null
 
     fun getNetworkType(): NetworkType {
-        @Suppress("KotlinConstantConditions")
-        if (BuildConfig.BUILD_TYPE == "stageNet") {
+        if (BuildConfig.APPLICATION_ID.lowercase().contains("stagenet")) {
             return NetworkType.NetworkType_Stagenet
         }
         return NetworkType.NetworkType_Mainnet

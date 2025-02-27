@@ -7,7 +7,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,7 +36,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.model.Subaddress
-import io.anonero.model.TransactionInfo
 import io.anonero.services.WalletState
 import io.anonero.util.Formats
 import org.koin.java.KoinJavaComponent.inject
@@ -137,7 +135,6 @@ fun SubAddressesScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Preview(device = "id:pixel_7_pro")
 @Composable
 private fun SubAddressScreenPrev() {
