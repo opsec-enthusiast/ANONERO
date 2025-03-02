@@ -71,7 +71,7 @@ fun NavGraphBuilder.onboardingGraph(
                 },
                 onCreateClick = {
                     onboardViewModel.setMode(Mode.CREATE)
-                    
+
                     navController.navigate(OnboardNodeSetupScreen)
                 },
                 onProxySettings = {
