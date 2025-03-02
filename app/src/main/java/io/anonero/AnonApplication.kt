@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.util.Log
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
+import io.anonero.services.TorService
 import io.anonero.store.LogRepository
 import io.anonero.ui.util.AnonLogTree
 import org.koin.android.ext.android.get
@@ -35,7 +36,8 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         plantLog()
 
         Thread.setDefaultUncaughtExceptionHandler(this)
-
+        val torService:TorService = get()
+        torService.start()
     }
 
 
@@ -74,7 +76,9 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
     }
 
     override fun onTerminate() {
+        val torService:TorService = get()
         super.onTerminate()
+        torService.dispose()
         anonLogTree.cleanup()
     }
 

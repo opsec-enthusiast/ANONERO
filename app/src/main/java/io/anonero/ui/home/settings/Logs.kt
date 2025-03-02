@@ -162,7 +162,6 @@ fun LogViewer(
                 actions = {
                     IconButton(
                         onClick = {
-
                             viewModel.prePareForShare()
                                 .invokeOnCompletion {
                                     Timber.tag(TAG).i(it)
@@ -268,6 +267,7 @@ private fun LogLine(text: AnonLog) {
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Light,
             maxLines = 30,
+            lineHeight = 12.sp,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()

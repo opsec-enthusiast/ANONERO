@@ -2,6 +2,11 @@ package io.anonero
 
 import android.content.Context
 import io.anonero.model.NetworkType
+import io.matthewnelson.kmp.tor.resource.exec.tor.ResourceLoaderTorExec
+import io.matthewnelson.kmp.tor.runtime.TorRuntime
+import io.matthewnelson.kmp.tor.runtime.core.ThisBlock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.math.pow
@@ -27,6 +32,26 @@ object AnonConfig {
         val walletDir = getDefaultWalletDir(context)
         val anonWallet = File(walletDir, "anon")
         return anonWallet
+    }
+
+
+    fun getTorConfig(scope: CoroutineScope): TorRuntime.Environment {
+        val torDir = File(context?.filesDir, "tor")
+        torDir.mkdirs()
+        val cacheDir = File(context?.cacheDir, "tor")
+        torDir.mkdirs()
+        return TorRuntime.Environment.Builder(
+            workDirectory = torDir,
+            cacheDirectory = cacheDir,
+            loader = ResourceLoaderTorExec::getOrCreate,
+        )
+    }
+
+
+    fun getTorCacheDir(): File {
+        val torDir = File(context?.cacheDir, "tor")
+        torDir.mkdirs()
+        return torDir
     }
 
 

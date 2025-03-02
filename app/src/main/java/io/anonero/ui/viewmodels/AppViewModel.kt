@@ -1,10 +1,12 @@
 package io.anonero.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.InvalidPin
+import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -12,8 +14,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
+import timber.log.Timber
 
-class AppViewModel(private val walletState: WalletState) : ViewModel() {
+private const val TAG = "AppViewModel"
+
+class AppViewModel(private val walletState: WalletState, private val torService: TorService) :
+    ViewModel() {
 
     private var splashInit = false
     private var walletExist: MutableSharedFlow<Boolean> = MutableSharedFlow(replay = 2)
@@ -28,7 +34,7 @@ class AppViewModel(private val walletState: WalletState) : ViewModel() {
             walletExist.emit(
                 AnonConfig.getDefaultWalletFile(AnonConfig.context!!).exists()
             )
-            delay(400)
+            delay(300)
             splashInit = true
         }
     }
@@ -42,8 +48,12 @@ class AppViewModel(private val walletState: WalletState) : ViewModel() {
     }
 
     fun startService() {
-        viewModelScope.launch(Dispatchers.IO) {
+        walletHandler.scope.launch {
             walletHandler.startService()
+        }.invokeOnCompletion {
+            it?.printStackTrace()
+            if (it != null)
+                Timber.tag(TAG).e(it)
         }
     }
 

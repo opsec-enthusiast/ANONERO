@@ -124,7 +124,9 @@ class NodeSettingsViewModel(
     }
 
 
+
     fun getCurrentDaemonLive() = walletState.daemonInfo.asLiveData()
+
     val connectionError: LiveData<String?> get() = uriValidationError
 
     fun validate(rpcUrl: String, rpcUsername: String, rpcPassPhrase: String): Node? {

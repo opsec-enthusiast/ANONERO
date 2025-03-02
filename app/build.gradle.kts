@@ -20,7 +20,11 @@ android {
             useSupportLibrary = true
         }
         ndk {
+            //noinspection ChromeOsAbiSupport
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
+        packaging {
+            jniLibs.useLegacyPackaging = true
         }
     }
 
@@ -141,6 +145,9 @@ dependencies {
     implementation(libs.com.jakewharton.timber)
 
     implementation(libs.org.bouncycastle.bcprov)
+
+    implementation(libs.io.matthewnelson.kmp.tor.runtime)
+    implementation(libs.io.matthewnelson.kmp.resource.exec.tor)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

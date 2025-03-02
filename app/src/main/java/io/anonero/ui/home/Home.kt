@@ -102,6 +102,11 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
         LockScreenShortCut.SEND -> SendScreenRoute(address = "")
         null -> TransactionsRoute
     }
+    LaunchedEffect(currentRoute) {
+        if (getRoutes().find { it.getRouteAsString == currentRoute } != null) {
+            showBottomNavigation = true
+        }
+    }
 
     LaunchedEffect(true) {
         if (!context.isIgnoringBatteryOptimizations()) {
@@ -283,8 +288,10 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     composable<SettingsRoute> {
                         SettingsPage(
                             onBackPress = {
+                                showBottomNavigation = true
                                 bottomNavController.popBackStack()
                             }, navigateTo = {
+                                showBottomNavigation = false
                                 bottomNavController.navigate(it)
                             }
                         )

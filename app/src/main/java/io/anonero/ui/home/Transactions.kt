@@ -2,6 +2,7 @@ package io.anonero.ui.home
 
 import AnonNeroTheme
 import android.icu.text.CompactDecimalFormat
+import android.util.Log
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -31,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +56,7 @@ import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.components.scanner.QRScannerDialog
@@ -232,11 +235,11 @@ fun TransactionScreen(
                                     onItemClick(transactions[it])
                                 }
                                 .sharedElement(
-                                sharedTransitionScope.rememberSharedContentState(
-                                    key = "${transactions[it].hash}",
-                                ),
-                                animatedVisibilityScope = animatedContentScope
-                            )
+                                    sharedTransitionScope.rememberSharedContentState(
+                                        key = "${transactions[it].hash}",
+                                    ),
+                                    animatedVisibilityScope = animatedContentScope
+                                )
                         )
                     }
                 }

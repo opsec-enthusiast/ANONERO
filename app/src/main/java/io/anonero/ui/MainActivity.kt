@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -52,7 +51,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val walletExist by appViewModel.existWallet.asLiveData().observeAsState(false)
             val onboardViewModel = koinViewModel<OnboardViewModel>()
-
             AnonNeroTheme {
                 val navController = rememberNavController()
                 NavHost(
@@ -72,7 +70,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
 
     }
 

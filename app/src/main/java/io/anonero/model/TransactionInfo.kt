@@ -55,7 +55,7 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
         subaddressLabel: String?,
         transfers: List<Transfer>?
     ) {
-        this.direction = Direction.values()[direction]
+        this.direction = Direction.entries.toTypedArray()[direction]
         this.isPending = isPending
         this.isFailed = isFailed
         this.amount = amount

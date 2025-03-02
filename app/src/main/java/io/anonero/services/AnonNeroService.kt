@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.IBinder
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
@@ -12,6 +13,8 @@ import io.anonero.FOREGROUND_CHANNEL
 import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.util.WALLET_PREFERENCES
+import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +22,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
+import org.koin.core.qualifier.named
 import org.koin.java.KoinJavaComponent.inject
 
 const val NOTIFICATION_ID = 2
@@ -37,6 +42,8 @@ class AnonNeroService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.IO + job)
     private val walletState: WalletState by inject(WalletState::class.java)
+    private val torService: TorService by inject(TorService::class.java)
+    private val prefs: SharedPreferences by inject(named(WALLET_PREFERENCES))
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -68,7 +75,7 @@ class AnonNeroService : Service() {
         scope.launch {
             while (scope.isActive) {
                 updateNotificationState()
-                delay(2000)
+                delay(1000)
             }
         }
         scope.launch {
@@ -86,6 +93,11 @@ class AnonNeroService : Service() {
         val mNotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val wallet = WalletManager.instance?.wallet
+        val torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
+            " | Using Tor Proxy: ${torService.socks?.port.toString()}"
+        } else {
+            ""
+        }
         if (wallet != null) {
             val isSyncing = walletState.isSyncing
             if (!isSyncing) {
@@ -117,7 +129,7 @@ class AnonNeroService : Service() {
                 withContext(Dispatchers.Main) {
                     mNotificationManager.notify(
                         NOTIFICATION_ID,
-                        foregroundNotification(notificationMessage)
+                        foregroundNotification("$notificationMessage$torSate")
                     )
                 }
             }

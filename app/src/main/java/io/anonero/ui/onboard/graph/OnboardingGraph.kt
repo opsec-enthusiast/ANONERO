@@ -9,6 +9,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import io.anonero.ui.home.graph.routes.Home
+import io.anonero.ui.home.settings.ProxySettings
 import io.anonero.ui.onboard.Mode
 import io.anonero.ui.onboard.OnboardLoadingComposable
 import io.anonero.ui.onboard.OnboardViewModel
@@ -27,6 +28,9 @@ data object LandingScreenRoute
 
 @Serializable
 data object OnboardingWelcomeScreen
+
+@Serializable
+data object OnboardingProxyScreen
 
 @Serializable
 data object OnboardPassPhraseScreen
@@ -67,9 +71,20 @@ fun NavGraphBuilder.onboardingGraph(
                 },
                 onCreateClick = {
                     onboardViewModel.setMode(Mode.CREATE)
+                    
                     navController.navigate(OnboardNodeSetupScreen)
+                },
+                onProxySettings = {
+                    navController.navigate(OnboardingProxyScreen)
                 }
             )
+        }
+        composable<OnboardingProxyScreen> {
+          ProxySettings(
+              onBackPress = {
+                  navController.navigateUp()
+              },
+          )
         }
         composable<OnboardNodeSetupScreen> {
             SetupNodeComposable(

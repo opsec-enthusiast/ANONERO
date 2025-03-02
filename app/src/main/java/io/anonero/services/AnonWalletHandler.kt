@@ -1,7 +1,6 @@
 package io.anonero.services
 
 import android.content.SharedPreferences
-import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -10,7 +9,15 @@ import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import io.anonero.util.WALLET_PROXY
 import io.anonero.util.WALLET_PROXY_PORT
+import io.anonero.util.WALLET_USE_TOR
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import org.json.JSONObject
+import timber.log.Timber
 
 
 class InvalidPin : Exception("invalid pin")
@@ -21,10 +28,25 @@ class UnableToCloseWallet : Exception()
 
 class AnonWalletHandler(
     private val prefs: SharedPreferences,
-    private val walletState: WalletState
+    private val walletState: WalletState,
+    private val torService: TorService
 ) {
 
+    private val _scope = CoroutineScope(Dispatchers.Default) + SupervisorJob()
+
     private var handler: MoneroHandlerThread? = null
+
+    val scope get() = _scope
+
+    init {
+        scope.launch {
+            torService.socksFlow.collect {
+                if (prefs.getBoolean(WALLET_USE_TOR, false)) {
+                    setProxy(it.address.toString(), it.port.value)
+                }
+            }
+        }
+    }
 
     fun openWallet(pin: String): Boolean {
         val walletFile = AnonConfig.getDefaultWalletFile(AnonConfig.context!!)
@@ -35,7 +57,7 @@ class AnonWalletHandler(
         return anonWallet?.status?.isOk ?: throw InvalidPin()
     }
 
-    fun startService() {
+    suspend fun startService() {
         val wallet = WalletManager.instance?.wallet ?: return
         handler = MoneroHandlerThread(
             wallet,
@@ -53,10 +75,18 @@ class AnonWalletHandler(
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
             val proxyHost = prefs.getString(WALLET_PROXY, "")
             val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+            val useTor = prefs.getBoolean(WALLET_USE_TOR, false)
+
             if (host?.isEmpty() == true) {
                 throw Exception("Node not found")
             }
-            if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+            if (useTor) {
+                while (torService.socks == null) {
+                    delay(100)
+                }
+                val socket = torService.socks
+                WalletManager.instance?.setProxy("${socket?.value}")
+            } else if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
                 WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
             } else {
                 WalletManager.instance?.setProxy("")
@@ -126,6 +156,7 @@ class AnonWalletHandler(
     }
 
     fun setProxy(proxy: String?, port: Int?) {
+        Timber.tag(TAG).d("setProxy %s%s", proxy, port.toString())
         //disable proxy
         if (proxy == null && port == null) {
             prefs.edit().apply {
@@ -156,7 +187,6 @@ class AnonWalletHandler(
         }
         return null
     }
-
 
     fun wipe(passPhrase: String): Boolean {
         WalletManager.instance?.wallet?.pauseRefresh()

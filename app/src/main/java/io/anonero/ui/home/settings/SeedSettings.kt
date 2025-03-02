@@ -210,7 +210,10 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             },
             dismissButton = {
                 Button(
-                    onClick = onBackPress,
+                    onClick = {
+                        passPhraseDialog = false
+                        onBackPress.invoke()
+                    },
                     shape = MaterialTheme.shapes.small,
                     border = BorderStroke(
                         1.dp,
