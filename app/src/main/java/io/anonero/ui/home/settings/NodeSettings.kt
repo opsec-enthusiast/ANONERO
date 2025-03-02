@@ -3,6 +3,7 @@ package io.anonero.ui.home.settings
 import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -85,7 +86,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.java.KoinJavaComponent.inject
+import timber.log.Timber
 
+private const val TAG = "NodeSettings"
 class NodeSettingsViewModel(
     private val prefs: SharedPreferences,
     private val nodesRepository: NodesRepository
@@ -203,7 +206,7 @@ class NodeSettingsViewModel(
                 )
                 WalletManager.instance?.wallet?.startRefresh()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Timber.tag(TAG).e(e)
                 uriValidationError.postValue(e.message)
             }
         }
@@ -368,7 +371,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                                         try {
                                             nodeSettingsVM.connect(node)
                                         } catch (ex: Exception) {
-                                            ex.printStackTrace()
+                                            Timber.tag(TAG).e(ex)
                                         }
                                     }
                             },

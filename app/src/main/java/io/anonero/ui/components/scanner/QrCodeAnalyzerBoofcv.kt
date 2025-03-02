@@ -133,11 +133,11 @@ class QrCodeAnalyzerBoofcv(
         try {
             detector.process(imgGrayU8)
         } catch (e: NotFoundException) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         } catch (e: ChecksumException) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         } catch (e: Exception) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         }
         for (det in detector.detections) {
             onQrCodesDetected(Result(det.message, det.rawbits, null, BarcodeFormat.QR_CODE))
@@ -149,11 +149,11 @@ class QrCodeAnalyzerBoofcv(
             detector.process(invImgGrayU8)
             // result = reader.decode(binaryBitmap)
         } catch (e: NotFoundException) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         } catch (e: ChecksumException) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         } catch (e: Exception) {
-//            e.printStackTrace()
+//            Timber.tag(TAG).e(e)
         }
 
 

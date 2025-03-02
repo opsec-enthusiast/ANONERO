@@ -111,7 +111,7 @@ class AnonWalletHandler(
             walletState.update()
             walletState.setLoading(false)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.tag(TAG).e(e)
             walletState.setLoading(false)
         }
 
@@ -150,7 +150,7 @@ class AnonWalletHandler(
                     daemonHeight = 0L
                 )
             )
-            e.printStackTrace()
+            Timber.tag(TAG).e(e)
         }
 
     }

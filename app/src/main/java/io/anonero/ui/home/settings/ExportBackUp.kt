@@ -164,7 +164,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                 backupFile!!
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.tag(TAG).e(e)
             return
         }
         // Create the share intent

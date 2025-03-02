@@ -65,6 +65,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import io.anonero.icons.AnonIcons
+import timber.log.Timber
 import java.util.concurrent.Executors
 
 private const val TAG = "QrCamera"
@@ -297,7 +298,7 @@ fun QRScanner(
                                         imageAnalysis
                                     )
                                 } catch (exc: Exception) {
-                                    exc.printStackTrace()
+                                    Timber.tag(TAG).e(exc)
                                 }
                             }, ContextCompat.getMainExecutor(ctx))
 

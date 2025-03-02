@@ -85,11 +85,12 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
         addressIndex = `in`.readInt()
         confirmations = `in`.readLong()
         subaddressLabel = `in`.readString()
-        transfers?.toMutableList()?.let { transfers ->
+        transfers = transfers?.toMutableList()?.also { transfersList ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                `in`.readList(transfers, Transfer::class.java.classLoader, Transfer::class.java)
+                `in`.readList(transfersList, Transfer::class.java.classLoader, Transfer::class.java)
             } else {
-                `in`.readList(transfers, Transfer::class.java.classLoader)
+                @Suppress("DEPRECATION")
+                `in`.readList(transfersList, Transfer::class.java.classLoader)
             }
         }
         notes = `in`.readString()

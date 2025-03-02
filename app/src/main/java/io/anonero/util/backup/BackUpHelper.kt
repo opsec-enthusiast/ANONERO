@@ -2,12 +2,14 @@ package io.anonero.util.backup
 
 import android.content.Context
 import android.icu.text.SimpleDateFormat
+import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.di.provideWalletSharedPrefs
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import org.json.JSONObject
+import timber.log.Timber
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -22,7 +24,8 @@ import java.util.zip.ZipOutputStream
 object BackUpHelper {
     private const val BACKUP_VERSION = "1.0"
     const val BUFFER = 2048
-
+    private const val TAG = "BackUpHelper"
+    
     fun createBackUp(seedPassphrase: String, context: Context): String {
         val wallet = WalletManager.instance?.wallet ?: throw Exception("Wallet not found")
         val prefs = provideWalletSharedPrefs(context)
@@ -131,7 +134,8 @@ object BackUpHelper {
             }
             out.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.tag(TAG).e(e)
+            Timber.tag(TAG).e(e)
         }
     }
 

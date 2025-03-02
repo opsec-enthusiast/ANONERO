@@ -17,7 +17,6 @@
 
 package io.anonero.util;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -73,7 +72,7 @@ public class KeyStoreHelper {
         byte[] sig = null;
         try {
             KeyStoreHelper.createKeys(context, RSA_ALIAS);
-            sig = KeyStoreHelper.signData(RSA_ALIAS, data);
+            sig = KeyStoreHelper.signData(data);
             byte[] hash = slowHash(sig, brokenVariant);
             if (hash == null) {
                 throw new IllegalStateException("Slow Hash is null!");
@@ -111,7 +110,7 @@ public class KeyStoreHelper {
         }
     }
 
-    public static boolean saveWalletUserPass(@NonNull Context context, String wallet, String password) {
+    public static void saveWalletUserPass(@NonNull Context context, String wallet, String password) {
         String walletKeyAlias = SecurityConstants.WALLET_PASS_KEY_PREFIX + wallet;
         byte[] data = password.getBytes(StandardCharsets.UTF_8);
         try {
@@ -120,14 +119,12 @@ public class KeyStoreHelper {
             SharedPreferences.Editor e = context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE).edit();
             if (encrypted == null) {
                 e.remove(wallet).apply();
-                return false;
+                return;
             }
             e.putString(wallet, Base64.encodeToString(encrypted, Base64.DEFAULT)).apply();
-            return true;
         } catch (NoSuchProviderException | NoSuchAlgorithmException |
                  InvalidAlgorithmParameterException | KeyStoreException ex) {
-            ex.printStackTrace();
-            return false;
+            Timber.tag(TAG).e(ex);
         }
     }
 
@@ -143,7 +140,7 @@ public class KeyStoreHelper {
 
     public static boolean hasStoredPasswords(@NonNull Context context) {
         SharedPreferences prefs = context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getAll().size() > 0;
+        return !prefs.getAll().isEmpty();
     }
 
     public static String loadWalletUserPass(@NonNull Context context, String wallet) throws BrokenPasswordStoreException {
@@ -162,7 +159,7 @@ public class KeyStoreHelper {
         try {
             KeyStoreHelper.deleteKeys(walletKeyAlias);
         } catch (KeyStoreException ex) {
-            ex.printStackTrace();
+            Timber.tag(TAG).e(ex);
         }
         context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .remove(wallet).apply();
@@ -196,7 +193,7 @@ public class KeyStoreHelper {
             keyStore.load(null);
             keyStore.deleteEntry(alias);
         } catch (IOException | NoSuchAlgorithmException | CertificateException ex) {
-            ex.printStackTrace();
+            Timber.tag(TAG).e(ex);
         }
     }
 
@@ -211,7 +208,6 @@ public class KeyStoreHelper {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private static void createKeysJBMR2(Context context, String alias) throws NoSuchProviderException,
             NoSuchAlgorithmException, InvalidAlgorithmParameterException {
 
@@ -275,9 +271,7 @@ public class KeyStoreHelper {
                     .getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
             ks.load(null);
 
-            PublicKey publicKey = ks.getCertificate(alias).getPublicKey();
-
-            return publicKey;
+            return ks.getCertificate(alias).getPublicKey();
         } catch (IOException | NoSuchAlgorithmException | CertificateException
                  | KeyStoreException ex) {
             throw new IllegalStateException(ex);
@@ -293,7 +287,7 @@ public class KeyStoreHelper {
             return cipher.doFinal(data);
         } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException
                  | NoSuchAlgorithmException | NoSuchPaddingException ex) {
-            ex.printStackTrace();
+            Timber.tag(TAG).e(ex);
             return null;
         }
     }
@@ -308,7 +302,7 @@ public class KeyStoreHelper {
             return cipher.doFinal(data);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                  IllegalBlockSizeException | BadPaddingException ex) {
-            ex.printStackTrace();
+            Timber.tag(TAG).e(ex);
             return null;
         }
     }
@@ -320,9 +314,9 @@ public class KeyStoreHelper {
      *
      * @return The data signature generated
      */
-    private static byte[] signData(String alias, byte[] data) throws NoSuchAlgorithmException,
+    private static byte[] signData(byte[] data) throws NoSuchAlgorithmException,
             InvalidKeyException, SignatureException {
-        PrivateKey privateKey = getPrivateKey(alias);
+        PrivateKey privateKey = getPrivateKey(KeyStoreHelper.RSA_ALIAS);
         if (privateKey == null) return null;
         Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
         s.initSign(privateKey);

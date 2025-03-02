@@ -24,7 +24,7 @@ class AnonLogTree(
             try {
                 appendLog(tag, message, t, priority)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Timber.tag(TAG).e(e)
             }
         }
     }
@@ -50,5 +50,9 @@ class AnonLogTree(
 
     fun cleanup() {
         ioScope.cancel()
+    }
+
+    companion object {
+        private const val TAG = "LogTree"
     }
 }

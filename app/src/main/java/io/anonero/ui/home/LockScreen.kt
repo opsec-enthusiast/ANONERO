@@ -169,7 +169,7 @@ fun LockScreen(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Timber.tag(TAG).e(e)
                     Timber.tag(TAG).i("checkPin: %s", e.message)
                     showError()
                 }

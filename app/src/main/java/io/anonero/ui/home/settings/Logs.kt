@@ -173,7 +173,7 @@ fun LogViewer(
                                                 AnonConfig.getLogFile(context)
                                             )
                                         } catch (e: Exception) {
-                                            e.printStackTrace()
+                                            Timber.tag(TAG).e(e)
                                             return@invokeOnCompletion
                                         }
                                         // Create the share intent
