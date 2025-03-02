@@ -3,6 +3,7 @@ package io.anonero.ui.home.settings
 import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -24,9 +25,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -116,6 +115,20 @@ class ProxySettingsViewModel(
 
     init {
         updateProxyState()
+        viewModelScope.launch {
+            torService.socksFlow.collect {
+                //user did not set any proxy,
+                //tor socks is ready
+                //user did not disabled built in tor
+                // then set the current proxy to tor proxy
+                if (anonWalletHandler.getProxy() == null
+                    && anonPrefs.getBoolean(WALLET_USE_TOR, true)
+                    && torService.socks != null
+                ) {
+                    enableTor(true)
+                }
+            }
+        }
     }
 
     fun setProxy(proxy: String, port: Int) {
@@ -238,7 +251,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         Text("Proxy")
                     },
                 )
-                Box(modifier = Modifier.height(4.dp)){
+                Box(modifier = Modifier.height(4.dp)) {
                     this@Column.AnimatedVisibility(visible = loading) {
                         LinearProgressIndicator(
                             trackColor = MaterialTheme.colorScheme.primary.copy(
@@ -284,7 +297,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     trailingContent = {
                         Switch(checked = useTor,
                             thumbContent = {
-                                Text(if(useTor) "ON" else "OFF")
+                                Text(if (useTor) "ON" else "OFF")
                             },
 
                             onCheckedChange = {

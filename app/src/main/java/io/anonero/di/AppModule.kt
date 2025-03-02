@@ -26,7 +26,7 @@ fun provideWalletSharedPrefs(app: Context): SharedPreferences =
 
 val appModule = module {
     single(named(WALLET_PREFERENCES)) { provideWalletSharedPrefs(androidApplication()) }
-    single { TorService() }
+    single { TorService(get(named(WALLET_PREFERENCES))) }
     single { WalletState() }
     single { AnonWalletHandler(get(named(WALLET_PREFERENCES)), get(),get()) }
     single { LogRepository(get()) }

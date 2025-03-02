@@ -1,5 +1,6 @@
 package io.anonero.services
 
+import android.content.SharedPreferences
 import io.anonero.AnonConfig
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.stopDaemonAsync
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "TorService"
 
-class TorService {
+class TorService(prefs:SharedPreferences) {
 
     val scope = CoroutineScope(SupervisorJob())
 
