@@ -1,8 +1,6 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.icu.text.CompactDecimalFormat
-import android.util.Log
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -32,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +44,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
@@ -56,7 +55,6 @@ import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
-import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.components.scanner.QRScannerDialog
@@ -69,7 +67,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.inject
-import java.util.Locale
 
 
 class TransactionsViewModel : ViewModel() {
@@ -230,7 +227,7 @@ fun TransactionScreen(
                 items(transactions.size) {
                     with(sharedTransitionScope) {
                         TransactionItem(
-                            transactions[it],  modifier = Modifier
+                            transactions[it], modifier = Modifier
                                 .clickable {
                                     onItemClick(transactions[it])
                                 }
@@ -249,12 +246,11 @@ fun TransactionScreen(
 }
 
 
-
-
 @Composable
 fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
     val amount = if (isIncoming) tx.amount else tx.amount * -1
+    val confirmations = tx.confirmations
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -277,12 +273,33 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row {
-            Icon(
-                if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
-                modifier = Modifier.size(28.dp),
-                tint = if (isIncoming) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                contentDescription = ""
-            )
+            if (confirmations > 10)
+                Icon(
+                    if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
+                    modifier = Modifier.size(28.dp),
+                    tint = if (isIncoming) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                    contentDescription = ""
+                )
+            else
+                Box(
+                    modifier = Modifier.size(28.dp),
+
+                    ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(28.dp),
+                        strokeWidth = 2.dp ,
+                        progress = {
+                            ((confirmations.toFloat() ) / (10f))
+                        }
+                    )
+                    Text(
+                        text = "$confirmations",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 9.sp
+                        )
+                    )
+                }
             Spacer(modifier = Modifier.size(8.dp))
             Text(
                 Formats.getDisplayAmount(amount),
