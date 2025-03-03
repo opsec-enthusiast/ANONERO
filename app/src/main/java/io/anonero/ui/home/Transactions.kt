@@ -249,11 +249,7 @@ fun TransactionScreen(
 }
 
 
-fun convertNumber(number: Number, locale: Locale): String? {
-    val compactDecimalFormat =
-        CompactDecimalFormat.getInstance(locale, CompactDecimalFormat.CompactStyle.SHORT)
-    return compactDecimalFormat.format(number)
-}
+
 
 @Composable
 fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {

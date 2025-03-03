@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asLiveData
 import io.anonero.services.WalletState
-import io.anonero.ui.home.convertNumber
+import io.anonero.util.Formats
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
 
@@ -53,7 +53,7 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier) {
                 if (syncProgress!!.left > 50) {
                     Text(
                         "${
-                            convertNumber(
+                            Formats.convertNumber(
                                 syncProgress?.left!!,
                                 Locale.getDefault()
                             )

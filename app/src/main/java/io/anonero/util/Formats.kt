@@ -1,5 +1,6 @@
 package io.anonero.util
 
+import android.icu.text.CompactDecimalFormat
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import java.math.BigDecimal
@@ -13,6 +14,13 @@ import kotlin.math.log10
 import kotlin.math.pow
 
 object Formats {
+
+    fun convertNumber(number: Number, locale: Locale): String? {
+        val compactDecimalFormat =
+            CompactDecimalFormat.getInstance(locale, CompactDecimalFormat.CompactStyle.SHORT)
+        return compactDecimalFormat.format(number)
+    }
+
 
     fun getDisplayAmount(amount: Long): String {
 

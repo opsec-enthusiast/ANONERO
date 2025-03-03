@@ -13,6 +13,7 @@ import io.anonero.FOREGROUND_CHANNEL
 import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.util.Formats
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +26,7 @@ import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.core.qualifier.named
 import org.koin.java.KoinJavaComponent.inject
+import java.util.Locale
 
 const val NOTIFICATION_ID = 2
 
@@ -63,6 +65,7 @@ class AnonNeroService : Service() {
 
     private fun start() {
         startForeground(NOTIFICATION_ID, foregroundNotification())
+        val wallet = WalletManager.instance?.wallet
         scope.launch {
             walletState.walletConnectionStatus.collect {
                 updateNotificationState()
@@ -80,9 +83,14 @@ class AnonNeroService : Service() {
         }
         scope.launch {
             walletState.syncProgress.collect {
+                val torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
+                    " | Using Tor Proxy: ${torService.socks?.port.toString()}"
+                } else {
+                    ""
+                }
                 if (it != null) {
                     withContext(Dispatchers.Main) {
-                        showProgress(it)
+                        showProgress(it,torSate)
                     }
                 }
             }
@@ -136,9 +144,13 @@ class AnonNeroService : Service() {
         }
     }
 
-    private fun showProgress(it: SyncProgress) {
+    private fun showProgress(it: SyncProgress, torSate: String) {
         val notification = foregroundNotification(
-            content = if (it.left != 0L) "Syncing: ${it.left} blocks left" else "Syncing blocks completed",
+            content = if (it.left != 0L) "Syncing: ${
+                Formats.convertNumber(
+                    it.left,
+                Locale.getDefault()
+            )} blocks left $torSate" else "Syncing blocks completed ${torSate}",
             progress = it
         )
         val mNotificationManager =
