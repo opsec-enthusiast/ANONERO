@@ -38,6 +38,7 @@ import org.koin.java.KoinJavaComponent.inject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiveScreen(
+    modifier: Modifier = Modifier,
     onBackPress: () -> Unit = {},
     navigateToSubAddresses: () -> Unit = {}
 ) {
@@ -46,7 +47,7 @@ fun ReceiveScreen(
 
     val nextAddress by walletState.nextAddress.collectAsState(null)
 
-    Scaffold(modifier = Modifier.background(Color.Red),
+    Scaffold(modifier = modifier,
         topBar = {
             TopAppBar(
 

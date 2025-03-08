@@ -21,6 +21,7 @@ import io.anonero.ui.onboard.SetupPassphrase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.koin.androidx.compose.koinViewModel
 
 
 @Serializable

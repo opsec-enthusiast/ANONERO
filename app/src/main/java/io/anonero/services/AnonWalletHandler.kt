@@ -73,8 +73,8 @@ class AnonWalletHandler(
             val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
             val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
-            val proxyHost = prefs.getString(WALLET_PROXY, "")
-            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+            val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT,  3000)
             val useTor = prefs.getBoolean(WALLET_USE_TOR, false)
 
             if (host?.isEmpty() == true) {
@@ -168,12 +168,11 @@ class AnonWalletHandler(
                 putString(WALLET_PROXY, proxy)
                 putInt(WALLET_PROXY_PORT, port ?: -1)
             }.apply()
-            val proxyHost = prefs.getString(WALLET_PROXY, "")
-            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
-            if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+            val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
+            val daemonHost = prefs.getString(NodeFields.RPC_HOST.value, null)
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, 3000)
+            if (proxyHost?.isNotEmpty() == true && proxyPort != -1 && daemonHost != null ) {
                 WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
-            } else {
-                WalletManager.instance?.setProxy("")
             }
         }
     }

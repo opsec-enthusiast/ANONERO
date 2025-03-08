@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -126,7 +127,8 @@ class SendViewModel : ViewModel() {
 fun SendScreen(
     onBackPress: () -> Unit = {},
     navigateToReview: (route: ReviewTransactionRoute) -> Unit = {},
-    paymentUri: SendScreenRoute? = null
+    paymentUri: SendScreenRoute? = null,
+    modifier: Modifier =Modifier
 ) {
     var addressField by rememberSaveable { mutableStateOf("") }
     var amountField by rememberSaveable { mutableStateOf("") }
@@ -196,6 +198,7 @@ fun SendScreen(
     )
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -228,11 +231,12 @@ fun SendScreen(
                 )
             }
         } else {
-
             Column(
                 modifier = Modifier
                     .padding(padding)
-                    .padding(top = 12.dp),
+                    .padding(
+                        bottom = 64.dp
+                    ),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -394,5 +398,5 @@ fun SendScreen(
 @Preview(device = "id:pixel_5")
 @Composable
 private fun SendScreenPrev() {
-    SendScreen()
+    SendScreen(modifier = Modifier)
 }

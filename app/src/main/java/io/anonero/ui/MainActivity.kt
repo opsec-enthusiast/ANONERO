@@ -6,19 +6,27 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.View
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.asLiveData
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import io.anonero.AnonConfig
 import io.anonero.services.AnonNeroService
 import io.anonero.services.WalletState
 import io.anonero.services.startAnonService
@@ -28,6 +36,8 @@ import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.ui.onboard.graph.onboardingGraph
 import io.anonero.ui.viewmodels.AppViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 
@@ -38,18 +48,33 @@ class MainActivity : ComponentActivity() {
     private val walletState: WalletState by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashscreen = installSplashScreen()
+        var isAppReady by mutableStateOf(false)
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        val content: View = this.findViewById(android.R.id.content)
-        content.viewTreeObserver.addOnPreDrawListener {
-            appViewModel.isReady
-        }
+
+        splashscreen.setKeepOnScreenCondition { !isAppReady }
+
         if (intent.hasExtra("notification")) {
             walletState.setBackGroundSync(false)
             walletState.update()
         }
+
+
+        val scrimColor = Color.Black.copy(alpha = 0.1f).toArgb()
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(scrimColor),
+            navigationBarStyle = SystemBarStyle.dark(scrimColor),
+        )
         setContent {
-            val walletExist by appViewModel.existWallet.asLiveData().observeAsState(false)
+            var walletExist by remember { mutableStateOf(AnonConfig.isWalletFileExist()) }
+            val scope = rememberCoroutineScope()
+            LaunchedEffect(key1 = walletExist) {
+                scope.launch(Dispatchers.IO) {
+                    walletExist = AnonConfig.getDefaultWalletFile(applicationContext).exists()
+                    isAppReady = true
+                }
+            }
             val onboardViewModel = koinViewModel<OnboardViewModel>()
             AnonNeroTheme {
                 val navController = rememberNavController()

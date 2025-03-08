@@ -99,7 +99,7 @@ class ReviewTransactionViewModel : ViewModel() {
 fun ReviewTransactionScreen(
     reviewParams: ReviewTransactionRoute,
     onFinished: () -> Unit = {},
-    onBackPressed: () -> Unit = {}
+    onBackPressed: () -> Unit = {},
 ) {
 //
     val viewModel = viewModel<ReviewTransactionViewModel>()
@@ -149,6 +149,9 @@ fun ReviewTransactionScreen(
     ) {
         Box(
             modifier = Modifier.padding(it)
+                .padding(
+                    bottom = 64.dp
+                ),
         ) {
             if (pendingTransaction != null) {
                 AnimatedVisibility(
@@ -315,6 +318,8 @@ fun ReviewTransactionScreen(
 @Composable
 private fun ReviewTransactionScreenPreview() {
     AnonNeroTheme {
-        ReviewTransactionScreen(ReviewTransactionRoute("address"))
+        ReviewTransactionScreen(
+            ReviewTransactionRoute("address"),
+        )
     }
 }

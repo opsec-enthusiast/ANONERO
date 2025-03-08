@@ -8,6 +8,9 @@ import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,12 +21,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,7 +33,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,8 +43,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import dev.chrisbanes.haze.HazeState
 import io.anonero.R
 import io.anonero.model.Subaddress
+import io.anonero.ui.components.MainBottomNavigation
 import io.anonero.ui.home.addresses.SubAddressDetailScreen
 import io.anonero.ui.home.addresses.SubAddressesScreen
 import io.anonero.ui.home.graph.routes.HomeScreenRoute
@@ -79,19 +79,13 @@ import io.anonero.util.isIgnoringBatteryOptimizations
 @Composable
 fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHostController?) {
 
-    val navigationItemColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = MaterialTheme.colorScheme.primary,
-        indicatorColor = MaterialTheme.colorScheme.primary.copy(
-            alpha = 0.2f
-        ),
-        selectedTextColor = MaterialTheme.colorScheme.primary,
-    )
     var showBottomNavigation by remember { mutableStateOf(true) }
     val bottomNavController = rememberNavController()
     val context = LocalContext.current
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: TransactionsRoute
     var showBatteryManagerDialog by remember { mutableStateOf(false) }
+    val hazeState = remember { HazeState() }
 
     val homeScreenRoute =
         mainNavController?.currentBackStackEntryAsState()?.value?.toRoute<HomeScreenRoute>()
@@ -171,42 +165,31 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 visible = showBottomNavigation,
                 enter = slideInVertically(
                     initialOffsetY = { it }, // Slide in from the bottom
-                    animationSpec = tween(durationMillis = 500)
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessLow,
+                        dampingRatio = 0.66f,
+                    ),
                 ),
                 exit = slideOutVertically(
                     targetOffsetY = { it }, // Slide out to the bottom
-                    animationSpec = tween(durationMillis = 500)
+                    animationSpec = tween(durationMillis = 400, easing = EaseOut)
                 )
             ) {
-                NavigationBar(
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    getRoutes().forEach { item ->
-                        val isSelected = if (currentRoute is String) {
-                            currentRoute.contains(item.getRouteAsString)
-                        } else {
-                            currentRoute == item.getRouteAsString
+                MainBottomNavigation(
+                    hazeState = hazeState,
+                    currentRoute = currentRoute,
+                    onTabSelected = {
+                        bottomNavController.navigate(it.route) {
+                            popUpTo(bottomNavController.graph.startDestinationId)
+                            launchSingleTop = true
                         }
-                        NavigationBarItem(
-                            selected = isSelected,
-                            colors = navigationItemColors,
-                            onClick = {
-                                if (!isSelected) {
-                                    bottomNavController.navigate(item.route) {
-                                        popUpTo(bottomNavController.graph.startDestinationId)
-                                        launchSingleTop = true
-                                    }
-                                }
-                            },
-                            icon = { Icon(item.icon, contentDescription = item.title) },
-                        )
                     }
-                }
+                )
+
             }
 
         }) { paddingValues ->
-            Box(modifier = modifier.padding(paddingValues)) {
+            Box(modifier = modifier.padding(0.dp)) {
                 NavHost(bottomNavController, startDestination = startDestination, exitTransition = {
                     fadeOut(animationSpec = tween(340))
                 }, enterTransition = {
@@ -214,7 +197,10 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 }) {
                     composable<TransactionsRoute> {
                         TransactionScreen(
+                            modifier = Modifier.padding(paddingValues),
+                            hazeState = hazeState,
                             onItemClick = {
+                                showBottomNavigation = false
                                 it.hash?.let { paymentId ->
                                     bottomNavController.navigate(
                                         TransactionDetailRoute(
@@ -243,12 +229,14 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         )
                     }
                     composable<ReceiveRoute> {
-                        ReceiveScreen(onBackPress = {
-                            bottomNavController.popBackStack()
-                        }, navigateToSubAddresses = {
-                            showBottomNavigation = false
-                            bottomNavController.navigate(SubAddressesRoute)
-                        })
+                        ReceiveScreen(
+                            modifier = Modifier.padding(paddingValues),
+                            onBackPress = {
+                                bottomNavController.popBackStack()
+                            }, navigateToSubAddresses = {
+                                showBottomNavigation = false
+                                bottomNavController.navigate(SubAddressesRoute)
+                            })
                     }
                     composable<TransactionDetailRoute> { navBackStackEntry ->
                         val txDetailRoute = navBackStackEntry.toRoute<TransactionDetailRoute>()
@@ -258,16 +246,22 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                             animatedContentScope = this@composable,
                             onBackPress = {
                                 bottomNavController.popBackStack()
-                            }
+                            },
+                            modifier = Modifier.padding(paddingValues),
                         )
                     }
                     composable<SendScreenRoute> { backStackEntry ->
+
                         val params = backStackEntry.toRoute<SendScreenRoute>()
-                        SendScreen(navigateToReview = {
-                            bottomNavController.navigate(it)
-                        }, onBackPress = {
-                            bottomNavController.popBackStack()
-                        }, paymentUri = params)
+                        SendScreen(
+                            navigateToReview = {
+                                bottomNavController.navigate(it)
+                            },
+                            onBackPress = {
+                                bottomNavController.popBackStack()
+                            },
+                            paymentUri = params,
+                        )
                     }
                     composable<ReviewTransactionRoute> { backStackEntry ->
                         val route = backStackEntry.toRoute<ReviewTransactionRoute>()
@@ -287,6 +281,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     }
                     composable<SettingsRoute> {
                         SettingsPage(
+                            modifier = Modifier.padding(paddingValues),
                             onBackPress = {
                                 showBottomNavigation = true
                                 bottomNavController.popBackStack()

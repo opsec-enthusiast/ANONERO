@@ -28,13 +28,13 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
     override fun onCreate() {
         super.onCreate()
         AnonConfig.context = this
+        AnonConfig.initWalletState()
         startKoin {
             androidContext(this@AnonApplication)
             modules(appModule)
         }
         initConfigs()
         plantLog()
-
         Thread.setDefaultUncaughtExceptionHandler(this)
         val torService:TorService = get()
         torService.start()

@@ -74,16 +74,16 @@ fun OnboardingWelcome(
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.width(200.dp)
                 ) {
-                    Text("Restore Wallet")
+                    Text("Restore Wallet", color = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(
                     onClick = onProxySettings,
                     modifier = Modifier.width(200.dp)
                 ) {
                  Row  {
-                     Icon(Icons.Default.Settings, contentDescription = "Proxy")
+                     Icon(Icons.Default.Settings, contentDescription = "Proxy", tint = MaterialTheme.colorScheme.primary)
                      Spacer(Modifier.width(4.dp))
-                     Text("Proxy")
+                     Text("Proxy", color = MaterialTheme.colorScheme.primary)
                  }
                 }
                 Spacer(modifier = Modifier.height(32.dp))

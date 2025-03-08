@@ -4,8 +4,9 @@ import android.content.Context
 import io.anonero.model.NetworkType
 import io.matthewnelson.kmp.tor.resource.exec.tor.ResourceLoaderTorExec
 import io.matthewnelson.kmp.tor.runtime.TorRuntime
-import io.matthewnelson.kmp.tor.runtime.core.ThisBlock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -20,6 +21,7 @@ object AnonConfig {
     const val MAX_LOG_SIZE = 250
     const val PREFS = "anonPref"
     var context: AnonApplication? = null
+    private var walletFound: Boolean = false
 
     fun getNetworkType(): NetworkType {
         if (BuildConfig.APPLICATION_ID.lowercase().contains("stagenet")) {
@@ -48,10 +50,8 @@ object AnonConfig {
     }
 
 
-    fun getTorCacheDir(): File {
-        val torDir = File(context?.cacheDir, "tor")
-        torDir.mkdirs()
-        return torDir
+    fun isWalletFileExist(): Boolean {
+       return  walletFound
     }
 
 
@@ -73,5 +73,15 @@ object AnonConfig {
             walletDir.mkdirs()
         }
         return walletDir
+    }
+
+    fun initWalletState() {
+        MainScope().launch(Dispatchers.IO) {
+            walletFound = getDefaultWalletFile(context!!).exists()
+        }
+    }
+
+    fun disposeState() {
+        walletFound = false
     }
 }

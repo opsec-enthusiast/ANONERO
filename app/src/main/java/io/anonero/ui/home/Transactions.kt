@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,13 +46,15 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -91,7 +95,8 @@ fun TransactionScreen(
     navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {},
     navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {},
     animatedContentScope: AnimatedContentScope,
-    sharedTransitionScope: SharedTransitionScope
+    sharedTransitionScope: SharedTransitionScope,
+    hazeState: HazeState
 ) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
@@ -199,46 +204,54 @@ fun TransactionScreen(
                 }
             )
         }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            LazyColumn(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            ) {
-                stickyHeader {
-                    WalletProgressIndicator()
+    ) { contentPadding ->
+        LazyColumn(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                .haze(
+                    hazeState,
+                    backgroundColor = MaterialTheme.colorScheme.background.copy(
+                        alpha = 0.2f
+                    ),
+                    tint = Color.Black.copy(alpha = .1f),
+                    blurRadius = 40.dp,
+                )
+            ,
+            contentPadding = contentPadding
+        ) {
+            stickyHeader {
+                WalletProgressIndicator()
+            }
+            item {
+                Box(
+                    modifier = Modifier
+                        .padding(
+                            vertical = 12.dp
+                        )
+                        .fillParentMaxWidth()
+                ) {
+                    Text(
+                        Formats.getDisplayAmount(balance ?: 0),
+                        style = MaterialTheme.typography
+                            .displaySmall,
+                        modifier = Modifier.fillParentMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
                 }
-                item {
-                    Box(
-                        modifier = Modifier
-                            .padding(
-                                vertical = 12.dp
+            }
+            items(transactions.size, key = { transactions[it].getListKey() }) {
+                with(sharedTransitionScope) {
+                    TransactionItem(
+                        transactions[it], modifier = Modifier
+                            .clickable {
+                                onItemClick(transactions[it])
+                            }
+                            .sharedElement(
+                                sharedTransitionScope.rememberSharedContentState(
+                                    key = "${transactions[it].hash}",
+                                ),
+                                animatedVisibilityScope = animatedContentScope
                             )
-                            .fillParentMaxWidth()
-                    ) {
-                        Text(
-                            Formats.getDisplayAmount(balance ?: 0),
-                            style = MaterialTheme.typography
-                                .displaySmall,
-                            modifier = Modifier.fillParentMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                items(transactions.size) {
-                    with(sharedTransitionScope) {
-                        TransactionItem(
-                            transactions[it], modifier = Modifier
-                                .clickable {
-                                    onItemClick(transactions[it])
-                                }
-                                .sharedElement(
-                                    sharedTransitionScope.rememberSharedContentState(
-                                        key = "${transactions[it].hash}",
-                                    ),
-                                    animatedVisibilityScope = animatedContentScope
-                                )
-                        )
-                    }
+                    )
                 }
             }
         }

@@ -116,6 +116,7 @@ class SecureWipeViewModel(
             _wipeProgressMessage.postValue("Clearing Logs")
             delay(1000)
             logRepository.clear()
+            AnonConfig.disposeState()
             _wipeProgress.postValue(.8f)
             _wipeProgressMessage.postValue("Logs Cleared")
             delay(1200)

@@ -34,7 +34,6 @@ class AppViewModel(private val walletState: WalletState, private val torService:
             walletExist.emit(
                 AnonConfig.getDefaultWalletFile(AnonConfig.context!!).exists()
             )
-            delay(300)
             splashInit = true
         }
     }
