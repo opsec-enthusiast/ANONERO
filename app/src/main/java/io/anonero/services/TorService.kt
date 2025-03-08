@@ -27,7 +27,7 @@ class TorService(prefs:SharedPreferences) {
     val scope = CoroutineScope(SupervisorJob())
 
     private val _socksSharedFlow =
-        MutableSharedFlow<IPSocketAddress>()
+        MutableSharedFlow<IPSocketAddress>(replay = 1)
 
     private val _torLogs =
         MutableSharedFlow<String>(

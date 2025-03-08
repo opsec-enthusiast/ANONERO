@@ -178,8 +178,8 @@ class AnonWalletHandler(
     }
 
     fun getProxy(): Pair<String, Int>? {
-        val proxyHost = prefs.getString(WALLET_PROXY, "")
-        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+        val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
+        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, 3000)
 
         if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
             return Pair(proxyHost, proxyPort)

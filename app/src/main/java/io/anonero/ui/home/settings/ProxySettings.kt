@@ -3,7 +3,6 @@ package io.anonero.ui.home.settings
 import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -14,12 +13,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -52,6 +53,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
@@ -69,8 +71,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import io.anonero.icons.AnonIcons
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.TorService
+import io.anonero.util.WALLET_PROXY
+import io.anonero.util.WALLET_PROXY_PORT
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.runningFold
@@ -101,11 +106,11 @@ class ProxySettingsViewModel(
     private val addressValidationError = MutableLiveData<String?>()
     private val _proxyLoading = MutableLiveData(false)
     private val _proxyAddress = MutableLiveData<Pair<String, Int>?>()
-    private val _useTor = MutableLiveData(false)
+    private val _useManualProxy = MutableLiveData(false)
     val validationError: LiveData<String?> get() = addressValidationError
     val proxy: LiveData<Pair<String, Int>?> get() = _proxyAddress
     val loading: LiveData<Boolean> get() = _proxyLoading
-    val useTor: LiveData<Boolean> get() = _useTor
+    val useManualProxy: LiveData<Boolean> get() = _useManualProxy
     val logs: LiveData<List<String>> = torService.torLogs
         .runningFold<String, List<String>>(emptyList()) { accumulator, value ->
             accumulator + value
@@ -159,18 +164,25 @@ class ProxySettingsViewModel(
 
     private fun updateProxyState() {
         _proxyAddress.postValue(anonWalletHandler.getProxy())
-        _useTor.postValue(anonPrefs.getBoolean(WALLET_USE_TOR, true))
+        _useManualProxy.postValue(!anonPrefs.getBoolean(WALLET_USE_TOR, true))
+        val socks = torService.socks
+        if (anonPrefs.getBoolean(WALLET_USE_TOR, true) && socks != null) {
+            anonPrefs.edit()
+                .putString(WALLET_PROXY, socks.address.value)
+                .putInt(WALLET_PROXY_PORT, socks.port.value)
+                .apply()
+            _proxyAddress.postValue(anonWalletHandler.getProxy())
+        }
     }
 
     fun enableTor(enable: Boolean) {
         val socks = torService.socks
         if (enable && socks != null) {
-            _useTor.postValue(true)
+            _useManualProxy.postValue(false)
             setProxy(socks.address.value, socks.port.value)
             anonPrefs.edit().putBoolean(WALLET_USE_TOR, true).apply()
         } else {
-            disableProxy()
-            _useTor.postValue(false)
+            _useManualProxy.postValue(true)
             anonPrefs.edit().putBoolean(WALLET_USE_TOR, false).apply()
         }
     }
@@ -186,7 +198,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
     val validationError by proxyViewModel.validationError.observeAsState(null)
     val proxy by proxyViewModel.proxy.observeAsState(null)
     val loading by proxyViewModel.loading.observeAsState(false)
-    val useTor by proxyViewModel.useTor.observeAsState(false)
+    val useManualProxy by proxyViewModel.useManualProxy.observeAsState(false)
     var proxyPort by remember { mutableStateOf<Int?>(null) }
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
 
@@ -292,16 +304,15 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         containerColor = Color.Transparent
                     ),
                     headlineContent = {
-                        Text("Tor Proxy")
+                        Text("Manual Proxy")
                     },
                     trailingContent = {
-                        Switch(checked = useTor,
+                        Switch(checked = useManualProxy,
                             thumbContent = {
-                                Text(if (useTor) "ON" else "OFF")
+                                Text(if (useManualProxy) "ON" else "OFF")
                             },
-
-                            onCheckedChange = {
-                                proxyViewModel.enableTor(!useTor)
+                            onCheckedChange = { onState ->
+                                proxyViewModel.enableTor(!onState)
                                 view.performHapticFeedback(
                                     HapticFeedbackConstants.KEYBOARD_TAP
                                 )
@@ -318,7 +329,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
             ) {
                 OutlinedTextField(
                     value = proxyAddress,
-                    enabled = !useTor,
+                    enabled = useManualProxy,
                     isError = validationError != null,
                     supportingText = {
                         if (validationError != null)
@@ -349,11 +360,12 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         )
                 )
                 OutlinedTextField(
-                    enabled = !useTor,
+                    enabled = useManualProxy,
                     value = proxyPort?.toString() ?: "",
                     shape = MaterialTheme.shapes.medium,
+                    isError = proxyPort == null,
                     onValueChange = { port ->
-                        proxyPort = port.toInt()
+                        proxyPort = port.toIntOrNull()
                     },
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done,
@@ -369,7 +381,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         .weight(1f)
                 )
             }
-            if (!useTor)
+            if (useManualProxy)
                 OutlinedButton(
                     enabled = proxyAddress.isNotEmpty() && proxyPort != null,
                     onClick = {
@@ -391,8 +403,38 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(12.dp)
                 ) {
-                    Text(if (proxy != null) "Disable Proxy" else "Set External Proxy")
+                    Text("Set External Proxy")
                 }
+
+            if (!useManualProxy) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 48.dp)
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        AnonIcons.ShieldCheck, contentDescription = "tor",
+                        tint = Color.White.copy(
+                            alpha = 0.8f
+                        ), modifier = Modifier.size(44.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Using built in tor",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onBackground.copy(
+                                alpha = 0.8f
+                            )
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp
+                        )
+                    )
+                }
+            }
         }
 
     }
