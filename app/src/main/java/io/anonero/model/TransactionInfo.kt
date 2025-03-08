@@ -108,6 +108,10 @@ class TransactionInfo : Parcelable, Comparable<TransactionInfo> {
         return "$direction@$blockheight $amount"
     }
 
+    fun getListKey(): String {
+        return this.hash ?: "${timestamp}:${direction.value}:${amount}"
+    }
+
     override fun writeToParcel(out: Parcel, flags: Int) {
         out.writeInt(direction.value)
         out.writeByte((if (isPending) 1 else 0).toByte())
