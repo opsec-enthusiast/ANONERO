@@ -70,39 +70,38 @@ class AnonWalletHandler(
         walletState.update()
         try {
             val host = prefs.getString(NodeFields.RPC_HOST.value, "")
-            val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
+            val rpcPort = prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
             val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
-            val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
-            val proxyPort = prefs.getInt(WALLET_PROXY_PORT,  3000)
-            val useTor = prefs.getBoolean(WALLET_USE_TOR, false)
-
-            if (host?.isEmpty() == true) {
-                throw Exception("Node not found")
-            }
-            if (useTor) {
+            val proxyHost = prefs.getString(WALLET_PROXY, "")
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+            val useTor = prefs.getBoolean(WALLET_USE_TOR, true)
+            if (useTor ||  proxyHost.isNullOrBlank()) {
                 while (torService.socks == null) {
                     delay(100)
                 }
                 val socket = torService.socks
                 WalletManager.instance?.setProxy("${socket?.value}")
-            } else if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
+
+            } else if (proxyHost.isNotEmpty() && proxyPort != -1) {
                 WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
             } else {
-                WalletManager.instance?.setProxy("")
+                throw Exception("no proxy")
             }
             walletState.setLoading(true)
-            val nodeObj = JSONObject()
-                .apply {
-                    put(NodeFields.RPC_HOST.value, host)
-                    put(NodeFields.RPC_PORT.value, rpcPort)
-                    put(NodeFields.RPC_USERNAME.value, rpcUsername)
-                    put(NodeFields.RPC_PASSWORD.value, rpcPassphrase)
-                    put(NodeFields.RPC_NETWORK.value, AnonConfig.getNetworkType().toString())
-                    put(NodeFields.NODE_NAME.value, "anon")
-                }
-            val node = Node.fromJson(nodeObj)
-            updateDaemon(node)
+            if (host?.isNotEmpty() == true) {
+                val nodeObj = JSONObject()
+                    .apply {
+                        put(NodeFields.RPC_HOST.value, host)
+                        put(NodeFields.RPC_PORT.value, rpcPort)
+                        put(NodeFields.RPC_USERNAME.value, rpcUsername)
+                        put(NodeFields.RPC_PASSWORD.value, rpcPassphrase)
+                        put(NodeFields.RPC_NETWORK.value, AnonConfig.getNetworkType().toString())
+                        put(NodeFields.NODE_NAME.value, "anon")
+                    }
+                val node = Node.fromJson(nodeObj)
+                updateDaemon(node)
+            }
             walletState.update()
             wallet.init(0)
             wallet.setTrustedDaemon(true)
@@ -111,7 +110,7 @@ class AnonWalletHandler(
             walletState.update()
             walletState.setLoading(false)
         } catch (e: Exception) {
-            Timber.tag(TAG).e(e)
+            e.printStackTrace()
             walletState.setLoading(false)
         }
 
@@ -150,7 +149,7 @@ class AnonWalletHandler(
                     daemonHeight = 0L
                 )
             )
-            Timber.tag(TAG).e(e)
+            e.printStackTrace()
         }
 
     }
@@ -168,18 +167,19 @@ class AnonWalletHandler(
                 putString(WALLET_PROXY, proxy)
                 putInt(WALLET_PROXY_PORT, port ?: -1)
             }.apply()
-            val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
-            val daemonHost = prefs.getString(NodeFields.RPC_HOST.value, null)
-            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, 3000)
-            if (proxyHost?.isNotEmpty() == true && proxyPort != -1 && daemonHost != null ) {
+            val proxyHost = prefs.getString(WALLET_PROXY, "")
+            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+            if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
                 WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
+            } else {
+                WalletManager.instance?.setProxy("")
             }
         }
     }
 
     fun getProxy(): Pair<String, Int>? {
-        val proxyHost = prefs.getString(WALLET_PROXY, "127.0.0.1")
-        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, 3000)
+        val proxyHost = prefs.getString(WALLET_PROXY, "")
+        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
 
         if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {
             return Pair(proxyHost, proxyPort)

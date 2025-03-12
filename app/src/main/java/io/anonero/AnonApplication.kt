@@ -77,9 +77,9 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
 
     override fun onTerminate() {
         val torService:TorService = get()
-        super.onTerminate()
         torService.dispose()
         anonLogTree.cleanup()
+        super.onTerminate()
     }
 
     override fun uncaughtException(t: Thread, e: Throwable) {

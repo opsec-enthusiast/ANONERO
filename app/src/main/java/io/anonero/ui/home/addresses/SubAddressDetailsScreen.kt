@@ -7,7 +7,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,6 +25,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.services.WalletState
+import io.anonero.ui.components.SubAddressLabelDialog
 import io.anonero.ui.home.TransactionItem
 import io.anonero.util.Formats
 import kotlinx.coroutines.flow.map
@@ -65,16 +68,28 @@ fun SubAddressDetailScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope
 ) {
-
+    val walletState: WalletState by inject(WalletState::class.java)
     val subAddressDetailVm = viewModel {
         SubAddressDetail(subAddress)
     }
     val transactions by subAddressDetailVm.transactions.observeAsState(listOf())
-
+    var addressLabel by remember { mutableStateOf(subAddress.label) }
     BackHandler {
         onBackPress()
     }
 
+    var labelDialog by remember { mutableStateOf(false) }
+
+    if (labelDialog)
+        SubAddressLabelDialog(
+            label = addressLabel,
+            onSave = { label ->
+                walletState.updateAddressLabel(label, subAddress.addressIndex)
+                addressLabel = label
+                labelDialog = false
+            }, onCancel = {
+                labelDialog = false
+            })
     Scaffold(
         topBar = {
             TopAppBar(
@@ -108,7 +123,10 @@ fun SubAddressDetailScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    subAddress.displayLabel,
+                                    addressLabel,
+                                    modifier = Modifier.clickable {
+                                        labelDialog = true
+                                    },
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
@@ -136,7 +154,8 @@ fun SubAddressDetailScreen(
                     TransactionItem(transactions[it], Modifier
                         .clickable {
                             onTransactionClick(transactions[it])
-                        }.sharedElement(
+                        }
+                        .sharedElement(
                             sharedTransitionScope.rememberSharedContentState(key = "${transactions[it].hash}"),
                             animatedVisibilityScope = animatedContentScope
                         )

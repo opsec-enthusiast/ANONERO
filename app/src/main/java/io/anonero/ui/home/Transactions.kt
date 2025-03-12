@@ -80,7 +80,8 @@ class TransactionsViewModel : ViewModel() {
         it ?: 0L
     }.asLiveData()
 
-    val transactions = walletState.transactions.asLiveData()
+    val transactions = walletState.transactions
+        .asLiveData()
 
 }
 
@@ -170,7 +171,7 @@ fun TransactionScreen(
                 ),
                 scrollBehavior = scrollBehavior,
                 title = {
-                    Text("[ANON]")
+                    Text("[ΛИ0И]")
                 },
                 actions = {
                     LockButton(
@@ -286,7 +287,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row {
-            if (confirmations > 10)
+            if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
                     modifier = Modifier.size(28.dp),
@@ -295,9 +296,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 )
             else
                 Box(
-                    modifier = Modifier.size(28.dp),
-
-                    ) {
+                    modifier = Modifier.size(28.dp)) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(28.dp),
                         strokeWidth = 2.dp ,

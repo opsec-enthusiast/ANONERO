@@ -1,7 +1,9 @@
 package io.anonero.services
 
 import android.content.SharedPreferences
+import android.util.Log
 import io.anonero.AnonConfig
+import io.matthewnelson.kmp.tor.runtime.Action.Companion.restartDaemonAsync
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.stopDaemonAsync
 import io.matthewnelson.kmp.tor.runtime.RuntimeEvent
@@ -18,11 +20,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 
 private const val TAG = "TorService"
 
-class TorService(prefs:SharedPreferences) {
+class TorService(prefs: SharedPreferences) {
 
     val scope = CoroutineScope(SupervisorJob())
 
@@ -62,7 +65,7 @@ class TorService(prefs:SharedPreferences) {
                 }
             }
         }
-        config { environment ->
+        config { _ ->
             TorOption.SocksPort.configure { auto() }
         }
         required(TorEvent.ERR)
@@ -85,11 +88,18 @@ class TorService(prefs:SharedPreferences) {
 
     fun restart() {
         scope.launch {
-            runtime.stopDaemonAsync()
+            runtime.restartDaemonAsync()
         }
     }
 
     fun dispose() {
-        scope.cancel("Dispose")
+        scope.launch {
+            runtime.stopDaemonAsync()
+        }.invokeOnCompletion {
+            it?.let {
+                Timber.tag(TAG).i("Tor dispose exception: ${it.message}")
+            }
+           scope.cancel()
+        }
     }
 }

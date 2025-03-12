@@ -8,7 +8,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -247,72 +246,73 @@ fun TransactionDetailScreen(
         })
     }) { paddingValues ->
         if (transactionInfo != null) {
-            Box(modifier = Modifier.padding(paddingValues)) {
-                LazyColumn(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                ) {
-                    item {
-                        with(sharedTransitionScope) {
-                            TransactionItem(
-                                tx = transactionInfo!!,
-                                modifier = Modifier
-                                    .clickable {
+            LazyColumn(
+                contentPadding = paddingValues,
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            ) {
+                item {
+                    with(sharedTransitionScope) {
+                        TransactionItem(
+                            tx = transactionInfo!!,
+                            modifier = Modifier
+                                .clickable {
 
-                                    }.sharedElement(
+                                }
+                                .sharedElement(
                                     sharedTransitionScope.rememberSharedContentState(
                                         key = "${transactionInfo!!.hash}",
                                     ),
                                     animatedVisibilityScope = animatedContentScope
                                 )
-                            )
-                        }
-                    }
-                    item {
-                        DetailItem(
-                            title = "DESTINATION",
-                            subtitle = destinations
                         )
                     }
-                    item {
-                        DetailItem(
-                            title = "DESCRIPTION",
-                            subtitle = notes.text,
-                            trailing = {
-                                IconButton(onClick = {
-                                    notesDialog = true
-                                    view.performHapticFeedback(
-                                        HapticFeedbackConstants.CONTEXT_CLICK
-                                    )
-                                }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "Edit")
-                                }
+                }
+                item {
+                    DetailItem(
+                        title = "DESTINATION",
+                        subtitle = destinations
+                    )
+                }
+                item {
+                    DetailItem(
+                        title = "DESCRIPTION",
+                        subtitle = notes.text,
+                        trailing = {
+                            IconButton(onClick = {
+                                notesDialog = true
+                                view.performHapticFeedback(
+                                    HapticFeedbackConstants.CONTEXT_CLICK
+                                )
+                            }) {
+                                Icon(Icons.Filled.Edit, contentDescription = "Edit")
                             }
-                        )
-                    }
-                    item {
-                        DetailItem(
-                            title = "TRANSACTION ID",
-                            subtitle = transactionInfo?.hash ?: "____"
-                        )
-                    }
-                    item {
-                        DetailItem(
-                            title = "TRANSACTION KEY",
-                            subtitle = transactionKey
-                        )
-                    }
-                    item {
-                        DetailItem(
-                            title = "CONFIRMATION BLOCK",
-                            subtitle = "${transactionInfo?.blockheight ?: "____"}"
-                        )
-                    }
-                    item {
-                        DetailItem(
-                            title = "TIME",
-                            subtitle = Formats.formatTransactionTime(transactionInfo!!.timestamp)
-                        )
-                    }
+                        }
+                    )
+                }
+                item {
+                    DetailItem(
+                        title = "TRANSACTION ID",
+                        subtitle = transactionInfo?.hash ?: "____"
+                    )
+                }
+                item {
+                    DetailItem(
+                        title = "TRANSACTION KEY",
+                        subtitle = transactionKey
+                    )
+                }
+                item {
+                    DetailItem(
+                        title = "CONFIRMATION BLOCK",
+                        subtitle = "${transactionInfo?.blockheight ?: "____"}"
+                    )
+                }
+                item {
+                    DetailItem(
+                        modifier = Modifier.padding(bottom = 24.dp),
+                        title = "TIME",
+                        subtitle = Formats.formatTransactionTime(transactionInfo!!.timestamp,"HH:mm dd/MM/yyy")
+                    )
                 }
             }
         }

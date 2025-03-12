@@ -234,9 +234,8 @@ class NodeSettingsViewModel(
                 NodeFields.RPC_HOST.value,
                 null
             )
-            editor.putString(
-                NodeFields.RPC_PORT.value,
-                null
+            editor.putInt(
+                NodeFields.RPC_PORT.value,0
 
             )
             editor.putString(
@@ -414,7 +413,7 @@ fun NodeListItem(
         headlineContent = {
             Text(
                 node.toNodeString(), style = MaterialTheme
-                    .typography.labelMedium
+                    .typography.bodySmall
             )
         },
         supportingContent = {

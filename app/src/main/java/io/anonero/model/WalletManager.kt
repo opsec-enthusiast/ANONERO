@@ -235,7 +235,6 @@ class WalletManager {
     }
 
     fun getDaemonAddress(): String? {
-        checkNotNull(daemonAddress) { "use setDaemon() to initialise daemon and net first!" }
         return daemonAddress
     }
 

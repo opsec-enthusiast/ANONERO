@@ -15,6 +15,7 @@
  */
 package io.anonero.model
 
+import android.util.Log
 import android.util.Pair
 import timber.log.Timber
 import java.io.File
@@ -38,7 +39,6 @@ class Wallet {
             }
             return field
         }
-        private set
     var coins: Coins? = null
         get() {
             if (field == null) {
@@ -46,7 +46,6 @@ class Wallet {
             }
             return field
         }
-        private set
 
     internal constructor(handle: Long) {
         this.handle = handle
@@ -111,8 +110,10 @@ class Wallet {
     private external fun getAddressJ(accountIndex: Int, addressIndex: Int): String
     private fun getSubaddressObject(accountIndex: Int, subAddressIndex: Int): Subaddress {
         return Subaddress(
-            accountIndex, subAddressIndex,
-            getSubaddress(subAddressIndex), getSubaddressLabel(subAddressIndex)
+            accountIndex,
+            subAddressIndex,
+            getSubaddress(subAddressIndex), 
+            getSubaddressLabel(0,subAddressIndex)
         )
     }
 

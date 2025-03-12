@@ -34,17 +34,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.model.Subaddress
 import io.anonero.services.WalletState
 import io.anonero.util.Formats
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 
 
 class SubAddressListViewModel : ViewModel() {
+
     private val walletState: WalletState by inject(WalletState::class.java)
 
     val subAddresses = walletState.subAddresses.asLiveData()
+
+
+    fun getNextAddress() {
+        viewModelScope.launch(Dispatchers.IO){
+            walletState.getNewAddress()
+        }
+    }
 
 }
 
@@ -76,7 +87,7 @@ fun SubAddressesScreen(
                 actions = {
                     IconButton(
                         onClick = {
-
+                            vm.getNextAddress()
                         }
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -109,7 +120,7 @@ fun SubAddressesScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    address.displayLabel, color = MaterialTheme.colorScheme.primary,
+                                    address.label, color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
                                     Formats.getDisplayAmount(address.totalAmount),

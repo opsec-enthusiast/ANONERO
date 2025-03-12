@@ -1,8 +1,8 @@
 package io.anonero.util
 
 import android.icu.text.CompactDecimalFormat
+import android.util.Log
 import io.anonero.AnonConfig
-import io.anonero.model.Wallet
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -31,29 +31,12 @@ object Formats {
         return d.toPlainString()
     }
 
-    fun formatTransactionTime(timestamp: Long): String {
+    fun formatTransactionTime(timestamp: Long,pattern: String = "HH:mm\ndd/MM"): String {
         val instant =
-            Instant.ofEpochMilli(timestamp)
-
+            Instant.ofEpochSecond(timestamp)
         val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-
-        val formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyy")
-
+        val formatter = DateTimeFormatter.ofPattern(pattern)
         return dateTime.format(formatter)
-
-    }
-
-
-    fun formatTransactionDetailTime(timestamp: Long): String {
-        val instant =
-            Instant.ofEpochMilli(timestamp)
-
-        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-
-        val formatter = DateTimeFormatter.ofPattern("HH:mm\nMM/dd")
-
-        return dateTime.format(formatter)
-
     }
 
 

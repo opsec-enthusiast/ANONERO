@@ -61,18 +61,18 @@ fun SetupNodeComposable(
     var rpcHost by remember { mutableStateOf("") }
     var rpcUsername by remember { mutableStateOf("") }
     var rpcPassPhrase by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf("") }
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
     val nodesRepository = koinInject<NodesRepository>()
-    val nodes by nodesRepository.nodesFlow.collectAsState(listOf())
 
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
         rpcHost = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
         rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: ""
         rpcPassPhrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: ""
-        val rpcPort = prefs.getString(NodeFields.RPC_PORT.value, "")
-        if ((rpcPort ?: "").isNotEmpty()) {
+        val rpcPort = prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
+        if (rpcHost.isNotEmpty()) {
             rpcHost = "${rpcHost}:${rpcPort}"
         }
     }
@@ -228,39 +228,49 @@ fun SetupNodeComposable(
                             Context.MODE_PRIVATE
                         )
                         val editor = prefs.edit()
-
-                        val rpcPort = Node.defaultRpcPort.toString()
                         try {
-                            val cleanURL = rpcHost.trim().lowercase()
-                            val urlForParsing = if (cleanURL.startsWith("http")) {
-                                cleanURL
-                            } else {
-                                if (cleanURL.startsWith("https")) {
+                            if (rpcHost.isNotEmpty()) {
+                                val cleanURL = rpcHost.trim().lowercase()
+                                val urlForParsing = if (cleanURL.startsWith("http")) {
                                     cleanURL
                                 } else {
-                                    "http://$cleanURL"
+                                    if (cleanURL.startsWith("https")) {
+                                        cleanURL
+                                    } else {
+                                        "http://$cleanURL"
+                                    }
                                 }
-                            }
-                            val validatedUrl = Uri.parse(urlForParsing)
-                            editor.putString(NodeFields.RPC_HOST.value, validatedUrl.host)
-                            editor.putString(NodeFields.RPC_PORT.value, rpcPort)
-                            editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
-                            editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
-                            editor.apply()
-                            val nodeObj = JSONObject()
-                                .apply {
-                                    put(NodeFields.RPC_HOST.value, validatedUrl.host)
-                                    put(NodeFields.RPC_PORT.value, rpcPort)
-                                    put(NodeFields.RPC_USERNAME.value, rpcUsername)
-                                    put(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
-                                    put(
-                                        NodeFields.RPC_NETWORK.value,
-                                        AnonConfig.getNetworkType().toString()
-                                    )
-                                    put(NodeFields.NODE_NAME.value, validatedUrl.host)
+                                val validatedUrl = Uri.parse(urlForParsing)
+                                if (validatedUrl.host == null) {
+                                    error = "Invalid Url"
                                 }
-                            Node.fromJson(nodeObj)?.let {
-                                nodesRepository.addItem(it)
+                                val nodeJson = JSONObject()
+                                    .apply {
+                                        put(NodeFields.RPC_HOST.value, validatedUrl.host)
+                                        put(
+                                            NodeFields.RPC_PORT.value,
+                                            if (validatedUrl.port == -1) Node.defaultRpcPort else validatedUrl.port
+                                        )
+                                        put(NodeFields.RPC_USERNAME.value, rpcUsername)
+                                        put(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
+                                        put(
+                                            NodeFields.RPC_NETWORK.value,
+                                            AnonConfig.getNetworkType().toString()
+                                        )
+                                        put(NodeFields.NODE_NAME.value, "anon")
+                                    }
+
+                                editor.putString(NodeFields.RPC_HOST.value, validatedUrl.host)
+                                editor.putInt(
+                                    NodeFields.RPC_PORT.value,
+                                    if (validatedUrl.port == -1) Node.defaultRpcPort else validatedUrl.port
+                                )
+                                editor.putString(NodeFields.RPC_USERNAME.value, rpcUsername)
+                                editor.putString(NodeFields.RPC_PASSWORD.value, rpcPassPhrase)
+                                editor.apply()
+                                Node.fromJson(nodeJson)?.let {
+                                    nodesRepository.addItem(it)
+                                }
                             }
                             oNextPressed()
                         } catch (_: Exception) {

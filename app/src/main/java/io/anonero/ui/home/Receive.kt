@@ -1,14 +1,16 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import androidx.compose.foundation.background
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,16 +24,21 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.anonero.icons.AnonIcons
+import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.QrCodeImage
+import io.anonero.ui.components.SubAddressLabelDialog
 import org.koin.java.KoinJavaComponent.inject
 
 
@@ -42,15 +49,23 @@ fun ReceiveScreen(
     onBackPress: () -> Unit = {},
     navigateToSubAddresses: () -> Unit = {}
 ) {
-
     val walletState: WalletState by inject(WalletState::class.java)
-
     val nextAddress by walletState.nextAddress.collectAsState(null)
+    var labelDialog by remember { mutableStateOf(false) }
+
+    if (labelDialog)
+        SubAddressLabelDialog(
+            label = nextAddress!!.label,
+            onSave = { label ->
+            walletState.updateAddressLabel(label, nextAddress!!.addressIndex)
+            labelDialog = false
+        }, onCancel = {
+            labelDialog = false
+        })
 
     Scaffold(modifier = modifier,
         topBar = {
             TopAppBar(
-
                 title = {
 
                 },
@@ -71,35 +86,53 @@ fun ReceiveScreen(
             )
         }) {
         if (nextAddress != null) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(it),
+                    .fillMaxSize(),
+                contentPadding = it,
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                verticalArrangement = Arrangement.Top,
             ) {
-                Spacer(Modifier.height(60.dp))
-                Text(
-                    text = nextAddress!!.label,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                QrCodeImage(
-                    size = 320.dp,
-                    content = nextAddress!!.address,
-                    modifier = Modifier
-                        .padding(20.dp)
-                )
-                SelectionContainer {
+                item {
                     Text(
-                        nextAddress!!.address,
-                        modifier = Modifier.width(250.dp)
+                        text = nextAddress!!.label,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                labelDialog = true
+                            },
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                    )
+
+                }
+                item {
+                    Spacer(Modifier.height(24.dp))
+                }
+                item {
+                    QrCodeImage(
+                        size = 300.dp,
+                        content = nextAddress!!.address,
+                        modifier = Modifier
+                            .padding(20.dp)
                     )
                 }
+                item {
+                    SelectionContainer {
+                        Text(
+                            nextAddress!!.address,
+                            modifier = Modifier.width(250.dp)
+                        )
+                    }
+                }
+                item {
+                    Spacer(Modifier.height(12.dp))
+                }
+
             }
         }
     }

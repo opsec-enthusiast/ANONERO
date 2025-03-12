@@ -6,7 +6,7 @@
     </style>
 
     <style name="Theme.Anonnero.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenBackground">@color/black</item>
         <item name="postSplashScreenTheme">@style/Theme.Anonnero</item>
         <item name="android:windowBackground">@color/black</item>
     </style>

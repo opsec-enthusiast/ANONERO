@@ -1,5 +1,6 @@
 package io.anonero.ui.util
 
+import android.util.Log
 import io.anonero.model.Subaddress
 import io.anonero.model.Wallet
 
@@ -27,8 +28,9 @@ fun Wallet.getLastUnusedIndex(): Int {
 fun Wallet.getLatestSubAddress(): Subaddress {
     val lastUsedSubAddress = getLastUnusedIndex()
     val address = this.getSubaddressObject(lastUsedSubAddress + 1)
-    if (lastUsedSubAddress == this.numSubaddresses) {
-        this.addSubaddress(getAccountIndex(), "Subaddress #${address.addressIndex}")
+    if (this.getSubaddressLabel(address.addressIndex).isEmpty()) {
+        this.addSubaddress(getAccountIndex(), "Subaddress #${this.numSubaddresses}")
+        this.store()
     }
     return address
 }
@@ -36,8 +38,10 @@ fun Wallet.getLatestSubAddress(): Subaddress {
 
 fun Wallet.getAllUsedSubAddresses(): ArrayList<Subaddress> {
     val addresses = arrayListOf<Subaddress>()
-    for (i in 0..this.numSubaddresses) {
-        addresses.add(this.getSubaddressObject(i))
+    for (i in 0 until this.numSubaddresses) {
+        if (this.getSubaddressLabel(i).isNotEmpty()) {
+            addresses.add(this.getSubaddressObject(i))
+        }
     }
     return addresses
 }

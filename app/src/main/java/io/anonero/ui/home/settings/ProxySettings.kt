@@ -4,6 +4,7 @@ import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
 import android.view.HapticFeedbackConstants
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -52,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +73,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.TorService
@@ -78,6 +81,7 @@ import io.anonero.util.WALLET_PROXY
 import io.anonero.util.WALLET_PROXY_PORT
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -136,30 +140,28 @@ class ProxySettingsViewModel(
         }
     }
 
-    fun setProxy(proxy: String, port: Int) {
+    fun setProxy(proxy: String, port: Int): Job {
         _proxyLoading.postValue(true)
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!isNumericAddress(proxy)) {
-                addressValidationError.postValue("Invalid proxy address")
-                return@launch
+        return viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (!isNumericAddress(proxy)) {
+                    addressValidationError.postValue("Invalid proxy address")
+                    return@launch
+                }
+                if (port > 65535) {
+                    addressValidationError.postValue("Invalid port")
+                    return@launch
+                }
+                anonWalletHandler.setProxy(proxy = proxy, port = port)
+                updateProxyState()
+                _proxyLoading.postValue(false)
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e)
+                addressValidationError.postValue(e.message)
+            } finally {
+                _proxyLoading.postValue(false)
             }
-            if (port > 65535) {
-                addressValidationError.postValue("Invalid port")
-                return@launch
-            }
-            anonWalletHandler.setProxy(proxy = proxy, port = port)
-            updateProxyState()
-        }.invokeOnCompletion {
-            if (it != null) {
-                Timber.tag(TAG).e(it)
-            }
-            _proxyLoading.postValue(false)
         }
-    }
-
-    fun disableProxy() {
-        anonWalletHandler.setProxy(proxy = null, port = null)
-        updateProxyState()
     }
 
     private fun updateProxyState() {
@@ -201,7 +203,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
     val useManualProxy by proxyViewModel.useManualProxy.observeAsState(false)
     var proxyPort by remember { mutableStateOf<Int?>(null) }
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
-
+    val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
     val view = LocalView.current
@@ -385,13 +387,21 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                 OutlinedButton(
                     enabled = proxyAddress.isNotEmpty() && proxyPort != null,
                     onClick = {
-                        if (proxy != null && proxy!!.first == proxyAddress && proxy!!.second == proxyPort) {
-                            proxyViewModel.disableProxy()
-                        } else {
-                            if (proxyAddress.isNotEmpty() && proxyPort != null)
-                                proxyViewModel.setProxy(
-                                    proxyAddress, proxyPort!!
-                                )
+                        if (loading) {
+                            return@OutlinedButton
+                        }
+                        proxyViewModel.setProxy(
+                            proxyAddress, proxyPort!!
+                        ).invokeOnCompletion { error ->
+                            if (error == null) {
+                             scope.launch(Dispatchers.Main) {
+                                 Toast.makeText(
+                                     AnonConfig.context,
+                                     "Proxy updated",
+                                     Toast.LENGTH_SHORT
+                                 ).show()
+                             }
+                            }
                         }
                     },
                     modifier = Modifier
@@ -403,7 +413,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(12.dp)
                 ) {
-                    Text("Set External Proxy")
+                    Text("Update External Proxy")
                 }
 
             if (!useManualProxy) {

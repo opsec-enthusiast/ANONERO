@@ -13,11 +13,13 @@ import io.anonero.FOREGROUND_CHANNEL
 import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.model.node.NodeFields
 import io.anonero.util.Formats
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -26,7 +28,9 @@ import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.core.qualifier.named
 import org.koin.java.KoinJavaComponent.inject
+import timber.log.Timber
 import java.util.Locale
+
 
 const val NOTIFICATION_ID = 2
 
@@ -41,7 +45,7 @@ class AnonNeroService : Service() {
 
     private val TAG: String = AnonNeroService::class.java.simpleName
     private val job = SupervisorJob()
-
+    private var updateJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + job)
     private val walletState: WalletState by inject(WalletState::class.java)
     private val torService: TorService by inject(TorService::class.java)
@@ -63,6 +67,7 @@ class AnonNeroService : Service() {
         return START_STICKY
     }
 
+
     private fun start() {
         startForeground(NOTIFICATION_ID, foregroundNotification())
         val wallet = WalletManager.instance?.wallet
@@ -75,7 +80,7 @@ class AnonNeroService : Service() {
             }
         }
         // Update notification state every 2 seconds
-        scope.launch {
+        updateJob = scope.launch {
             while (scope.isActive) {
                 updateNotificationState()
                 delay(1000)
@@ -83,14 +88,16 @@ class AnonNeroService : Service() {
         }
         scope.launch {
             walletState.syncProgress.collect {
-                val torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
+                val torSate = if (torService.socks != null
+                    && prefs.getBoolean(WALLET_USE_TOR, true)
+                ) {
                     " | Using Tor Proxy: ${torService.socks?.port.toString()}"
                 } else {
                     ""
                 }
                 if (it != null) {
                     withContext(Dispatchers.Main) {
-                        showProgress(it,torSate)
+                        showProgress(it, torSate)
                     }
                 }
             }
@@ -101,7 +108,8 @@ class AnonNeroService : Service() {
         val mNotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val wallet = WalletManager.instance?.wallet
-        val torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
+        val daemon = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
+        var torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
             " | Using Tor Proxy: ${torService.socks?.port.toString()}"
         } else {
             ""
@@ -134,6 +142,9 @@ class AnonNeroService : Service() {
                         }
                     }
                 }
+                if (daemon.isEmpty()) {
+                    torSate = ""
+                }
                 withContext(Dispatchers.Main) {
                     mNotificationManager.notify(
                         NOTIFICATION_ID,
@@ -149,17 +160,14 @@ class AnonNeroService : Service() {
             content = if (it.left != 0L) "Syncing: ${
                 Formats.convertNumber(
                     it.left,
-                Locale.getDefault()
-            )} blocks left $torSate" else "Syncing blocks completed ${torSate}",
+                    Locale.getDefault()
+                )
+            } blocks left $torSate" else "Syncing blocks completed $torSate",
             progress = it
         )
         val mNotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mNotificationManager.notify(NOTIFICATION_ID, notification)
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
     }
 
     private fun foregroundNotification(
@@ -197,14 +205,22 @@ class AnonNeroService : Service() {
                 }
             }
             .setGroup("BackgroundService")
-//            .setContentIntent(resultPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
     }
 
     override fun onDestroy() {
-        job.cancel()
+        updateJob?.cancel()
+        Timber.tag(TAG).i("onDestroy: ")
         super.onDestroy()
+        job.cancel()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Timber.tag(TAG).i("onTaskRemoved: ")
+        updateJob?.cancel()
+        job.cancel()
+        super.onTaskRemoved(rootIntent)
     }
 }

@@ -193,6 +193,10 @@ fun BottomBarTabs(
                 targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .35f,
                 label = "alpha"
             )
+            val colorAnim by animateColorAsState(
+                targetValue = if (selectedTab == tabs.indexOf(tab)) MaterialTheme.colorScheme.primary else Color.White,
+                label = "color"
+            )
             val scale by animateFloatAsState(
                 targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .98f,
                 visibilityThreshold = .000001f,
@@ -216,7 +220,7 @@ fun BottomBarTabs(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Icon(imageVector = tab.icon, contentDescription = "tab ${tab.title}")
+                Icon(imageVector = tab.icon, contentDescription = "tab ${tab.title}", tint = colorAnim)
             }
         }
     }
