@@ -21,10 +21,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -52,9 +54,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -97,7 +96,6 @@ fun TransactionScreen(
     navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {},
     animatedContentScope: AnimatedContentScope,
     sharedTransitionScope: SharedTransitionScope,
-    hazeState: HazeState
 ) {
 
     val transactionsViewModel = viewModel<TransactionsViewModel>()
@@ -196,27 +194,31 @@ fun TransactionScreen(
                         }, loading = settingBSync
                     )
                     IconButton(
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = Color.White
+                        ),
                         onClick = {
                             showScanner = true
                         }
                     ) {
-                        Icon(AnonIcons.Scan, contentDescription = "")
+                        Icon(AnonIcons.Scan, contentDescription = "Scan")
+                    }
+                    IconButton(
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = Color.White
+                        ),
+                        onClick = {
+
+                        }
+                    ) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More")
                     }
                 }
             )
         }
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                .haze(
-                    hazeState,
-                    backgroundColor = MaterialTheme.colorScheme.background.copy(
-                        alpha = 0.2f
-                    ),
-                    tint = Color.Black.copy(alpha = .1f),
-                    blurRadius = 40.dp,
-                )
-            ,
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = contentPadding
         ) {
             stickyHeader {
@@ -286,7 +288,10 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
             if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
@@ -296,7 +301,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 )
             else
                 Box(
-                    modifier = Modifier.size(28.dp)) {
+                    modifier = Modifier.size(28.dp).align(Alignment.CenterVertically)) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(28.dp),
                         strokeWidth = 2.dp ,
@@ -332,6 +337,9 @@ fun LockButton(onLock: () -> Unit, loading: Boolean = false) {
     val walletLoading by walletState.isLoading.asLiveData().observeAsState(false)
     IconButton(
         modifier = Modifier.alpha(if (walletLoading) 0.2f else 1.0f),
+        colors = IconButtonDefaults.iconButtonColors(
+            contentColor = Color.White
+        ),
         onClick = {
             if (walletLoading || loading) {
                 return@IconButton

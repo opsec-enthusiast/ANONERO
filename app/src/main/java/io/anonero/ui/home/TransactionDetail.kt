@@ -56,7 +56,6 @@ import io.anonero.model.TransactionInfo
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.util.Formats
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinApplication
 import org.koin.compose.koinInject
@@ -89,29 +88,26 @@ fun TransactionDetailScreen(
         }
         scope.launch {
             notesDialog = false
-            WalletManager.instance?.wallet?.setUserNote(transactionInfo!!.hash, notes.text)
             view.performHapticFeedback(
                 HapticFeedbackConstants.CONTEXT_CLICK
             )
-            delay(120)
-            view.performHapticFeedback(
-                HapticFeedbackConstants.CONTEXT_CLICK
-            )
+            walletState.setTransactionNote(notes.text, transactionInfo!!)
         }
     }
 
     LaunchedEffect(true) {
         scope.launch {
             transactionInfo = transactions.find { it.hash == transactionId }
+            val wallet = WalletManager.instance?.wallet ?: return@launch
             if (transactionInfo != null) {
-                var dests = ""
+                var destination = ""
                 transactionInfo?.transfers?.forEach {
-                    dests = "${it.address}\n${dests}"
+                    destination = "${it.address}\n${destination}"
                 }
-                destinations = dests.trim()
+                destinations = destination.trim()
 
                 if (transactionInfo?.direction == TransactionInfo.Direction.Direction_In) {
-                    destinations = WalletManager.instance?.wallet?.getSubaddress(
+                    destinations = wallet.getSubaddress(
                         0,
                         transactionInfo!!.addressIndex
                     )
@@ -119,7 +115,7 @@ fun TransactionDetailScreen(
 
                 }
                 transactionKey =
-                    WalletManager.instance?.wallet?.getTxKey(transactionInfo!!.hash) ?: "____"
+                    wallet.getTxKey(transactionInfo!!.hash) ?: "____"
 
                 transactionInfo?.notes?.let {
                     notes = notes.copy(
@@ -185,7 +181,9 @@ fun TransactionDetailScreen(
                         }
                     ),
                     onValueChange = {
-                        notes = it
+                        if(it.text.length <= 24) {
+                            notes = it
+                        }
                     },
                 )
             },
@@ -297,6 +295,16 @@ fun TransactionDetailScreen(
                 }
                 item {
                     DetailItem(
+                        title = "TRANSACTION FEE",
+                        subtitle = if (transactionInfo?.fee != null) {
+                            Formats.getDisplayAmount(transactionInfo?.fee!!)
+                        } else {
+                            "____"
+                        }
+                    )
+                }
+                item {
+                    DetailItem(
                         title = "TRANSACTION KEY",
                         subtitle = transactionKey
                     )
@@ -311,7 +319,10 @@ fun TransactionDetailScreen(
                     DetailItem(
                         modifier = Modifier.padding(bottom = 24.dp),
                         title = "TIME",
-                        subtitle = Formats.formatTransactionTime(transactionInfo!!.timestamp,"HH:mm dd/MM/yyy")
+                        subtitle = Formats.formatTransactionTime(
+                            transactionInfo!!.timestamp,
+                            "HH:mm dd/MM/yyy"
+                        )
                     )
                 }
             }

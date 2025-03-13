@@ -52,7 +52,7 @@ fun SetupPassphrase(
     var passPhraseConfirm by remember { mutableStateOf("") }
 
 
-    LaunchedEffect(passPhraseConfirm) {
+    LaunchedEffect(passPhraseConfirm,passPhrase) {
         passPhraseMatched = if (passPhraseConfirm.isNotEmpty()) {
             passPhraseConfirm == passPhrase
         } else {
@@ -170,7 +170,7 @@ fun SetupPassphrase(
             }
 
             OutlinedButton(
-                enabled = passPhraseMatched,
+                enabled = passPhraseMatched && passPhrase.length >= 4,
                 onClick = {
                     oNextPressed(passPhrase)
                 },

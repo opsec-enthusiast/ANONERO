@@ -1,6 +1,5 @@
 package io.anonero.services
 
-import android.util.Log
 import androidx.compose.ui.util.fastDistinctBy
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
@@ -126,6 +125,15 @@ class WalletState {
             it.getAllUsedSubAddresses().let { allItems ->
                 _subAddresses.update { allItems.reversed() }
             }
+            update()
+        }
+    }
+
+    fun setTransactionNote(note: String, transactionInfo: TransactionInfo) {
+        getWallet?.let {
+            it.setUserNote(transactionInfo.hash, note)
+            it.store()
+            it.refreshHistory()
             update()
         }
     }

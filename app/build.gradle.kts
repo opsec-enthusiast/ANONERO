@@ -143,7 +143,6 @@ dependencies {
     implementation(libs.com.google.accompanist.permissions)
 
     implementation(libs.com.jakewharton.timber)
-    implementation(libs.haze.jetpack.compose)
     implementation(libs.org.bouncycastle.bcprov)
 
     implementation(libs.io.matthewnelson.kmp.tor.runtime)

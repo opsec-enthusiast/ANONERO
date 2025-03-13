@@ -100,10 +100,10 @@ fun SubAddressDetailScreen(
 
     if(showQR){
         ModalBottomSheet(
-            scrimColor = MaterialTheme.colorScheme.background,
-            containerColor =MaterialTheme.colorScheme.background.copy(
+            scrimColor = MaterialTheme.colorScheme.background.copy(
                 alpha = 0.5f
-            ) ,
+            ),
+            containerColor =MaterialTheme.colorScheme.background,
             onDismissRequest = {
                 showQR = false
             }

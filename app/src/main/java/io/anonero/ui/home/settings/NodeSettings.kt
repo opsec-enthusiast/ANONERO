@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -59,6 +61,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -89,6 +93,7 @@ import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
 
 private const val TAG = "NodeSettings"
+
 class NodeSettingsViewModel(
     private val prefs: SharedPreferences,
     private val nodesRepository: NodesRepository
@@ -125,7 +130,6 @@ class NodeSettingsViewModel(
             }
         }
     }
-
 
 
     fun getCurrentDaemonLive() = walletState.daemonInfo.asLiveData()
@@ -183,9 +187,9 @@ class NodeSettingsViewModel(
                     NodeFields.RPC_HOST.value,
                     node.host
                 )
-                editor.putString(
+                editor.putInt(
                     NodeFields.RPC_PORT.value,
-                    node.rpcPort.toString()
+                    node.rpcPort
                 )
                 editor.putString(
                     NodeFields.RPC_USERNAME.value,
@@ -235,7 +239,7 @@ class NodeSettingsViewModel(
                 null
             )
             editor.putInt(
-                NodeFields.RPC_PORT.value,0
+                NodeFields.RPC_PORT.value, 0
 
             )
             editor.putString(
@@ -262,40 +266,57 @@ class NodeSettingsViewModel(
 fun NodeSettings(onBackPress: () -> Unit = {}) {
     val nodeSettingsVM = koinViewModel<NodeSettingsViewModel>()
     var showNodeDetails by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val availableNodes by nodeSettingsVM.nodes.collectAsState(arrayListOf())
     val activeNode by nodeSettingsVM.activeNode.collectAsState(null)
     val scope = rememberCoroutineScope()
 
     if (showNodeDetails)
-        ModalBottomSheet(
-            scrimColor = Color.Black.copy(alpha = .8f),
-            containerColor = Color.Transparent,
+        Dialog(
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnClickOutside = true,
+                dismissOnBackPress = true,
+                decorFitsSystemWindows = false,
+            ),
             onDismissRequest = {
                 showNodeDetails = false
-            },
-            sheetState = sheetState,
-            dragHandle = {
-
-            },
-            contentWindowInsets = {
-                WindowInsets(
-                    bottom = 24.dp
-                )
-            },
+            }
         ) {
-            NodeForm(onBackPress = {
-                scope.launch {
-                    sheetState.hide()
-                    showNodeDetails = false
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                Column {
+                    TopAppBar(
+                        title = {
+
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    showNodeDetails = false
+                                }
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            }
+                        }
+                    )
+                    NodeForm(
+                        onBackPress = {
+                            scope.launch {
+                                showNodeDetails = false
+                            }
+                        }, onConnect = {
+                            nodeSettingsVM.addItem(it)
+                            nodeSettingsVM.viewModelScope
+                                .launch {
+                                    nodeSettingsVM.connect(it)
+                                }
+                        }, nodeSettingsVM
+                    )
                 }
-            }, onConnect = {
-                nodeSettingsVM.addItem(it)
-                nodeSettingsVM.viewModelScope
-                    .launch {
-                        nodeSettingsVM.connect(it)
-                    }
-            }, nodeSettingsVM)
+            }
         }
 
     Scaffold(
@@ -313,9 +334,6 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                         TextButton(
                             onClick = {
                                 showNodeDetails = true
-                                scope.launch {
-                                    sheetState.show()
-                                }
                             }
                         ) { Text("Add Node") }
                     },
@@ -510,28 +528,18 @@ fun NodeForm(
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     Column(
         modifier = Modifier
-            .fillMaxHeight(.6f)
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            )
-            .border(
-                1.dp,
-                color = MaterialTheme.colorScheme.onSecondary.copy(
-                    alpha = .2f
-                ),
-                shape = MaterialTheme.shapes.medium,
-            )
+            .fillMaxHeight(.9f)
             .background(Color.Black),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
             modifier = Modifier
-                .padding(top = 12.dp)
-                .verticalScroll(rememberScrollState())
-                .fillMaxSize(),
+                .verticalScroll(
+                    rememberScrollState()
+                ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
             ListItem(
                 headlineContent = {
                     Text(
@@ -639,18 +647,10 @@ fun NodeForm(
                     )
 
             }
-
-
         }
         Column(
             modifier = Modifier
-                .weight(1f)
-                .padding(
-                    bottom = 8.dp
-                )
-                .padding(
-                    horizontal = 8.dp
-                ), Arrangement.Bottom
+                .safeContentPadding()
         ) {
             OutlinedButton(
                 onClick = {

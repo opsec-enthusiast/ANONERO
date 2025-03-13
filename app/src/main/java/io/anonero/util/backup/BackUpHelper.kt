@@ -47,8 +47,7 @@ object BackUpHelper {
                 put("password", prefs.getString(NodeFields.RPC_PASSWORD.value, ""))
                 put("username", prefs.getString(NodeFields.RPC_USERNAME.value, ""))
                 put("rpcPort",
-                    prefs.getString(NodeFields.RPC_PORT.value, Node.defaultRpcPort.toString())
-                        ?.toInt()
+                    prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
                 )
                 put("networkType", AnonConfig.getNetworkType().toString())
                 put("isOnion", false)

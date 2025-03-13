@@ -8,9 +8,6 @@ import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,7 +41,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dev.chrisbanes.haze.HazeState
 import io.anonero.R
 import io.anonero.model.Subaddress
 import io.anonero.ui.components.MainBottomNavigation
@@ -85,7 +82,6 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: TransactionsRoute
     var showBatteryManagerDialog by remember { mutableStateOf(false) }
-    val hazeState = remember { HazeState() }
 
     val homeScreenRoute =
         mainNavController?.currentBackStackEntryAsState()?.value?.toRoute<HomeScreenRoute>()
@@ -165,18 +161,14 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 visible = showBottomNavigation,
                 enter = slideInVertically(
                     initialOffsetY = { it }, // Slide in from the bottom
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessLow,
-                        dampingRatio = 0.66f,
-                    ),
+                    animationSpec = tween(durationMillis = 500)
                 ),
                 exit = slideOutVertically(
                     targetOffsetY = { it }, // Slide out to the bottom
-                    animationSpec = tween(durationMillis = 400, easing = EaseOut)
+                    animationSpec = tween(durationMillis = 500)
                 )
             ) {
                 MainBottomNavigation(
-                    hazeState = hazeState,
                     currentRoute = currentRoute,
                     onTabSelected = {
                         bottomNavController.navigate(it.route) {
@@ -185,7 +177,6 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         }
                     }
                 )
-
             }
 
         }) { paddingValues ->
@@ -198,7 +189,6 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     composable<TransactionsRoute> {
                         TransactionScreen(
                             modifier = Modifier.padding(paddingValues),
-                            hazeState = hazeState,
                             onItemClick = {
                                 showBottomNavigation = false
                                 it.hash?.let { paymentId ->
