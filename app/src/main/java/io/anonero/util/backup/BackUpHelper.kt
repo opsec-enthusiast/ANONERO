@@ -2,7 +2,6 @@ package io.anonero.util.backup
 
 import android.content.Context
 import android.icu.text.SimpleDateFormat
-import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.di.provideWalletSharedPrefs
 import io.anonero.model.WalletManager

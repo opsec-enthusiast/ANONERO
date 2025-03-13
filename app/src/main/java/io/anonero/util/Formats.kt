@@ -1,7 +1,6 @@
 package io.anonero.util
 
 import android.icu.text.CompactDecimalFormat
-import android.util.Log
 import io.anonero.AnonConfig
 import java.math.BigDecimal
 import java.math.RoundingMode

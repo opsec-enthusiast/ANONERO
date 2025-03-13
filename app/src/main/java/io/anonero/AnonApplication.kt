@@ -3,7 +3,6 @@ package io.anonero
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.util.Log
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
 import io.anonero.services.TorService

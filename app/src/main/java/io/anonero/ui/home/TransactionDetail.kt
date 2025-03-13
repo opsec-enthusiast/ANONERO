@@ -111,8 +111,6 @@ fun TransactionDetailScreen(
                         0,
                         transactionInfo!!.addressIndex
                     )
-                        ?: "___"
-
                 }
                 transactionKey =
                     wallet.getTxKey(transactionInfo!!.hash) ?: "____"

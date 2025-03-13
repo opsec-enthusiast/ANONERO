@@ -1,7 +1,6 @@
 package io.anonero.services
 
 import android.content.SharedPreferences
-import android.util.Log
 import io.anonero.AnonConfig
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.restartDaemonAsync
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync

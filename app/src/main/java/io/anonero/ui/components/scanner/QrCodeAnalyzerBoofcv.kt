@@ -2,7 +2,6 @@ package io.anonero.ui.components.scanner
 
 import android.graphics.ImageFormat
 import android.media.Image
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis

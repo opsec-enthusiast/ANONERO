@@ -1,7 +1,6 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -35,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.anonero.icons.AnonIcons
-import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.QrCodeImage
 import io.anonero.ui.components.SubAddressLabelDialog
