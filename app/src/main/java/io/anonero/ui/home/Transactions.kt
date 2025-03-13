@@ -286,10 +286,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
+        Box {
             if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
@@ -299,12 +296,14 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 )
             else
                 Box(
-                    modifier = Modifier.size(28.dp).align(Alignment.CenterVertically)) {
+                    modifier = Modifier
+                        .size(28.dp)
+                ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(28.dp),
-                        strokeWidth = 2.dp ,
+                        strokeWidth = 2.dp,
                         progress = {
-                            ((confirmations.toFloat() ) / (10f))
+                            ((confirmations.toFloat()) / (10f))
                         }
                     )
                     Text(
@@ -315,13 +314,12 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                         )
                     )
                 }
-            Spacer(modifier = Modifier.size(8.dp))
-            Text(
-                Formats.getDisplayAmount(amount),
-                textAlign = TextAlign.Start,
-                style = MaterialTheme.typography.titleMedium
-            )
         }
+        Text(
+            Formats.getDisplayAmount(amount),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium
+        )
         Text(
             Formats.formatTransactionTime(tx.timestamp),
             style = MaterialTheme.typography.labelSmall
