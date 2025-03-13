@@ -15,7 +15,6 @@
  */
 package io.anonero.model
 
-import android.util.Log
 import android.util.Pair
 import timber.log.Timber
 import java.io.File
@@ -411,12 +410,10 @@ class Wallet {
 
     private external fun setSubaddressLabel(accountIndex: Int, addressIndex: Int, label: String?)
     external fun getNumAccounts(): Int
-    val numSubaddresses: Int
+    val numSubAddresses: Int
         get() = getNumSubaddresses(accountIndex)
 
     private external fun getNumSubaddresses(accountIndex: Int): Int
-    val newSubaddress: String
-        get() = getNewSubaddress(accountIndex)
 
     private fun getNewSubaddress(accountIndex: Int): String {
         val timeStamp = SimpleDateFormat("yyyy-MM-dd-HH:mm:ss", Locale.US).format(Date())

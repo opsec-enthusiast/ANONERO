@@ -23,7 +23,7 @@ class Subaddress(
     private val accountIndex: Int,
     val addressIndex: Int,
     val address: String,
-    val label: String
+    var label: String
 ) : Comparable<Subaddress> {
     var amount: Long = 0
 
@@ -34,10 +34,11 @@ class Subaddress(
 
     val squashedAddress: String
         get() = address.substring(0, 8) + "…" + address.substring(address.length - 8)
+
     val displayLabel: String
         get() = if (label.isEmpty() || DEFAULT_LABEL_FORMATTER.matcher(label)
                 .matches()
-        ) "#$addressIndex" else label
+        ) "SubAddress #$addressIndex" else label
 
     companion object {
         val DEFAULT_LABEL_FORMATTER: Pattern =

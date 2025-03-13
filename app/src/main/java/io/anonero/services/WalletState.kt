@@ -1,5 +1,6 @@
 package io.anonero.services
 
+import android.util.Log
 import androidx.compose.ui.util.fastDistinctBy
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
@@ -89,7 +90,7 @@ class WalletState {
             }
             if (!backgroundSync) {
                 _nextAddress.update { (wallet.getLatestSubAddress()) }
-                _subAddresses.update { (wallet.getAllUsedSubAddresses().reversed()) }
+                _subAddresses.update { (wallet.getAllUsedSubAddresses()).reversed() }
             }
         }
     }
@@ -117,14 +118,14 @@ class WalletState {
 
     fun getNewAddress() {
         getWallet?.let {
-            it.addSubaddress(it.getAccountIndex(), "Subaddress #${it.numSubaddresses}")
+            it.addSubaddress(it.getAccountIndex(), "Subaddress #${it.numSubAddresses}")
+            it.store()
             it.getLatestSubAddress().let { subAddresses ->
                 _nextAddress.update { subAddresses }
             }
             it.getAllUsedSubAddresses().let { allItems ->
                 _subAddresses.update { allItems.reversed() }
             }
-            it.store()
             update()
         }
     }
@@ -132,6 +133,8 @@ class WalletState {
     fun updateAddressLabel(label: String, addressIndex: Int) {
         getWallet?.let {
             it.setSubaddressLabel(addressIndex, label)
+            it.store()
+            it.refreshHistory()
             it.getAllUsedSubAddresses().let { allItems ->
                 _subAddresses.update { allItems.reversed() }
             }

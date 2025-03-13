@@ -1,25 +1,16 @@
 package io.anonero.ui.util
 
-import android.util.Log
 import io.anonero.model.Subaddress
 import io.anonero.model.Wallet
 
 fun Wallet.getLastUnusedIndex(): Int {
     var lastUsedSubaddress = 0
     val subaddress = arrayListOf<Subaddress>()
-    for (i in 0 until this.numSubaddresses) {
+    for (i in 0 until this.numSubAddresses) {
         subaddress.add(this.getSubaddressObject(i))
     }
-    subaddress.forEach {
-        //Skip primary and find unused subaddress
-        if (it.totalAmount == 0L && subaddress.indexOf(it) != 0) {
-            return subaddress.indexOf(it)
-        }
-    }
-    this.history?.let {
-        for (info in it.all) {
-            if (info.addressIndex > lastUsedSubaddress) lastUsedSubaddress = info.addressIndex
-        }
+    for (info in this.history?.all ?: listOf()) {
+        if (info.addressIndex > lastUsedSubaddress) lastUsedSubaddress = info.addressIndex
     }
     return lastUsedSubaddress
 }
@@ -27,21 +18,28 @@ fun Wallet.getLastUnusedIndex(): Int {
 
 fun Wallet.getLatestSubAddress(): Subaddress {
     val lastUsedSubAddress = getLastUnusedIndex()
+    //get the next address
     val address = this.getSubaddressObject(lastUsedSubAddress + 1)
-    if (this.getSubaddressLabel(address.addressIndex).isEmpty()) {
-        this.addSubaddress(getAccountIndex(), "Subaddress #${this.numSubaddresses}")
+    //if label is empty add new subaddress
+    if (address.label.isEmpty()) {
+        this.addSubaddress(getAccountIndex(), "Subaddress #${address.addressIndex}")
         this.store()
     }
     return address
 }
 
 
-fun Wallet.getAllUsedSubAddresses(): ArrayList<Subaddress> {
-    val addresses = arrayListOf<Subaddress>()
-    for (i in 0 until this.numSubaddresses) {
-        if (this.getSubaddressLabel(i).isNotEmpty()) {
-            addresses.add(this.getSubaddressObject(i))
-        }
+fun Wallet.getAllUsedSubAddresses(): List<Subaddress> {
+    val subAddresses = arrayListOf<Subaddress>()
+    for (i in 0 until this.numSubAddresses) {
+        subAddresses.add(this.getSubaddressObject(i))
     }
-    return addresses
+    this.getLatestSubAddress().let {
+        if (subAddresses.indexOf(it) == -1) subAddresses.add(it)
+    }
+    return subAddresses
+        .apply {
+            this.removeIf { it.addressIndex == 0 && it.totalAmount != 0L }
+        }
+        .distinctBy { it.address }.sortedBy { it.addressIndex }
 }

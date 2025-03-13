@@ -36,7 +36,7 @@ object BackUpHelper {
                 put("seed", wallet.getSeed(seedPassphrase))
                 put("restoreHeight", wallet.getRestoreHeight())
                 put("balanceAll", wallet.getBalanceAll())
-                put("numSubaddresses", wallet.numSubaddresses)
+                put("numSubaddresses", wallet.numSubAddresses)
                 put("numAccounts", wallet.getNumAccounts())
                 put("isWatchOnly", wallet.isWatchOnly())
                 put("isSynchronized", wallet.isSynchronized)

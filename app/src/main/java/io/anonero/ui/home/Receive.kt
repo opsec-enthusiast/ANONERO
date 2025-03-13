@@ -55,7 +55,7 @@ fun ReceiveScreen(
 
     if (labelDialog)
         SubAddressLabelDialog(
-            label = nextAddress!!.label,
+            label = nextAddress!!.displayLabel,
             onSave = { label ->
             walletState.updateAddressLabel(label, nextAddress!!.addressIndex)
             labelDialog = false
@@ -95,7 +95,7 @@ fun ReceiveScreen(
             ) {
                 item {
                     Text(
-                        text = nextAddress!!.label,
+                        text = nextAddress!!.displayLabel,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
