@@ -305,7 +305,7 @@ class Wallet {
         amount: Long,
         sweepAll: Boolean = false,
         mixin_count: Int = 0,
-        priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Medium,
+        priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Default,
         selectedUtxos: ArrayList<String?> = arrayListOf()
     ): PendingTransaction {
         disposePendingTransaction()

@@ -92,7 +92,7 @@ class SendViewModel : ViewModel() {
                     }
                     wallet?.createSweepTransaction(
                         dstAddr = addressField,
-                        priority = PendingTransaction.Priority.Priority_Medium,
+                        priority = PendingTransaction.Priority.Priority_Default,
                         keyImages = arrayListOf()
                     )
                 } else {
