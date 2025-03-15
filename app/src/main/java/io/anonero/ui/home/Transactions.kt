@@ -226,7 +226,7 @@ fun TransactionScreen(
                 Box(
                     modifier = Modifier
                         .padding(
-                            vertical = 12.dp
+                            vertical = 32.dp
                         )
                         .fillParentMaxWidth()
                 ) {
@@ -263,19 +263,19 @@ fun TransactionScreen(
 @Composable
 fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
-    val amount = if (isIncoming) tx.amount else tx.amount * -1
+    val amount = if (isIncoming) tx.amount else tx.amount
     val confirmations = tx.confirmations
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(
                 horizontal = 12.dp,
-                vertical = 8.dp
+                vertical = 20.dp
             )
             .border(
                 border = BorderStroke(
                     1.dp,
-                    Color.White
+                    Color.Black
                 ),
                 shape = MaterialTheme.shapes.medium
             )
@@ -290,7 +290,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
             if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(32.dp),
                     tint = if (isIncoming) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                     contentDescription = ""
                 )
@@ -318,7 +318,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         Text(
             Formats.getDisplayAmount(amount),
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleLarge
         )
         Text(
             Formats.formatTransactionTime(tx.timestamp),
