@@ -28,7 +28,7 @@ fun MainBottomNavigation(
     )
 
     NavigationBar(
-        containerColor = Color.Transparent,
+        containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.primary,
     ) {
         getRoutes().forEach { item ->
