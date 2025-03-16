@@ -107,7 +107,7 @@ fun ReceiveScreen(
                             },
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.primary,
-                            fontSize = 18.sp,
+                            fontSize = 30.sp,
                             fontWeight = FontWeight.Bold
                         ),
                     )
@@ -136,12 +136,12 @@ fun ReceiveScreen(
                     ) {
                         Text(
                             nextAddress!!.address,
-                            modifier = Modifier.width(250.dp)
+                            modifier = Modifier.width(300.dp)
                         )
                     }
                 }
                 item {
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(18.dp))
                 }
 
             }

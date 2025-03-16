@@ -114,7 +114,7 @@ fun PinSetup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (confirming) "Confirm PIN" else "Please enter your PIN")
+                Text(if (confirming) "Confirm PIN" else "Enter PIN")
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier

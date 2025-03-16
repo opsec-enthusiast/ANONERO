@@ -111,7 +111,7 @@ fun TorSplash(
                         trackColor = Color.White.copy(alpha = 0.2f)
                     )
                     Text(
-                        text = "Waiting for Tor ...", color = Color.White
+                        text = "INITIALIZING TOR ...", color = Color.White
                     )
                 }
             }

@@ -116,7 +116,7 @@ fun SettingsPage(
                     )
                 }
                 item {
-                    SettingsMenuItem(title = "Export BackUp", onClick = {
+                    SettingsMenuItem(title = "Export Backup", onClick = {
                         navigateTo(SettingsExportBackUp)
                     })
                     HorizontalDivider(

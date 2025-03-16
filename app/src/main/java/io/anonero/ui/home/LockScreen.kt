@@ -212,7 +212,7 @@ fun LockScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text("Please enter your PIN")
+                Text("UNLOCK WALLET")
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier
