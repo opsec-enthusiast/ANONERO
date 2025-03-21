@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -98,6 +99,7 @@ class ReviewTransactionViewModel : ViewModel() {
 @Composable
 fun ReviewTransactionScreen(
     reviewParams: ReviewTransactionRoute,
+    modifier: Modifier = Modifier,
     onFinished: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
@@ -123,6 +125,7 @@ fun ReviewTransactionScreen(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -149,9 +152,7 @@ fun ReviewTransactionScreen(
     ) {
         Box(
             modifier = Modifier.padding(it)
-                .padding(
-                    bottom = 64.dp
-                ),
+                .padding(bottom = 0.dp)
         ) {
             if (pendingTransaction != null) {
                 AnimatedVisibility(

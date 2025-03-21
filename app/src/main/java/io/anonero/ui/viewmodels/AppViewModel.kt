@@ -1,8 +1,10 @@
 package io.anonero.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
+import io.anonero.model.WalletManager
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.InvalidPin
 import io.anonero.services.TorService
@@ -36,6 +38,7 @@ class AppViewModel(private val walletState: WalletState, private val torService:
         }
     }
 
+    @Synchronized
     fun openWallet(pin: String): Boolean {
         return try {
             walletHandler.openWallet(pin)
@@ -44,6 +47,7 @@ class AppViewModel(private val walletState: WalletState, private val torService:
         }
     }
 
+    @Synchronized
     fun startService() {
         walletHandler.scope.launch {
             walletHandler.startService()

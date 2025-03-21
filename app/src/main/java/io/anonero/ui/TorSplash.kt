@@ -58,6 +58,10 @@ fun TorSplash(
     )
 
     LaunchedEffect(key1 = walletExist, socks) {
+        //if user disabled tor and uses manual proxy, skip tor splash
+        if(enableTor.not()){
+            return@LaunchedEffect
+        }
         scope.launch(Dispatchers.IO) {
             walletExist = AnonConfig.getDefaultWalletFile(context).exists()
             //if user disabled tor and uses manual proxy, skip tor splash
@@ -65,7 +69,6 @@ fun TorSplash(
                 isAppReady = true
             } else {
                 if ((socks != null)) scope.launch(Dispatchers.IO) {
-                    delay(200)
                     isAppReady = true
                 }
             }

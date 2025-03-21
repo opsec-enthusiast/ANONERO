@@ -286,7 +286,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box {
+        Box(modifier = Modifier.padding(top = 2.dp)){
             if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,

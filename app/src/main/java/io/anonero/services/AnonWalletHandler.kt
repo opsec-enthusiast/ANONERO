@@ -41,7 +41,8 @@ class AnonWalletHandler(
     init {
         scope.launch {
             torService.socksFlow.collect {
-                if (prefs.getBoolean(WALLET_USE_TOR, false)) {
+                val wallet = WalletManager.instance?.wallet
+                if (prefs.getBoolean(WALLET_USE_TOR, false) && wallet?.isInitialized == true) {
                     setProxy(it.address.toString(), it.port.value)
                 }
             }
@@ -76,13 +77,12 @@ class AnonWalletHandler(
             val proxyHost = prefs.getString(WALLET_PROXY, "")
             val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
             val useTor = prefs.getBoolean(WALLET_USE_TOR, true)
-            if (useTor ||  proxyHost.isNullOrBlank()) {
+            if (useTor || proxyHost.isNullOrBlank()) {
                 while (torService.socks == null) {
                     delay(100)
                 }
                 val socket = torService.socks
                 WalletManager.instance?.setProxy("${socket?.value}")
-
             } else if (proxyHost.isNotEmpty() && proxyPort != -1) {
                 WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
             } else {
@@ -104,11 +104,13 @@ class AnonWalletHandler(
             }
             walletState.update()
             wallet.init(0)
-            wallet.setTrustedDaemon(true)
-            wallet.startRefresh()
-            wallet.refreshHistory()
-            walletState.update()
-            walletState.setLoading(false)
+            if (wallet.isInitialized) {
+                wallet.setTrustedDaemon(true)
+                wallet.startRefresh()
+                wallet.refreshHistory()
+                walletState.update()
+                walletState.setLoading(false)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             walletState.setLoading(false)

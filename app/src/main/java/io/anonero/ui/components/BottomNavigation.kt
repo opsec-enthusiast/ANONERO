@@ -1,11 +1,18 @@
 package io.anonero.ui.components
 
+import android.util.Log
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.anonero.ui.home.BottomNavigationItem
@@ -19,6 +26,19 @@ fun MainBottomNavigation(
     onTabSelected: (BottomNavigationItem) -> Unit
 ) {
 
+    var selectedItem by remember { mutableIntStateOf(0) }
+    LaunchedEffect(key1 = currentRoute) {
+        getRoutes().forEachIndexed { index, bottomNavigationItem ->
+            val isSelected = if (currentRoute is String) {
+                currentRoute.contains(bottomNavigationItem.getRouteAsString)
+            } else {
+                currentRoute == bottomNavigationItem.getRouteAsString
+            }
+            if (isSelected) {
+                selectedItem = index
+            }
+        }
+    }
     val navigationItemColors = NavigationBarItemDefaults.colors(
         selectedIconColor = MaterialTheme.colorScheme.primary,
         indicatorColor = MaterialTheme.colorScheme.primary.copy(
@@ -31,21 +51,17 @@ fun MainBottomNavigation(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.primary,
     ) {
-        getRoutes().forEach { item ->
-            val isSelected = if (currentRoute is String) {
-                currentRoute.contains(item.getRouteAsString)
-            } else {
-                currentRoute == item.getRouteAsString
-            }
+        getRoutes().forEachIndexed { item, bottomNavigationItem ->
+            val isSelected = selectedItem == item
             NavigationBarItem(
                 selected = isSelected,
                 colors = navigationItemColors,
                 onClick = {
                     if (!isSelected) {
-                        onTabSelected(item)
+                        onTabSelected(bottomNavigationItem)
                     }
                 },
-                icon = { Icon(item.icon, contentDescription = item.title) },
+                icon = { Icon(bottomNavigationItem.icon, contentDescription = bottomNavigationItem.title) },
             )
         }
     }

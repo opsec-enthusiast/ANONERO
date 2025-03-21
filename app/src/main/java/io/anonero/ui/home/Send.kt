@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -216,9 +218,7 @@ fun SendScreen(
             )
         }
     ) { padding ->
-
         if (preparingTx) {
-
             Column(
                 Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -233,9 +233,7 @@ fun SendScreen(
             Column(
                 modifier = Modifier
                     .padding(padding)
-                    .padding(
-                        bottom = 64.dp
-                    ),
+                    .padding(bottom = 0.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -380,9 +378,8 @@ fun SendScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            horizontal = 12.dp
+                            horizontal = 16.dp,
                         ),
-
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(12.dp)
                 ) {

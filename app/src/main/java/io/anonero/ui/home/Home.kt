@@ -244,9 +244,11 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         val params = backStackEntry.toRoute<SendScreenRoute>()
                         SendScreen(
                             navigateToReview = {
-                                showBottomNavigation = false
                                 bottomNavController.navigate(it)
                             },
+                            modifier = Modifier.padding(
+                                bottom = paddingValues.calculateBottomPadding()
+                            ),
                             onBackPress = {
                                 bottomNavController.popBackStack()
                             },
@@ -257,12 +259,12 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         val route = backStackEntry.toRoute<ReviewTransactionRoute>()
                         ReviewTransactionScreen(
                             route,
+                            modifier = Modifier.padding(paddingValues),
                             onFinished = {
                                 bottomNavController.popBackStack(
                                     route = TransactionsRoute,
                                     inclusive = false
                                 )
-                                showBottomNavigation = true
                             },
                             onBackPressed = {
                                 bottomNavController.popBackStack()

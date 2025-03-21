@@ -8,7 +8,9 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
@@ -70,7 +72,7 @@ fun TransactionDetailScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+//    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var transactionInfo: TransactionInfo? by remember { mutableStateOf(null) }
     val walletState = koinInject<WalletState>()
     val transactions by walletState.transactions.collectAsState(listOf())
@@ -230,7 +232,7 @@ fun TransactionDetailScreen(
         )
 
 
-    Scaffold(modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+    Scaffold(topBar = {
         TopAppBar(navigationIcon = {
             IconButton(
                 onClick = onBackPress
@@ -244,7 +246,6 @@ fun TransactionDetailScreen(
         if (transactionInfo != null) {
             LazyColumn(
                 contentPadding = paddingValues,
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             ) {
                 item {
                     with(sharedTransitionScope) {
@@ -323,6 +324,7 @@ fun TransactionDetailScreen(
                         )
                     )
                 }
+                item { Spacer(Modifier.height(44.dp)) }
             }
         }
     }
