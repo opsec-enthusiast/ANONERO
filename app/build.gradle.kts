@@ -82,13 +82,13 @@ android {
     productFlavors {
         create("anon") {
             applicationIdSuffix = ".anon"
-            resValue("string", "app_name", "anon")
+            resValue("string", "app_name", "ANON")
             dimension = "anon_mode"
             buildConfigField("String", "FLAVOR", "\"anon\"")
         }
         create("nero") {
             applicationIdSuffix = ".nero"
-            resValue("string", "app_name", "nero")
+            resValue("string", "app_name", "NERO")
             dimension = "anon_mode"
             buildConfigField("String", "FLAVOR", "\"nero\"")
         }
