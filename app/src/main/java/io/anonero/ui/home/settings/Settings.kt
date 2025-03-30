@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.anonero.AnonConfig
 import io.anonero.ui.home.graph.routes.ProxySettingsRoute
 import io.anonero.ui.home.graph.routes.SecureWipeRoute
 import io.anonero.ui.home.graph.routes.SettingsExportBackUp
@@ -101,14 +102,15 @@ fun SettingsPage(
                         )
                     )
                 }
-                item {
-                    SettingsMenuItem(title = "Seed ", onClick = {
-                        navigateTo(SettingsViewSeedRoute)
-                    })
-                    HorizontalDivider(
-                        thickness = 2.5.dp
-                    )
-                }
+                if (!AnonConfig.viewOnly)
+                    item {
+                        SettingsMenuItem(title = "Seed ", onClick = {
+                            navigateTo(SettingsViewSeedRoute)
+                        })
+                        HorizontalDivider(
+                            thickness = 2.5.dp
+                        )
+                    }
                 item {
                     SettingsMenuItem(title = "Change PIN")
                     HorizontalDivider(

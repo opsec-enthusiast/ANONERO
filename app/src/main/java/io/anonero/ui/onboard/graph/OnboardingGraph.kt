@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
+import io.anonero.AnonConfig
 import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.home.settings.ProxySettings
 import io.anonero.ui.onboard.Mode
@@ -18,6 +19,7 @@ import io.anonero.ui.onboard.PinSetup
 import io.anonero.ui.onboard.SeedSetup
 import io.anonero.ui.onboard.SetupNodeComposable
 import io.anonero.ui.onboard.SetupPassphrase
+import io.anonero.ui.onboard.viewonly.RestoreFromKeys
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -47,6 +49,9 @@ data object OnboardPinScreen
 @Serializable
 data object OnboardNodeSetupScreen
 
+@Serializable
+data object OnboardImportKeysScreen
+
 //onboarding
 fun NavGraphBuilder.onboardingGraph(
     navController: NavHostController,
@@ -73,17 +78,20 @@ fun NavGraphBuilder.onboardingGraph(
                     onboardViewModel.setMode(Mode.CREATE)
                     navController.navigate(OnboardNodeSetupScreen)
                 },
+                onRestoreFromKeys = {
+                    navController.navigate(OnboardImportKeysScreen)
+                },
                 onProxySettings = {
                     navController.navigate(OnboardingProxyScreen)
                 }
             )
         }
         composable<OnboardingProxyScreen> {
-          ProxySettings(
-              onBackPress = {
-                  navController.navigateUp()
-              },
-          )
+            ProxySettings(
+                onBackPress = {
+                    navController.navigateUp()
+                },
+            )
         }
         composable<OnboardNodeSetupScreen> {
             SetupNodeComposable(
@@ -112,11 +120,23 @@ fun NavGraphBuilder.onboardingGraph(
                 onNext = { pin ->
                     navController.navigate(OnboardLoading("Creating wallet..."))
                     onboardViewModel.viewModelScope.launch {
-                        onboardViewModel.create(pin)
+                        if (AnonConfig.viewOnly) {
+                            onboardViewModel.createViewOnly(pin)
+                        } else {
+                            onboardViewModel.create(pin)
+                        }
                         delay(600)
                     }.invokeOnCompletion {
                         if (it == null) {
-                            navController.navigate(OnboardSeedScreen(onboardViewModel.getSeed()))
+                            if (AnonConfig.viewOnly) {
+                                navController.navigate(
+                                    Home
+                                ) {
+                                    popUpTo(LandingScreenRoute)
+                                }
+                            } else {
+                                navController.navigate(OnboardSeedScreen(onboardViewModel.getSeed()))
+                            }
                         }
                     }
                 }
@@ -136,6 +156,17 @@ fun NavGraphBuilder.onboardingGraph(
                 },
                 onBackPressed = {
                     navController.navigate("")
+                }
+            )
+        }
+        composable<OnboardImportKeysScreen> {
+            RestoreFromKeys(
+                oNextPressed = {
+                    onboardViewModel.setNeroPayload(it)
+                    navController.navigate(OnboardPinScreen)
+                },
+                onBackPressed = {
+                    navController.navigateUp()
                 }
             )
         }

@@ -89,15 +89,15 @@ class WalletManager {
         networkType: Int
     ): Long
 
-    //TODO virtual bool checkPayment(const std::string &address, const std::string &txid, const std::string &txkey, const std::string &daemon_address, uint64_t &received, uint64_t &height, std::string &error) const = 0;
     fun openWallet(path: String, password: String): Wallet {
-        val walletHandle = openWalletJ(path, password, networkType.value)
+        val walletHandle = openWalletJ(path, password, networkType.value,AnonConfig.viewOnly)
         val wallet = Wallet(walletHandle)
         manageWallet(wallet)
         return wallet
     }
 
-    private external fun openWalletJ(path: String, password: String, networkType: Int): Long
+    private external fun openWalletJ(path: String, password: String, networkType: Int,isViewOnly:Boolean): Long
+
     fun recoveryWallet(
         aFile: File,
         password: String,

@@ -3,10 +3,14 @@ package io.anonero.util.backup
 import android.content.Context
 import android.icu.text.SimpleDateFormat
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.di.provideWalletSharedPrefs
+import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.BufferedInputStream
@@ -24,7 +28,7 @@ object BackUpHelper {
     private const val BACKUP_VERSION = "1.0"
     const val BUFFER = 2048
     private const val TAG = "BackUpHelper"
-    
+
     fun createBackUp(seedPassphrase: String, context: Context): String {
         val wallet = WalletManager.instance?.wallet ?: throw Exception("Wallet not found")
         val prefs = provideWalletSharedPrefs(context)
@@ -39,13 +43,17 @@ object BackUpHelper {
                 put("numAccounts", wallet.getNumAccounts())
                 put("isWatchOnly", wallet.isWatchOnly())
                 put("isSynchronized", wallet.isSynchronized)
+                if (AnonConfig.viewOnly) {
+                    put("nero", NeroKeyPayload.fromWallet(wallet).toJSONObject())
+                }
             }
         val nodePayload = JSONObject()
             .apply {
                 put("host", prefs.getString(NodeFields.RPC_HOST.value, ""))
                 put("password", prefs.getString(NodeFields.RPC_PASSWORD.value, ""))
                 put("username", prefs.getString(NodeFields.RPC_USERNAME.value, ""))
-                put("rpcPort",
+                put(
+                    "rpcPort",
                     prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
                 )
                 put("networkType", AnonConfig.getNetworkType().toString())
@@ -64,6 +72,7 @@ object BackUpHelper {
             put("meta", metaPayload)
         }
 
+        Timber.tag(TAG).d("BackUpPayload: $backUpPayload")
 
         val json = JSONObject().apply {
             put("version", BACKUP_VERSION)
@@ -79,7 +88,7 @@ object BackUpHelper {
         val date = Date()
         val sdf = SimpleDateFormat("dd_MM_yyyy' 'HH_mm_a", Locale.getDefault())
         val timeStamp: String = sdf.format(date)
-        val backupFile = File(context.cacheDir, "anon_backup_$timeStamp.zip")
+        val backupFile = File(context.cacheDir, "${R.string.app_name}_backup_$timeStamp.zip")
         tmpBackupDir.mkdirs()
         val tmpBackupFile = File(tmpBackupDir, "anon.json")
         tmpBackupFile.writeText(json)
@@ -91,7 +100,8 @@ object BackUpHelper {
         if (!backupCacheDir.exists()) {
             backupCacheDir.mkdirs()
         }
-        val backupFileEncrypted = File(backupCacheDir, "anon_backup_$timeStamp.anon")
+        val backupFileEncrypted =
+            File(backupCacheDir, "${R.string.app_name}_backup_$timeStamp.anon")
 
         if (files != null) {
             zip(files, backupFile.absolutePath)

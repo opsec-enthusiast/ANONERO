@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
@@ -108,7 +109,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
     val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
     val exportViewModel = viewModel<ExportBackUpViewModel>()
     val focusRequester = remember { FocusRequester() }
-    var passPhraseDialog by remember { mutableStateOf(true) }
+    var passPhraseDialog by remember { mutableStateOf(!AnonConfig.viewOnly) }
     var passPhrase by remember { mutableStateOf("") }
     val errorShake = rememberShakeController()
     val scope = rememberCoroutineScope()
@@ -121,12 +122,6 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
         label = "blur-radius"
     )
 
-    LaunchedEffect(true) {
-        scope.launch {
-            delay(100)
-            focusRequester.requestFocus()
-        }
-    }
     fun createBackUp() {
         scope.launch(Dispatchers.IO) {
             val hash = prefs.getString(PREFS_PASSPHRASE_HASH, "")
@@ -152,6 +147,16 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
         }
     }
 
+    LaunchedEffect(true) {
+        scope.launch {
+            delay(100)
+            if(AnonConfig.viewOnly){
+                createBackUp()
+            }else {
+                focusRequester.requestFocus()
+            }
+        }
+    }
 
     fun exportToExternDir() {
         if (backupFile == null) {
@@ -302,7 +307,9 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
         ) {
             if (!passPhraseDialog && backupFile == null) {
                 Column(
-                    Modifier.fillMaxSize(),
+                    Modifier.fillMaxSize().padding(
+                      all = 12.dp
+                    ),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -310,13 +317,16 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                         modifier = Modifier.size(300.dp),
                         strokeWidth = 2.dp
                     )
+                    Spacer(Modifier.height(16.dp))
                     Text("Generating Backup")
                 }
             } else {
                 if (backupFile != null) {
 
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(
+                            horizontal = 12.dp
+                        ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -373,8 +383,8 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                             shape = MaterialTheme.shapes.small,
                             modifier = Modifier
                                 .padding(
-                                    horizontal = 24.dp,
-                                ),
+                                    vertical = 24.dp,
+                                ).fillMaxWidth(0.85f),
                             border = BorderStroke(
                                 1.dp,
                                 color = MaterialTheme.colorScheme.onBackground

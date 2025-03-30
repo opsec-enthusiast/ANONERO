@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.anonero.AnonConfig
 import io.anonero.R
 
 
@@ -33,6 +34,7 @@ import io.anonero.R
 fun OnboardingWelcome(
     onCreateClick: () -> Unit = {},
     onRestoreClick: () -> Unit = {},
+    onRestoreFromKeys: () -> Unit = {},
     onProxySettings: () -> Unit = {},
 ) {
 
@@ -61,15 +63,22 @@ fun OnboardingWelcome(
                     .weight(1.2f),
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.Bottom),
             ) {
+                if (!AnonConfig.viewOnly)
+                    OutlinedButton(
+                        onClick = onCreateClick,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.width(200.dp)
+                    ) {
+                        Text("Create Wallet")
+                    }
                 OutlinedButton(
-                    onClick = onCreateClick,
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.width(200.dp)
-                ) {
-                    Text("Create Wallet")
-                }
-                OutlinedButton(
-                    onClick = onRestoreClick,
+                    onClick = {
+                        if (AnonConfig.viewOnly) {
+                            onRestoreFromKeys()
+                        } else {
+                            onRestoreClick()
+                        }
+                    },
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.width(200.dp)
                 ) {
@@ -79,11 +88,15 @@ fun OnboardingWelcome(
                     onClick = onProxySettings,
                     modifier = Modifier.width(200.dp)
                 ) {
-                 Row  {
-                     Icon(Icons.Default.Settings, contentDescription = "Proxy", tint = MaterialTheme.colorScheme.primary)
-                     Spacer(Modifier.width(4.dp))
-                     Text("Proxy", color = MaterialTheme.colorScheme.primary)
-                 }
+                    Row {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Proxy",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Proxy", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }

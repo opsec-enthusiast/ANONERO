@@ -81,8 +81,6 @@ fun QRScannerDialog(
         skipPartiallyExpanded = true
     )
 
-
-
     if (show) {
         ModalBottomSheet(
             onDismissRequest = onDismiss,

@@ -85,12 +85,14 @@ android {
             resValue("string", "app_name", "ANON")
             dimension = "anon_mode"
             buildConfigField("String", "FLAVOR", "\"anon\"")
+            buildConfigField("boolean", "VIEW_ONLY", "false")
         }
         create("nero") {
             applicationIdSuffix = ".nero"
             resValue("string", "app_name", "NERO")
             dimension = "anon_mode"
             buildConfigField("String", "FLAVOR", "\"nero\"")
+            buildConfigField("boolean", "VIEW_ONLY", "true")
         }
 
     }
@@ -113,7 +115,6 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.navigation.compose)
-
     implementation(libs.androidx.datastore.preferences)
 
 
@@ -147,6 +148,7 @@ dependencies {
 
     implementation(libs.io.matthewnelson.kmp.tor.runtime)
     implementation(libs.io.matthewnelson.kmp.resource.exec.tor)
+    implementation(libs.com.sparrowwallet.hummingbird)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

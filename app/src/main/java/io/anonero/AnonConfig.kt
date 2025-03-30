@@ -16,6 +16,7 @@ val jsonDecoder = Json { ignoreUnknownKeys = true }
 
 object AnonConfig {
 
+    const val NERO_KEY_PAYLOAD_VERSION = 1
     const val XMR_DECIMALS = 12
     val ONE_XMR = Math.round(10.0.pow(XMR_DECIMALS.toDouble()))
     const val MAX_LOG_SIZE = 250
@@ -29,6 +30,8 @@ object AnonConfig {
         }
         return NetworkType.NetworkType_Mainnet
     }
+
+    val viewOnly: Boolean get() =  BuildConfig.VIEW_ONLY
 
     fun getDefaultWalletFile(context: Context): File {
         val walletDir = getDefaultWalletDir(context)
@@ -51,7 +54,7 @@ object AnonConfig {
 
 
     fun isWalletFileExist(): Boolean {
-       return  walletFound
+        return walletFound
     }
 
 

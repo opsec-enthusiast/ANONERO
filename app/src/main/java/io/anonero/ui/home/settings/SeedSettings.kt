@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,15 +24,18 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,13 +53,17 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import io.anonero.AnonConfig
+import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
+import io.anonero.store.jsonDecoder
+import io.anonero.ui.components.QrCodeImage
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.ShakeConfig
@@ -65,6 +73,9 @@ import io.anonero.util.shake
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.json.JSONObject
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import kotlin.random.Random
@@ -95,6 +106,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
     val focusRequester = remember { FocusRequester() }
     var passPhraseDialog by remember { mutableStateOf(true) }
     var passPhrase by remember { mutableStateOf("") }
+    var neroPayload by remember { mutableStateOf("") }
     val errorShake = rememberShakeController()
     val scope = rememberCoroutineScope()
     val view = LocalView.current
@@ -103,6 +115,18 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
         if (passPhraseDialog) 6f else 0f,
         label = "blur-radius"
     )
+
+
+    fun exportForNero() {
+        val wallet = WalletManager.instance?.wallet ?: return
+        if (passPhrase.isEmpty()) {
+            passPhraseDialog = true
+            return
+        }
+        val payload  = Json.encodeToString(NeroKeyPayload.fromWallet(wallet))
+        neroPayload = payload.toString();
+    }
+
 
     LaunchedEffect(true) {
         scope.launch {
@@ -137,6 +161,39 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
 
         }
     }
+    if (neroPayload.isNotEmpty()) {
+        ModalBottomSheet(
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+            ),
+            scrimColor = MaterialTheme.colorScheme.background.copy(
+                alpha = 0.5f
+            ),
+            containerColor = MaterialTheme.colorScheme.background,
+            onDismissRequest = {
+                neroPayload = ""
+            }
+        ) {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(modifier = Modifier.padding(8.dp))
+                Text("[ИΞR0] keys", textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
+                Box(modifier = Modifier.padding(8.dp))
+                QrCodeImage(
+                    size = 320.dp,
+                    content = neroPayload,
+                    modifier = Modifier
+                        .padding(20.dp)
+                )
+                Box(modifier = Modifier.padding(16.dp))
+            }
+        }
+    }
+
+
     if (passPhraseDialog)
         AlertDialog(
             modifier = Modifier
@@ -250,6 +307,33 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     Text("")
                 }
             )
+        },
+        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButton = {
+            Button(
+                shape = MaterialTheme.shapes.small,
+                border = BorderStroke(
+                    1.dp,
+                    color = MaterialTheme.colorScheme.onSecondary
+                ),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
+                contentPadding =  PaddingValues(
+                    all = 12.dp
+                ),
+                modifier = Modifier.fillMaxWidth(0.85f),
+                onClick = {
+                    exportForNero()
+                }) {
+                Text(
+                    "Export [ИΞR0] keys", style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSecondary.copy(
+                            alpha = 0.8f
+                        )
+                    )
+                )
+            }
         }
     ) {
         Box(

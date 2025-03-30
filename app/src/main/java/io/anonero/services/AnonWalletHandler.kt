@@ -1,6 +1,7 @@
 package io.anonero.services
 
 import android.content.SharedPreferences
+import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -55,6 +56,9 @@ class AnonWalletHandler(
             walletFile.path,
             pin,
         )
+        if (anonWallet?.status?.isOk != true) {
+            Timber.tag(TAG).e("openWallet error: %s", anonWallet?.status?.errorString)
+        }
         return anonWallet?.status?.isOk ?: throw InvalidPin()
     }
 

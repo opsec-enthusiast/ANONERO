@@ -73,6 +73,7 @@ org-jetbrains-kotlin-android = { group = "org.jetbrains.kotlinx", name = "kotlin
 com-google-zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.1" }
 com-jakewharton-timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 org-bouncycastle-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version = "1.79" }
+com-sparrowwallet-hummingbird = { group = "com.sparrowwallet", name = "hummingbird", version = "1.7.4" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,6 +51,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -167,7 +167,7 @@ fun TransactionScreen(
                 ),
                 scrollBehavior = scrollBehavior,
                 title = {
-                    Text("[ΛИ0И]")
+                    Text(if (AnonConfig.viewOnly) "[ИΞR0]" else "[ΛИ0И]")
                 },
                 actions = {
                     LockButton(
@@ -286,7 +286,7 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(modifier = Modifier.padding(top = 2.dp)){
+        Box(modifier = Modifier.padding(top = 2.dp)) {
             if (confirmations >= 10)
                 Icon(
                     if (isIncoming) AnonIcons.ArrowDownLeft else AnonIcons.ArrowUpRight,

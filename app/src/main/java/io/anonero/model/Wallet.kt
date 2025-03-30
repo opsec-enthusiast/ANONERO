@@ -228,7 +228,11 @@ class Wallet {
         get() = getBalance(accountIndex)
 
     private external fun getBalance(accountIndex: Int): Long
+
+    private external fun viewOnlyBalance(): Long
+
     external fun getBalanceAll(): Long
+
     val unlockedBalance: Long
         get() = getUnlockedBalance(accountIndex)
 
