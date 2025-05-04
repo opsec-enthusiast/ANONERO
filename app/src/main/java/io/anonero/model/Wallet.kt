@@ -31,6 +31,7 @@ class Wallet {
     private var handle: Long = 0
     private var listenerHandle: Long = 0
     private var pendingTransaction: PendingTransaction? = null
+    private var unsignedTransaction: UnsignedTransaction? = null
     var history: TransactionHistory? = null
         get() {
             if (field == null) {
@@ -52,6 +53,10 @@ class Wallet {
 
     fun getPendingTx(): PendingTransaction? {
         return pendingTransaction
+    }
+
+    fun getUnsginedTx(): UnsignedTransaction? {
+        return unsignedTransaction
     }
 
     internal constructor(handle: Long, accountIndex: Int) {
@@ -111,8 +116,8 @@ class Wallet {
         return Subaddress(
             accountIndex,
             subAddressIndex,
-            getSubaddress(subAddressIndex), 
-            getSubaddressLabel(0,subAddressIndex)
+            getSubaddress(subAddressIndex),
+            getSubaddressLabel(0, subAddressIndex)
         )
     }
 
@@ -268,6 +273,7 @@ class Wallet {
         if (pendingTransaction != null) {
             disposeTransaction(pendingTransaction)
             pendingTransaction = null
+            unsignedTransaction = null
         }
     }
 
@@ -293,6 +299,7 @@ class Wallet {
         val _priority = priority.ordinal
         val txHandle = createSweepTransaction(dstAddr, "", 0, _priority, accountIndex, keyImages)
         pendingTransaction = PendingTransaction(txHandle)
+        unsignedTransaction = null
         return pendingTransaction
     }
 
@@ -302,6 +309,7 @@ class Wallet {
         priority: Int, accountIndex: Int, keyImages: ArrayList<String>
     ): Long
 
+    external fun signAndExportJ(inputFile: String?, outputFile: String?): String?
 
     @Throws(Exception::class)
     fun createTransaction(
@@ -324,6 +332,7 @@ class Wallet {
                 accountIndex, preferredInputs
             ))
         pendingTransaction = PendingTransaction(txHandle)
+        unsignedTransaction = null
         return pendingTransaction!!
     }
 
@@ -349,8 +358,21 @@ class Wallet {
     private external fun getHistoryJ(): Long
     private external fun getCoinsJ(): Long
 
-    //virtual bool exportKeyImages(const std::string &filename) = 0;
-    //virtual bool importKeyImages(const std::string &filename) = 0;
+
+    external fun exportOutputs(filename: String?, all: Boolean): Boolean
+    external fun importOutputs(filename: String?): String?
+    external fun exportKeyImages(filename: String?, all: Boolean): Boolean
+    external fun importKeyImages(filename: String?): Boolean
+    fun loadUnsignedTransaction(inputFile: String?): UnsignedTransaction {
+        val unsignedTx: Long = loadUnsignedTx(inputFile)
+        unsignedTransaction = UnsignedTransaction(unsignedTx)
+        pendingTransaction = null
+        return unsignedTransaction!!
+    }
+    external fun submitTransaction(filename: String?): String?
+
+    private external fun loadUnsignedTx(inputFile: String?): Long
+
     //virtual TransactionHistory * history() const = 0;
     fun refreshHistory() {
         history?.refreshWithNotes(this)

@@ -15,7 +15,7 @@
  */
 package io.anonero.model
 
-class PendingTransaction internal constructor(var handle: Long) {
+class PendingTransaction internal constructor(override var handle: Long) : StagingTransaction {
     val status: Status
         get() = Status.values()[getStatusJ()]
 
