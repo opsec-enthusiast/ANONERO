@@ -2,6 +2,7 @@ package io.anonero.ui.components.scanner
 
 import android.graphics.ImageFormat
 import android.media.Image
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -139,6 +140,7 @@ class QrCodeAnalyzerBoofcv(
 //            Timber.tag(TAG).e(e)
         }
         for (det in detector.detections) {
+
             onQrCodesDetected(Result(det.message, det.rawbits, null, BarcodeFormat.QR_CODE))
         }
 

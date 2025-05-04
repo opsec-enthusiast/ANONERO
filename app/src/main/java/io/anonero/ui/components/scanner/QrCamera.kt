@@ -4,12 +4,16 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
@@ -29,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +44,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -62,6 +69,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.sparrowwallet.hummingbird.URDecoder
 import io.anonero.icons.AnonIcons
 import timber.log.Timber
 import java.util.concurrent.Executors
@@ -75,6 +83,7 @@ fun QRScannerDialog(
     modifier: Modifier = Modifier,
     show: Boolean,
     onDismiss: () -> Unit,
+    onUrRusult: (URDecoder.Result) -> Unit = {},
     onQRCodeScanned: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -112,6 +121,7 @@ fun QRScannerDialog(
                         onDismiss.invoke()
                         onQRCodeScanned.invoke(it)
                     },
+                    onUrRusult = onUrRusult,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -125,16 +135,26 @@ fun QRScannerDialog(
 @Composable
 fun QRScanner(
     onQRCodeScanned: (String) -> Unit, modifier: Modifier = Modifier,
+    onUrRusult: (URDecoder.Result) -> Unit = {},
     onDismiss: () -> Unit = {}
 ) {
+    val decoder = remember { URDecoder() }
+
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     var isScanned by remember { mutableStateOf(false) }
+    var progrees by remember { mutableFloatStateOf(0.0f) }
+    val progressAnimDuration = 1_500
+    val progressAnimation by animateFloatAsState(
+        targetValue = progrees,
+        animationSpec = tween(durationMillis = progressAnimDuration, easing = FastOutSlowInEasing),
+    )
     val widthInPx: Float
     val heightInPx: Float
     val radiusInPx: Float
+    val view = LocalView.current
 
     with(LocalDensity.current) {
         widthInPx = 240.dp.toPx()
@@ -258,7 +278,6 @@ fun QRScanner(
                                     ViewGroup.LayoutParams.MATCH_PARENT
                                 )
                             }
-
                             // Set up CameraX
                             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                             cameraProviderFuture.addListener({
@@ -277,9 +296,27 @@ fun QRScanner(
                                         analysis.setAnalyzer(
                                             cameraExecutor,
                                             QrCodeAnalyzerBoofcv(onQrCodesDetected = {
-                                                if (!isScanned)
-                                                    onQRCodeScanned.invoke(it.text)
-                                                isScanned = true
+                                                val result = it.text
+                                                if (result.lowercase().startsWith("ur:")) {
+                                                    decoder.receivePart(result)
+                                                    val progreesPercentage =
+                                                        decoder.processedPartsCount.toFloat() / decoder.expectedPartCount.toFloat()
+                                                    if(progreesPercentage != progrees) {
+                                                        progrees = progreesPercentage
+                                                        view.performHapticFeedback(
+                                                            HapticFeedbackConstants.KEYBOARD_TAP
+                                                        )
+                                                    }
+                                                    if (decoder.result != null) {
+                                                        if (!isScanned)
+                                                            onUrRusult.invoke(decoder.result)
+                                                        isScanned = true
+                                                    }
+                                                } else {
+                                                    if (!isScanned)
+                                                        onQRCodeScanned.invoke(it.text)
+                                                    isScanned = true
+                                                }
                                             })
                                         )
                                     }
@@ -297,17 +334,16 @@ fun QRScanner(
                                     Timber.tag(TAG).e(exc)
                                 }
                             }, ContextCompat.getMainExecutor(ctx))
-
                             previewView
                         },
                         update = { })
                     Canvas(
                         modifier = Modifier
                             .fillMaxSize()
-
                     ) {
-                         drawRect(
-                            color = Color.Black.copy(alpha = 0.4f))
+                        drawRect(
+                            color = Color.Black.copy(alpha = 0.4f)
+                        )
                     }
                     Canvas(
                         modifier = Modifier
@@ -337,34 +373,52 @@ fun QRScanner(
                             )
                         }
                     }
-                    Button(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 24.dp),
-                        shape = MaterialTheme.shapes.extraSmall.copy(
-                            all = CornerSize(12.dp)
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            color = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        onClick = {
-                            onDismiss.invoke()
-                        }) {
-                        Row {
-                            Icon(Icons.Default.Close, contentDescription = "")
-                            Spacer(Modifier.padding(8.dp))
-                            Text("Close")
-                            Spacer(Modifier.padding(12.dp))
+                    if (progrees != 0.0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 6.dp,
+                                modifier = Modifier
+                                    .padding(24.dp)
+                                    .align(Alignment.Center)
+                                    .size(180.dp),
+                                progress = {
+                                    progressAnimation
+                                }
+                            )
+                        }
+                        Button(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 24.dp),
+                            shape = MaterialTheme.shapes.extraSmall.copy(
+                                all = CornerSize(12.dp)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                color = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            onClick = {
+                                onDismiss.invoke()
+                            }) {
+                            Row {
+                                Icon(Icons.Default.Close, contentDescription = "")
+                                Spacer(Modifier.padding(8.dp))
+                                Text("Close")
+                                Spacer(Modifier.padding(12.dp))
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
+    }
 }
