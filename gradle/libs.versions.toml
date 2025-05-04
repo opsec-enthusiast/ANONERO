@@ -27,7 +27,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-core-splashscreen  = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashScreen" }
 
 androidx-lifecycle-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
@@ -57,16 +57,17 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-datastore-preferences-core-jvm = { group = "androidx.datastore", name = "datastore-preferences-core-jvm", version.ref = "datastorePreferencesCoreJvm" }
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraXversion" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraXversion" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraXversion" }
+androidx-camera-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraXversion" }
 
-androidx-camera-core = {group="androidx.camera",name="camera-core",version.ref = "cameraXversion"}
-androidx-camera-camera2 = {group="androidx.camera",name="camera-camera2",version.ref = "cameraXversion"}
-androidx-camera-lifecycle = {group="androidx.camera",name="camera-lifecycle",version.ref = "cameraXversion"}
-androidx-camera-camera-view = {group="androidx.camera",name="camera-view",version.ref = "cameraXversion"}
-
-com-google-accompanist-permissions = {group="com.google.accompanist",name="accompanist-permissions",version.ref = "accompanistVersion"}
+com-google-accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistVersion" }
 
 io-matthewnelson-kmp-tor-runtime = { group = "io.matthewnelson.kmp-tor", name = "runtime", version.ref = "kmpTor" }
 io-matthewnelson-kmp-resource-exec-tor = { group = "io.matthewnelson.kmp-tor", name = "resource-exec-tor-gpl", version.ref = "vKmpTorResource" }
+
+com-sparrowwalle-hummingbird = { group = "com.sparrowwallet", name = "hummingbird", version = "1.7.4" }
 
 org-boofcv-boofcv-core = { group = "org.boofcv", name = "boofcv-core", version = "1.1.7" }
 org-jetbrains-kotlin-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }

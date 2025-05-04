@@ -30,8 +30,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".stagenet.debug"
-            versionNameSuffix = "-stagenet"
+            applicationIdSuffix = ".debug"
         }
         release {
             isMinifyEnabled = false
@@ -145,6 +144,7 @@ dependencies {
 
     implementation(libs.com.jakewharton.timber)
     implementation(libs.org.bouncycastle.bcprov)
+    implementation(libs.com.sparrowwalle.hummingbird)
 
     implementation(libs.io.matthewnelson.kmp.tor.runtime)
     implementation(libs.io.matthewnelson.kmp.resource.exec.tor)
