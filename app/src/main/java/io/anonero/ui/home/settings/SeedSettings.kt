@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -63,7 +64,8 @@ import io.anonero.AnonConfig
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
 import io.anonero.store.jsonDecoder
-import io.anonero.ui.components.QrCodeImage
+import io.anonero.ui.components.qr.QrCodeColors
+import io.anonero.ui.components.qr.QrCodeView
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.ShakeConfig
@@ -182,10 +184,14 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                 Box(modifier = Modifier.padding(8.dp))
                 Text("[ИΞR0] keys", textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
                 Box(modifier = Modifier.padding(8.dp))
-                QrCodeImage(
-                    size = 320.dp,
-                    content = neroPayload,
+                QrCodeView(
+                    data = neroPayload,
+                    colors = QrCodeColors(
+                        background = MaterialTheme.colorScheme.background,
+                        foreground = MaterialTheme.colorScheme.onBackground,
+                    ),
                     modifier = Modifier
+                        .size(320.dp)
                         .padding(20.dp)
                 )
                 Box(modifier = Modifier.padding(16.dp))

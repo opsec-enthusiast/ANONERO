@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -25,6 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -50,21 +51,29 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sparrowwallet.hummingbird.ResultType
+import com.sparrowwallet.hummingbird.URDecoder
+import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
+import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
-import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
+import io.anonero.ui.home.spend.ExportType
+import io.anonero.ui.home.spend.SpendQRExchangeParam
+import io.anonero.ui.home.spend.SpendScanner
+import io.anonero.ui.home.spend.SpendScannerController
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.androidx.compose.koinViewModel
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
+import java.io.File
 
 private const val TAG = "Send"
 
@@ -78,32 +87,55 @@ class SendViewModel : ViewModel() {
     private val walletState: WalletState by inject(WalletState::class.java)
     val balance = walletState.unLockedBalance.asLiveData()
     private val _paymentUri = MutableLiveData<SendScreenRoute?>(null)
+    private val _txComposeError = MutableLiveData<String?>(null)
     private val _spendType = MutableLiveData(SpendType.NORMAL)
     val paymentUri = _paymentUri as LiveData<SendScreenRoute?>
     val spendType = _spendType as LiveData<SpendType>
+    val txComposeError = _txComposeError as LiveData<String?>
 
     suspend fun prepareTransaction(addressField: String, amount: String): PendingTransaction? {
         val amountFromString: Long = Wallet.getAmountFromString(amount)
         val wallet = WalletManager.instance?.wallet
         return withContext(Dispatchers.IO) {
             try {
-                val balance = wallet?.unlockedBalance ?: 0L
+                _txComposeError.postValue(null)
                 if (spendType.value == SpendType.SWEEP) {
                     if (wallet?.unlockedBalance != wallet?.balance) {
                         return@withContext null
                     }
-                    wallet?.createSweepTransaction(
+                    val pendingTx = wallet?.createSweepTransaction(
                         dstAddr = addressField,
                         priority = PendingTransaction.Priority.Priority_Default,
                         keyImages = arrayListOf()
                     )
+                    if (!pendingTx?.getErrorString().isNullOrEmpty()) {
+                        throw Exception(pendingTx?.getErrorString())
+                    }
+
+                    if (pendingTx != null) {
+                        val unsignedTxFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.EXPORT_UNSIGNED_TX_FILE)
+                        pendingTx.commit(unsignedTxFile.path, true)
+                    }
+                    pendingTx
                 } else {
-                    wallet?.createTransaction(
+                    val pendingTx = wallet?.createTransaction(
                         dst_addr = addressField,
                         amount = amountFromString
                     )
+
+                    if (!pendingTx?.getErrorString().isNullOrEmpty()) {
+                        throw Exception(pendingTx?.getErrorString())
+                    }
+                    if (pendingTx != null) {
+                        val unsignedTxFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.EXPORT_UNSIGNED_TX_FILE)
+                        pendingTx.commit(unsignedTxFile.path, true)
+                    }
+                    pendingTx
                 }
             } catch (e: Exception) {
+                _txComposeError.postValue(e.message)
                 Timber.tag(TAG).e(e)
                 null
             }
@@ -114,6 +146,47 @@ class SendViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.Default) {
             SendScreenRoute.parse(data)?.let {
                 _paymentUri.postValue(it)
+            }
+        }
+    }
+
+    fun processUrCode(
+        urResult: URDecoder.Result,
+        onSuccess: (path: String) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (urResult.type == ResultType.SUCCESS) {
+                var destinationFile: File? = null
+                val ur = urResult.ur
+                when (ur.type) {
+                    AnonUrRegistryTypes.XMR_TX_UNSIGNED.type -> {
+                        destinationFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.IMPORT_UNSIGNED_TX_FILE)
+                    }
+
+                    AnonUrRegistryTypes.XMR_TX_SIGNED.type -> {
+                        destinationFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.IMPORT_SIGNED_TX_FILE)
+                    }
+
+                    AnonUrRegistryTypes.XMR_OUTPUT.type -> {
+                        destinationFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.IMPORT_OUTPUT_FILE)
+                    }
+
+                    AnonUrRegistryTypes.XMR_KEY_IMAGE.type -> {
+                        destinationFile =
+                            File(AnonConfig.context?.cacheDir, AnonConfig.IMPORT_KEY_IMAGE_FILE)
+                    }
+
+                    else -> {
+                        Timber.tag(TAG).e("Unknown UR type")
+                    }
+                }
+                destinationFile?.writeBytes(ur.toBytes())
+                if (destinationFile != null) {
+                    onSuccess(destinationFile.path)
+                }
             }
         }
     }
@@ -129,20 +202,23 @@ fun SendScreen(
     onBackPress: () -> Unit = {},
     navigateToReview: (route: ReviewTransactionRoute) -> Unit = {},
     paymentUri: SendScreenRoute? = null,
-    modifier: Modifier =Modifier
+    modifier: Modifier = Modifier,
 ) {
+
+    val snackbarHostState = remember { SnackbarHostState() }
     var addressField by rememberSaveable { mutableStateOf("") }
     var amountField by rememberSaveable { mutableStateOf("") }
     var validSpend by rememberSaveable { mutableStateOf(false) }
     var preparingTx by remember { mutableStateOf(false) }
-    var showScanner by remember { mutableStateOf(false) }
     var inValidAddress by remember { mutableStateOf<Boolean?>(null) }
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     val scope = rememberCoroutineScope()
-    val sendViewModel = viewModel<SendViewModel>()
+    val sendViewModel = koinViewModel<SendViewModel>()
+    val spendScannerController = remember { SpendScannerController() }
     val unlockedBalance by sendViewModel.balance.observeAsState(0L)
     val paymentUriFromScanner by sendViewModel.paymentUri.observeAsState(null)
     val spendType by sendViewModel.spendType.observeAsState(SpendType.NORMAL)
+    val txComposeError by sendViewModel.txComposeError.observeAsState()
     val view = LocalView.current
     val unLockedAmount = Formats.getDisplayAmount(
         unlockedBalance ?: 0L
@@ -187,14 +263,67 @@ fun SendScreen(
         }
     }
 
-    QRScannerDialog(
-        show = showScanner,
-        onQRCodeScanned = {
-            sendViewModel.handleScan(it)
-            showScanner = false
-        },
+    fun prepare() {
+        scope.launch {
+            try {
+                preparingTx = true
+                val pendingTx =
+                    sendViewModel.prepareTransaction(addressField, amountField)
+                if (pendingTx != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        view.performHapticFeedback(
+                            HapticFeedbackConstants.CONFIRM
+                        )
+                    }
+                    if (!pendingTx.getErrorString().isNullOrEmpty()) {
+                        return@launch
+                    }
+                    navigateToReview.invoke(ReviewTransactionRoute(addressField))
+                } else {
+                    //show error
+                }
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e)
+            } finally {
+                preparingTx = false
+            }
+        }
+    }
+
+    SpendScanner(
+        spendScannerController = spendScannerController,
         onDismiss = {
-            showScanner = false
+
+        },
+        modifier = Modifier,
+        onKeyImagesImported = {
+            prepare()
+        },
+        onUnsignedTransactionImported = {
+            navigateToReview.invoke(
+                ReviewTransactionRoute(
+                    addressField,
+                )
+            )
+        },
+        onSignedTransactionImported = {
+
+        },
+        onOutputsImported = {
+        },
+        onError = {
+            Timber.tag(TAG).e(it)
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = it,
+                    duration = SnackbarDuration.Short
+                )
+            }
+        },
+
+        onQRCodeScanned = {
+            spendScannerController.hideScanner();
+            sendViewModel.handleScan(it)
         }
     )
 
@@ -216,7 +345,15 @@ fun SendScreen(
 
                 }
             )
-        }
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(
+                    bottom = 12.dp
+                )
+            )
+        },
     ) { padding ->
         if (preparingTx) {
             Column(
@@ -343,37 +480,38 @@ fun SendScreen(
                     IconButton(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         onClick = {
-                            showScanner = true
+                            spendScannerController.showScanner();
                         }
                     ) {
                         Icon(AnonIcons.Scan, contentDescription = "")
                     }
+
+                    if (!txComposeError.isNullOrEmpty())
+                        Text(
+                            text = "${txComposeError}",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
                 }
 
                 OutlinedButton(
                     enabled = validSpend,
                     onClick = {
-                        scope.launch {
-                            try {
-                                preparingTx = true
-                                val pendingTx =
-                                    sendViewModel.prepareTransaction(addressField, amountField)
-                                if (pendingTx != null) {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                        view.performHapticFeedback(
-                                            HapticFeedbackConstants.CONFIRM
-                                        )
-                                    }
-                                    navigateToReview.invoke(ReviewTransactionRoute(addressField))
-                                } else {
-                                    //show error
-                                }
-                            } catch (e: Exception) {
-                                Timber.tag(TAG).e(e)
-                            } finally {
-                                preparingTx = false
-                            }
+                        if (AnonConfig.viewOnly) {
+                            spendScannerController.showQRExchange(
+                                SpendQRExchangeParam(
+                                    exportType = ExportType.OUTPUT,
+                                    title = "OUTPUTS",
+                                    ctaText = "SCAN KEY IMAGES",
+                                )
+                            )
+                            return@OutlinedButton
                         }
+                        prepare()
                     },
                     modifier = Modifier
                         .fillMaxWidth()

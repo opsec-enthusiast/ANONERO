@@ -66,6 +66,7 @@ import io.anonero.ui.home.settings.ProxySettings
 import io.anonero.ui.home.settings.SecureWipe
 import io.anonero.ui.home.settings.SeedSettingsPage
 import io.anonero.ui.home.settings.SettingsPage
+import io.anonero.ui.home.spend.QRExchangeScreen
 import io.anonero.ui.home.spend.ReviewTransactionScreen
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.util.isIgnoringBatteryOptimizations
@@ -240,7 +241,6 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         )
                     }
                     composable<SendScreenRoute> { backStackEntry ->
-
                         val params = backStackEntry.toRoute<SendScreenRoute>()
                         SendScreen(
                             navigateToReview = {

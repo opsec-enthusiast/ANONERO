@@ -8,6 +8,7 @@ import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import io.anonero.store.LogRepository
 import io.anonero.store.NodesRepository
+import io.anonero.ui.home.SendViewModel
 import io.anonero.ui.home.settings.LogViewModel
 import io.anonero.ui.home.settings.NodeSettingsViewModel
 import io.anonero.ui.home.settings.ProxySettingsViewModel
@@ -36,6 +37,7 @@ val appModule = module {
     }
     viewModel { OnboardViewModel(get(named(WALLET_PREFERENCES))) }
     viewModel { LogViewModel(get()) }
+    viewModel { SendViewModel() }
     viewModel { SecureWipeViewModel(get(), get(named(WALLET_PREFERENCES)), get(), get()) }
     viewModel { NodeSettingsViewModel(get(named(WALLET_PREFERENCES)), get<NodesRepository>()) }
     viewModel { ProxySettingsViewModel(get(), get(), get(named(WALLET_PREFERENCES))) }

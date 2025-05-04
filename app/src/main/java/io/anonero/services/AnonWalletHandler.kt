@@ -146,6 +146,7 @@ class AnonWalletHandler(
                 )
             }
             walletManager?.setDaemon(node)
+            wallet?.setTrustedDaemon(true)
             walletState.setLoading(false)
         } catch (e: Exception) {
             walletState.updateDaemon(

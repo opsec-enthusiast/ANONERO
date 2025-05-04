@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -44,8 +45,8 @@ import io.anonero.icons.AnonIcons
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.services.WalletState
-import io.anonero.ui.components.QrCodeImage
 import io.anonero.ui.components.SubAddressLabelDialog
+import io.anonero.ui.components.qr.QrCodeView
 import io.anonero.ui.home.TransactionItem
 import io.anonero.util.Formats
 import kotlinx.coroutines.flow.map
@@ -112,10 +113,10 @@ fun SubAddressDetailScreen(
                horizontalAlignment = Alignment.CenterHorizontally,
                verticalArrangement = Arrangement.Center
            ){
-               QrCodeImage(
-                   size = 300.dp,
-                   content = subAddress.address,
+               QrCodeView(
+                   data = subAddress.address,
                    modifier = Modifier
+                       .size(300.dp)
                        .padding(20.dp)
                )
            }

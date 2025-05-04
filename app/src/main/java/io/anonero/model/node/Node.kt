@@ -41,7 +41,7 @@ open class Node {
         private set
     var password = ""
         private set
-    var trusted = false
+    var trusted = true
         private set
 
     internal constructor(nodeString: String?) {

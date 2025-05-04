@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -33,6 +32,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -40,12 +43,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.anonero.AnonConfig
+import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.PendingTransaction
+import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
+import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.theme.DangerColor
 import io.anonero.ui.theme.SuccessColor
@@ -53,6 +61,7 @@ import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class BroadcastState {
     STAGING,
@@ -61,18 +70,57 @@ enum class BroadcastState {
     ERROR
 }
 
+data class ReviewModel(
+    val address: String?,
+    val amount: Long,
+    val fee: Long,
+    val total: Long,
+    val txId: String
+)
+
 class ReviewTransactionViewModel : ViewModel() {
-    private val pendingTransaction = MutableLiveData<PendingTransaction?>(null)
+    private val reviewModel = MutableLiveData<ReviewModel?>(null)
     private val broadcastingTx = MutableLiveData(BroadcastState.STAGING)
     private var _broadcastError: Exception? = null
 
     val broadCastError get() = _broadcastError
     val getBroadcastingTxState get() = broadcastingTx
-    val pendingTransactionLive get() = pendingTransaction
+    val reviewModelLive: LiveData<ReviewModel?> get() = reviewModel
+
+    var pendingTransaction: PendingTransaction? = null;
+    var unsignedTransaction: UnsignedTransaction? = null;
+
+    public fun isUnsignedTransaction(): Boolean {
+        return unsignedTransaction != null
+    }
 
     init {
-        WalletManager.instance?.wallet?.getPendingTx().let {
-            pendingTransaction.postValue(it)
+        val wallet = WalletManager.instance?.wallet;
+        val pendingTransaction = wallet?.getPendingTx()
+        val unsignedTransaction = wallet?.getUnsginedTx()
+
+        if (unsignedTransaction != null) {
+            this.unsignedTransaction = unsignedTransaction
+            reviewModel.postValue(
+                ReviewModel(
+                    address = unsignedTransaction.address ?: "",
+                    amount = unsignedTransaction.amount,
+                    fee = unsignedTransaction.fee,
+                    total = unsignedTransaction.fee + unsignedTransaction.amount,
+                    txId = unsignedTransaction.firstTxId
+                )
+            )
+        } else if (pendingTransaction != null) {
+            this.pendingTransaction = pendingTransaction
+            reviewModel.postValue(
+                ReviewModel(
+                    address = null,
+                    amount = pendingTransaction.getAmount(),
+                    fee = pendingTransaction.getFee(),
+                    total = pendingTransaction.getFee() + pendingTransaction.getAmount(),
+                    txId = pendingTransaction.firstTxId
+                )
+            )
         }
     }
 
@@ -80,10 +128,22 @@ class ReviewTransactionViewModel : ViewModel() {
         if (broadcastingTx.value == BroadcastState.IN_PROGRESS) {
             return null
         }
+        val signedTxFile = File(
+            AnonConfig.context?.cacheDir,
+            AnonConfig.IMPORT_SIGNED_TX_FILE
+        );
         broadcastingTx.postValue(BroadcastState.IN_PROGRESS)
         return viewModelScope.launch(Dispatchers.IO) {
             try {
-                pendingTransaction.value?.let { WalletManager.instance?.wallet?.send(it) }
+                if (pendingTransaction != null) {
+                    pendingTransaction?.let { WalletManager.instance?.wallet?.send(it) }
+                }
+                if ( signedTxFile.exists()) {
+                    WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
+                    AnonConfig.context?.let {
+                        AnonConfig.clearSpendCacheFiles(it)
+                    }
+                }
                 WalletManager.instance?.wallet?.refreshHistory()
                 WalletManager.instance?.wallet?.store()
                 broadcastingTx.postValue(BroadcastState.SUCCESS)
@@ -103,12 +163,16 @@ fun ReviewTransactionScreen(
     onFinished: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
-//
+
+    var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     val viewModel = viewModel<ReviewTransactionViewModel>()
-    val pendingTransaction by viewModel.pendingTransactionLive.observeAsState()
+    val reviewModel by viewModel.reviewModelLive.observeAsState()
+    val scope = rememberCoroutineScope()
     val view = LocalView.current
-//
     val broadcastState by viewModel.getBroadcastingTxState.observeAsState(BroadcastState.STAGING)
+    var showScanner by remember { mutableStateOf(false) }
+    var signing by remember { mutableStateOf(false) }
+    var readyToBroadcast by remember { mutableStateOf(!AnonConfig.viewOnly) }
 
     val titleStyle = MaterialTheme.typography.bodyLarge.copy(
         color = MaterialTheme.colorScheme.primary,
@@ -117,12 +181,56 @@ fun ReviewTransactionScreen(
     val subTitleStyle = MaterialTheme.typography.bodyMedium.copy(
         color = MaterialTheme.colorScheme.onBackground,
         fontSize = 14.sp
-
     )
 
     BackHandler {
         onBackPressed()
     }
+
+    QRScannerDialog(
+        show = showScanner,
+        onQRCodeScanned = {
+            showScanner = false
+        },
+        onUrRusult = {
+            showScanner = false
+            val ur = it.ur;
+            qrScannerParam = null;
+            if (ur.type == AnonUrRegistryTypes.XMR_TX_SIGNED.type) {
+                readyToBroadcast = true
+            }
+        },
+        onDismiss = {
+            showScanner = false
+        }
+    )
+
+    QRExchangeDialog(
+        show = qrScannerParam != null,
+        params = qrScannerParam,
+        onCtaCalled = {
+            showScanner = true
+        },
+        onDismiss = {
+            qrScannerParam = null
+        },
+    )
+
+    val ctaText = if (AnonConfig.viewOnly) {
+        if (!viewModel.isUnsignedTransaction() && !readyToBroadcast) {
+            "Share unsigned transaction"
+        } else {
+            "Broadcast transaction"
+        }
+    } else {
+        if (viewModel.isUnsignedTransaction()) {
+            "Sign and share transaction"
+        } else {
+            "Broadcast transaction"
+        }
+    }
+
+
 
     Scaffold(
         modifier = modifier,
@@ -151,10 +259,11 @@ fun ReviewTransactionScreen(
         }
     ) {
         Box(
-            modifier = Modifier.padding(it)
+            modifier = Modifier
+                .padding(it)
                 .padding(bottom = 0.dp)
         ) {
-            if (pendingTransaction != null) {
+            if (reviewModel != null) {
                 AnimatedVisibility(
                     visible = broadcastState == BroadcastState.ERROR,
                     enter = fadeIn(),
@@ -228,7 +337,7 @@ fun ReviewTransactionScreen(
                                     headlineContent = { Text("Address", style = titleStyle) },
                                     supportingContent = {
                                         Text(
-                                            reviewParams.toAddress,
+                                            reviewModel!!.address ?: reviewParams.toAddress,
                                             style = subTitleStyle
                                         )
                                     }
@@ -240,7 +349,7 @@ fun ReviewTransactionScreen(
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getAmount()
+                                                reviewModel!!.amount
                                             ),
                                             style = subTitleStyle
                                         )
@@ -254,7 +363,7 @@ fun ReviewTransactionScreen(
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getFee()
+                                                reviewModel!!.fee
                                             ),
                                             style = subTitleStyle
                                         )
@@ -267,7 +376,7 @@ fun ReviewTransactionScreen(
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
-                                                pendingTransaction!!.getFee() + pendingTransaction!!.getAmount()
+                                                reviewModel!!.total
                                             ),
                                             textAlign = TextAlign.Center,
                                             style = MaterialTheme.typography.titleLarge,
@@ -283,16 +392,48 @@ fun ReviewTransactionScreen(
                         }
                         OutlinedButton(
                             onClick = {
-                                viewModel.broadCast()?.invokeOnCompletion { error ->
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                        if (error == null) {
-                                            view.performHapticFeedback(
-                                                HapticFeedbackConstants.CONFIRM
-                                            )
-                                        } else {
-                                            view.performHapticFeedback(
-                                                HapticFeedbackConstants.REJECT
-                                            )
+                                if (viewModel.isUnsignedTransaction()) {
+                                    scope.launch {
+                                        val unsignedTransaction = File(
+                                            AnonConfig.context?.cacheDir,
+                                            AnonConfig.IMPORT_UNSIGNED_TX_FILE
+                                        );
+                                        val signedTransaction = File(
+                                            AnonConfig.context?.cacheDir,
+                                            AnonConfig.EXPORT_SIGNED_TX_FILE
+                                        );
+                                        signing = true
+                                        WalletManager.instance?.wallet?.signAndExportJ(
+                                            unsignedTransaction.absolutePath,
+                                            signedTransaction.absolutePath,
+                                        )
+                                        signing = false
+                                        qrScannerParam = SpendQRExchangeParam(
+                                            exportType = ExportType.SIGNED_TX,
+                                            title = "Signed transaction",
+                                            ctaText = "Share signed transaction",
+                                        )
+                                    }
+                                } else {
+                                    if (AnonConfig.viewOnly && !readyToBroadcast) {
+                                        qrScannerParam = SpendQRExchangeParam(
+                                            exportType = ExportType.UN_SIGNED_TX,
+                                            title = "Unsigned transaction",
+                                            ctaText = "Scan signed transaction",
+                                        )
+                                    } else {
+                                        viewModel.broadCast()?.invokeOnCompletion { error ->
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                                if (error == null) {
+                                                    view.performHapticFeedback(
+                                                        HapticFeedbackConstants.CONFIRM
+                                                    )
+                                                } else {
+                                                    view.performHapticFeedback(
+                                                        HapticFeedbackConstants.REJECT
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -306,7 +447,14 @@ fun ReviewTransactionScreen(
                             shape = MaterialTheme.shapes.medium,
                             contentPadding = PaddingValues(12.dp)
                         ) {
-                            Text("CONFIRM")
+                            if (signing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(ctaText)
+                            }
                         }
                     }
                 }
@@ -314,6 +462,7 @@ fun ReviewTransactionScreen(
         }
     }
 }
+
 
 @Preview
 @Composable
