@@ -1294,12 +1294,14 @@ Java_io_anonero_model_Wallet_disposeTransaction(JNIEnv *env, jobject instance,
     wallet->disposeTransaction(_pendingTransaction);
 }
 
-//virtual bool exportKeyImages(const std::string &filename, bool all = false) = 0;
+//virtual bool exportKeyIexportKeyImagesmages(const std::string &filename, bool all = false) = 0;
 JNIEXPORT jboolean JNICALL
 Java_io_anonero_model_Wallet_exportKeyImages(JNIEnv *env, jobject instance, jstring filename,
                                              jboolean all) {
     Monero::Wallet *wallet = getHandle<Monero::Wallet>(env, instance);
+    LOGD("monerujo.cpp: Exporting key images");
     const char *_filename = env->GetStringUTFChars(filename, nullptr);
+    LOGD("monerujo.cpp: Exporting key images");
     return wallet->exportKeyImages(_filename, all);
 
     // return env->NewStringUTF(outputs.c_str());
@@ -1369,7 +1371,7 @@ Java_io_anonero_model_Wallet_viewOnlyBalance(JNIEnv *env, jobject instance) {
 
 //virtual bool importOutputs(const std::string &filename) = 0;
 JNIEXPORT jstring JNICALL
-Java_io_anonero_model_Wallet_importOutputsJ(JNIEnv *env, jobject instance, jstring filename) {
+Java_io_anonero_model_Wallet_importOutputs(JNIEnv *env, jobject instance, jstring filename) {
     Monero::Wallet *wallet = getHandle<Monero::Wallet>(env, instance);
     const char *_filename = env->GetStringUTFChars(filename, nullptr);
     bool success = wallet->importOutputs(_filename);

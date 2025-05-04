@@ -24,6 +24,19 @@ object AnonConfig {
     var context: AnonApplication? = null
     private var walletFound: Boolean = false
 
+    const val EXPORT_OUTPUT_FILE = "export_wallet_outputs"
+    const val IMPORT_OUTPUT_FILE = "import_wallet_outputs"
+
+    const val EXPORT_KEY_IMAGE_FILE = "export_key_images"
+    const val IMPORT_KEY_IMAGE_FILE = "import_key_images"
+
+    const val EXPORT_UNSIGNED_TX_FILE = "export_unsigned_tx"
+    const val IMPORT_UNSIGNED_TX_FILE = "import_unsigned_tx"
+
+    const val EXPORT_SIGNED_TX_FILE = "export_signed_tx"
+    const val IMPORT_SIGNED_TX_FILE = "import_signed_tx"
+
+
     fun getNetworkType(): NetworkType {
         if (BuildConfig.APPLICATION_ID.lowercase().contains("stagenet")) {
             return NetworkType.NetworkType_Stagenet
@@ -81,6 +94,27 @@ object AnonConfig {
     fun initWalletState() {
         MainScope().launch(Dispatchers.IO) {
             walletFound = getDefaultWalletFile(context!!).exists()
+        }
+    }
+
+    fun  clearSpendCacheFiles(context: Context) {
+        val files = arrayListOf(
+            EXPORT_OUTPUT_FILE,
+            IMPORT_OUTPUT_FILE,
+
+            EXPORT_KEY_IMAGE_FILE,
+            IMPORT_KEY_IMAGE_FILE,
+
+            EXPORT_UNSIGNED_TX_FILE,
+            IMPORT_UNSIGNED_TX_FILE,
+
+            EXPORT_SIGNED_TX_FILE,
+            IMPORT_SIGNED_TX_FILE
+        );
+       context.cacheDir.listFiles()?.forEach { file ->
+            if (files.any { file.name.contains(it) }) {
+                file.delete()
+            }
         }
     }
 

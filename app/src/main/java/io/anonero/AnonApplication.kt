@@ -37,6 +37,7 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         Thread.setDefaultUncaughtExceptionHandler(this)
         val torService:TorService = get()
         torService.start()
+        AnonConfig.clearSpendCacheFiles(this)
     }
 
 
