@@ -22,7 +22,7 @@ fun NavGraphBuilder.homeGraph(navController: NavHostController) {
         }
         composable<LockScreenRoute> {
             LockScreen(
-                onUnLocked =  { _, shortCut ->
+                onUnLocked = { _, shortCut ->
                     navController.navigate(HomeScreenRoute(shortCut)) {
                         popUpTo(LockScreenRoute) {
                             inclusive = true

@@ -150,9 +150,9 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
     LaunchedEffect(true) {
         scope.launch {
             delay(100)
-            if(AnonConfig.viewOnly){
+            if (AnonConfig.viewOnly) {
                 createBackUp()
-            }else {
+            } else {
                 focusRequester.requestFocus()
             }
         }
@@ -307,9 +307,11 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
         ) {
             if (!passPhraseDialog && backupFile == null) {
                 Column(
-                    Modifier.fillMaxSize().padding(
-                      all = 12.dp
-                    ),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            all = 12.dp
+                        ),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -324,9 +326,11 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                 if (backupFile != null) {
 
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(
-                            horizontal = 12.dp
-                        ),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(
+                                horizontal = 12.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
@@ -384,7 +388,8 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                             modifier = Modifier
                                 .padding(
                                     vertical = 24.dp,
-                                ).fillMaxWidth(0.85f),
+                                )
+                                .fillMaxWidth(0.85f),
                             border = BorderStroke(
                                 1.dp,
                                 color = MaterialTheme.colorScheme.onBackground

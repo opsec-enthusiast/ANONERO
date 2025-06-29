@@ -1,7 +1,6 @@
 package io.anonero.model
 
 import com.sparrowwallet.hummingbird.UR
-import com.sparrowwallet.hummingbird.URDecoder
 
 enum class AnonUrRegistryTypes(val type: String, val tag: Int) {
     XMR_OUTPUT("xmr-output", 610),

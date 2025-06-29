@@ -35,11 +35,10 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         initConfigs()
         plantLog()
         Thread.setDefaultUncaughtExceptionHandler(this)
-        val torService:TorService = get()
+        val torService: TorService = get()
         torService.start()
         AnonConfig.clearSpendCacheFiles(this)
     }
-
 
     private fun plantLog() {
 
@@ -76,7 +75,7 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
     }
 
     override fun onTerminate() {
-        val torService:TorService = get()
+        val torService: TorService = get()
         torService.dispose()
         anonLogTree.cleanup()
         super.onTerminate()

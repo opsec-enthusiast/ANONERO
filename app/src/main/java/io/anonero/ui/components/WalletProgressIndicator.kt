@@ -5,6 +5,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +30,9 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier) {
     val syncProgress by walletState.syncProgress.asLiveData().observeAsState(null)
     AnimatedVisibility(
         (showIndefiniteLoading || syncProgress != null),
-        modifier = modifier.animateContentSize()
+        modifier = modifier
+            .height(2.dp)
+            .animateContentSize()
     ) {
         if (syncProgress != null && syncProgress!!.left != 0L) {
             Column(

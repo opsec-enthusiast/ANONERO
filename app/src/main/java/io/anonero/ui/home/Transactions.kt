@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,7 +20,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,8 +65,12 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
-import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.SendScreenRoute
+import io.anonero.ui.home.spend.qr.ExportType
+import io.anonero.ui.home.spend.qr.ImportEvents
+import io.anonero.ui.home.spend.qr.QRExchangeScreen
+import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
+import io.anonero.ui.home.spend.qr.URQRScanner
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -68,6 +79,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.inject
+import timber.log.Timber
 
 
 class TransactionsViewModel : ViewModel() {
@@ -82,6 +94,8 @@ class TransactionsViewModel : ViewModel() {
 
 }
 
+private const val TAG = "Transactions"
+
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class,
     ExperimentalSharedTransitionApi::class
@@ -90,7 +104,7 @@ class TransactionsViewModel : ViewModel() {
 fun TransactionScreen(
     modifier: Modifier = Modifier,
     onItemClick: (TransactionInfo) -> Unit = {},
-    navigateToSend: (paymentUri: SendScreenRoute) -> Unit = {},
+    navigateTo: (route: Any) -> Unit = {},
     navigateToShortCut: (shortcut: LockScreenShortCut) -> Unit = {},
     animatedContentScope: AnimatedContentScope,
     sharedTransitionScope: SharedTransitionScope,
@@ -101,8 +115,14 @@ fun TransactionScreen(
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showLockScreen by remember { mutableStateOf(false) }
+    var scanFailure by remember { mutableStateOf<String?>(null) }
+    var spendDialog by remember { mutableStateOf<String?>(null) }
+    var broadcastSignedTxPath by remember { mutableStateOf<String?>(null) }
+    var broadcastProgree by remember { mutableStateOf(false) }
     var settingBSync by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
+    var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
+    var showMenu by remember { mutableStateOf(false) }
     val walletState = koinInject<WalletState>()
 
     val scope = rememberCoroutineScope()
@@ -137,24 +157,204 @@ fun TransactionScreen(
         }
     }
 
-    QRScannerDialog(
-        show = showScanner,
-        onQRCodeScanned = {
-            if (it.isNotEmpty()) {
-                scope.launch(Dispatchers.IO) {
-                    SendScreenRoute.parse(it)?.let { paymentUri ->
-                        withContext(Dispatchers.Main) {
-                            navigateToSend(paymentUri)
+    if (broadcastSignedTxPath != null) {
+        AlertDialog(
+            modifier = Modifier
+                .border(
+                    1.dp,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(
+                        alpha = .2f
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                ),
+            containerColor = MaterialTheme.colorScheme.background,
+            properties = DialogProperties(
+                securePolicy = SecureFlagPolicy.SecureOn, dismissOnBackPress = false
+            ),
+            title = {
+                Text(
+                    text = "Anon",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontSize = 18.sp
+                    )
+                )
+            },
+            text = {
+                Text("Do you want to broadcast transaction?")
+            },
+            onDismissRequest = {
+                scanFailure = null
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        broadcastSignedTxPath = null
+                    },
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onSecondary
+                    ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    )
+                ) {
+                    Text(
+                        "Cancel",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSecondary.copy(
+                                alpha = 0.8f
+                            )
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onBackground,
+                    ),
+                    onClick = {
+                        broadcastProgree = true
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                WalletManager.instance?.wallet?.submitTransaction(
+                                    broadcastSignedTxPath ?: ""
+                                )
+                                WalletManager.instance?.wallet?.refreshHistory()
+                                WalletManager.instance?.wallet?.store()
+                            } catch (ex: Exception) {
+                                Timber.tag(TAG).e(ex)
+                            } finally {
+                                broadcastProgree = false
+                                broadcastSignedTxPath = null
+                            }
+                        }
+                    }) { Text("Yes") }
+            },
+        )
+    }
+
+    if (qrScannerParam != null) {
+        QRExchangeScreen(
+            params = qrScannerParam!!,
+            onBackPressed = {
+                qrScannerParam = null
+            },
+            onCtaCalled = {
+                qrScannerParam = null
+                showScanner = true
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    if (showScanner)
+        URQRScanner(
+            onQRCodeScanned = {
+                if (it.isNotEmpty()) {
+                    scope.launch(Dispatchers.IO) {
+                        SendScreenRoute.parse(it)?.let { paymentUri ->
+                            withContext(Dispatchers.Main) {
+                                navigateTo(paymentUri)
+                            }
                         }
                     }
                 }
-            }
-            showScanner = false
-        },
-        onDismiss = {
-            showScanner = false
-        }
-    )
+                showScanner = false
+
+            },
+            onDismiss = {
+                showScanner = false
+            },
+            onURResult = {
+                when (it.getOrNull()) {
+                    ImportEvents.IMPORT_OUTPUTS -> {
+                        showScanner = false
+                        qrScannerParam = SpendQRExchangeParam(
+                            exportType = ExportType.IMAGE,
+                            title = "KEY IMAGES",
+                            ctaText = "Scan unsigned transaction",
+                        )
+                    }
+
+                    null -> {
+
+                    }
+
+                    ImportEvents.IMPORT_KEY_IMAGES -> {}
+                    ImportEvents.IMPORT_UNSIGNED_TX -> {}
+                    ImportEvents.IMPORT_SIGNED_TX -> {}
+                }
+                showScanner = false
+            },
+            showScanner = showScanner
+        )
+
+    if (spendDialog != null) {
+        AlertDialog(
+            modifier = Modifier
+                .border(
+                    1.dp,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(
+                        alpha = .2f
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                ),
+            containerColor = MaterialTheme.colorScheme.background,
+            properties = DialogProperties(
+                securePolicy = SecureFlagPolicy.SecureOn, dismissOnBackPress = false
+            ),
+            title = {
+                Text(
+                    text = "Anon",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontSize = 18.sp
+                    )
+                )
+            },
+            text = {
+                Text("${spendDialog}")
+            },
+            onDismissRequest = {
+                spendDialog = null
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        spendDialog = null
+                    },
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onSecondary
+                    ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    )
+                ) {
+                    Text(
+                        "Ok",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSecondary.copy(
+                                alpha = 0.8f
+                            )
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+
+            },
+        )
+    }
 
 
     Scaffold(
@@ -206,10 +406,37 @@ fun TransactionScreen(
                             contentColor = Color.White
                         ),
                         onClick = {
-
+                            showMenu = !showMenu
                         }
                     ) {
                         Icon(Icons.Default.MoreVert, contentDescription = "More")
+                        DropdownMenu(
+                            expanded = showMenu,
+                            containerColor = MaterialTheme.colorScheme.background,
+                            modifier = Modifier
+                                .border(
+                                    1.dp,
+                                    color = MaterialTheme.colorScheme.onSecondary.copy(
+                                        alpha = .2f
+                                    ),
+                                    shape = MaterialTheme.shapes.medium,
+                                ),
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            if (AnonConfig.viewOnly) {
+                                DropdownMenuItem(
+                                    text = { Text("Show Outputs") },
+                                    onClick = {
+                                        qrScannerParam =
+                                            SpendQRExchangeParam(
+                                                exportType = ExportType.OUTPUT,
+                                                title = "OUTPUTS",
+                                                ctaText = "SCAN KEY IMAGES",
+                                            )
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             )

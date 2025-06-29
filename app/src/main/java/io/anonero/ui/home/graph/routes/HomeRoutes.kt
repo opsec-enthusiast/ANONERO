@@ -1,7 +1,6 @@
 package io.anonero.ui.home.graph.routes
 
 import io.anonero.ui.home.LockScreenShortCut
-import io.anonero.ui.home.spend.ExportType
 import kotlinx.serialization.Serializable
 
 
@@ -52,4 +51,4 @@ data object SecureWipeRoute
 data object SubAddressesRoute
 
 @Serializable
-data  class SubAddressDetailRoute(val subAddress: String)
+data class SubAddressDetailRoute(val subAddress: String)

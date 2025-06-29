@@ -62,7 +62,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
 
 
     suspend fun createViewOnly(pin: String) {
-        if(neroKeyPayload == null) return
+        if (neroKeyPayload == null) return
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
             val context = AnonConfig.context!!.applicationContext

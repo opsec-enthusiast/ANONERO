@@ -52,7 +52,7 @@ fun SetupPassphrase(
     var passPhraseConfirm by remember { mutableStateOf("") }
 
 
-    LaunchedEffect(passPhraseConfirm,passPhrase) {
+    LaunchedEffect(passPhraseConfirm, passPhrase) {
         passPhraseMatched = if (passPhraseConfirm.isNotEmpty()) {
             passPhraseConfirm == passPhrase
         } else {

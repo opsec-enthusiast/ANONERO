@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
@@ -16,7 +17,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -50,12 +49,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -121,7 +119,9 @@ fun QRScannerDialog(
                         onDismiss.invoke()
                         onQRCodeScanned.invoke(it)
                     },
-                    onUrRusult = onUrRusult,
+                    onUrRusult = {
+
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -153,13 +153,11 @@ fun QRScanner(
     )
     val widthInPx: Float
     val heightInPx: Float
-    val radiusInPx: Float
     val view = LocalView.current
 
     with(LocalDensity.current) {
         widthInPx = 240.dp.toPx()
         heightInPx = 240.dp.toPx()
-        radiusInPx = 16.dp.toPx()
     }
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -270,7 +268,8 @@ fun QRScanner(
 
             PermissionStatus.Granted -> {
                 Box {
-                    AndroidView(modifier = modifier.fillMaxSize(),
+                    AndroidView(
+                        modifier = modifier.fillMaxSize(),
                         factory = { ctx ->
                             val previewView = PreviewView(ctx).apply {
                                 layoutParams = ViewGroup.LayoutParams(
@@ -298,18 +297,27 @@ fun QRScanner(
                                             QrCodeAnalyzerBoofcv(onQrCodesDetected = {
                                                 val result = it.text
                                                 if (result.lowercase().startsWith("ur:")) {
-                                                    decoder.receivePart(result)
+                                                    val received = decoder.receivePart(result)
                                                     val progreesPercentage =
-                                                        decoder.processedPartsCount.toFloat() / decoder.expectedPartCount.toFloat()
-                                                    if(progreesPercentage != progrees) {
-                                                        progrees = progreesPercentage
+                                                        decoder.estimatedPercentComplete;
+                                                    Log.i(
+                                                        TAG,
+                                                        "SpendScanner QRScanner:onUrRusult ${received}  $progrees"
+                                                    )
+                                                    if (progreesPercentage.toFloat() != progrees) {
+                                                        progrees = progreesPercentage.toFloat()
                                                         view.performHapticFeedback(
                                                             HapticFeedbackConstants.KEYBOARD_TAP
                                                         )
                                                     }
                                                     if (decoder.result != null) {
-                                                        if (!isScanned)
+                                                        if (!isScanned) {
+                                                            Log.i(
+                                                                TAG,
+                                                                "SpendScanner QRScanner: ${decoder.result}   $isScanned"
+                                                            )
                                                             onUrRusult.invoke(decoder.result)
+                                                        }
                                                         isScanned = true
                                                     }
                                                 } else {
@@ -339,17 +347,8 @@ fun QRScanner(
                         update = { })
                     Canvas(
                         modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        drawRect(
-                            color = Color.Black.copy(alpha = 0.4f)
-                        )
-                    }
-                    Canvas(
-                        modifier = Modifier
                             .size(240.dp)
                             .align(Alignment.Center)
-                            .border(1.dp, Color.White, RoundedCornerShape(16.dp))
                             .onGloballyPositioned { layoutCoordinates ->
                                 canvasSize = layoutCoordinates.size
                             }
@@ -359,17 +358,170 @@ fun QRScanner(
                                 x = (canvasSize.width - widthInPx) / 2,
                                 y = (canvasSize.height - heightInPx) / 2
                             )
+                            // Draw L-shaped corner markers
+                            val cornerLength = widthInPx * 0.32f
+                            val strokeWidth = 3.dp.toPx()
+                            val cornerPadding = 4.dp.toPx()
+                            val cornerRadius = 8.dp.toPx()
 
-                            val cutoutRect = Rect(offset, Size(widthInPx, heightInPx))
-                            drawRoundRect(
-                                topLeft = Offset(
-                                    (canvasSize.width - cutoutRect.width) / 2,
-                                    (canvasSize.height - cutoutRect.height) / 2
+                            // Top corner left
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y - cornerPadding + cornerLength
                                 ),
-                                size = cutoutRect.size,
-                                cornerRadius = CornerRadius(radiusInPx, radiusInPx),
-                                color = Color.Transparent,
-                                blendMode = BlendMode.Clear
+                                end = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y - cornerPadding + cornerRadius
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x - cornerPadding + cornerRadius,
+                                    offset.y - cornerPadding
+                                ),
+                                end = Offset(
+                                    offset.x - cornerPadding + cornerLength,
+                                    offset.y - cornerPadding
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 180f,
+                                sweepAngle = 90f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y - cornerPadding
+                                ) + Offset(0f, 0f),
+                                size = Size(cornerRadius * 2, cornerRadius * 2),
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+
+                            // Top corner, right
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerLength,
+                                    offset.y - cornerPadding
+                                ),
+                                end = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerRadius,
+                                    offset.y - cornerPadding
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x + widthInPx + cornerPadding,
+                                    offset.y - cornerPadding + cornerRadius
+                                ),
+                                end = Offset(
+                                    offset.x + widthInPx + cornerPadding,
+                                    offset.y - cornerPadding + cornerLength
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 270f,
+                                sweepAngle = 90f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerRadius * 2,
+                                    offset.y - cornerPadding
+                                ),
+                                size = Size(cornerRadius * 2, cornerRadius * 2),
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+
+                            // Bottom corner left
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y + heightInPx + cornerPadding - cornerLength
+                                ),
+                                end = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y + heightInPx + cornerPadding - cornerRadius
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x - cornerPadding + cornerRadius,
+                                    offset.y + heightInPx + cornerPadding
+                                ),
+                                end = Offset(
+                                    offset.x - cornerPadding + cornerLength,
+                                    offset.y + heightInPx + cornerPadding
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 90f,
+                                sweepAngle = 90f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    offset.x - cornerPadding,
+                                    offset.y + heightInPx + cornerPadding - cornerRadius * 2
+                                ),
+                                size = Size(cornerRadius * 2, cornerRadius * 2),
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+
+                            // Bottom corner right
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x + widthInPx + cornerPadding,
+                                    offset.y + heightInPx + cornerPadding - cornerLength
+                                ),
+                                end = Offset(
+                                    offset.x + widthInPx + cornerPadding,
+                                    offset.y + heightInPx + cornerPadding - cornerRadius
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerLength,
+                                    offset.y + heightInPx + cornerPadding
+                                ),
+                                end = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerRadius,
+                                    offset.y + heightInPx + cornerPadding
+                                ),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 0f,
+                                sweepAngle = 90f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    offset.x + widthInPx + cornerPadding - cornerRadius * 2,
+                                    offset.y + heightInPx + cornerPadding - cornerRadius * 2
+                                ),
+                                size = Size(cornerRadius * 2, cornerRadius * 2),
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                             )
                         }
                     }

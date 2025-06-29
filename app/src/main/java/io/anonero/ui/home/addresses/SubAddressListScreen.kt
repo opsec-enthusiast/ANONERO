@@ -52,7 +52,7 @@ class SubAddressListViewModel : ViewModel() {
 
 
     fun getNextAddress() {
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(Dispatchers.IO) {
             walletState.getNewAddress()
         }
     }

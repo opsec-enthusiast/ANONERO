@@ -2,7 +2,6 @@ package io.anonero.ui.home
 
 import AnonNeroTheme
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -33,18 +32,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.services.WalletState
 import io.anonero.ui.components.SubAddressLabelDialog
-import io.anonero.ui.components.qr.DotShape
 import io.anonero.ui.components.qr.QrCodeColors
 import io.anonero.ui.components.qr.QrCodeView
 import org.koin.java.KoinJavaComponent.inject
@@ -72,7 +68,8 @@ fun ReceiveScreen(
                 labelDialog = false
             })
 
-    Scaffold(modifier = modifier,
+    Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -124,12 +121,13 @@ fun ReceiveScreen(
                 }
                 item {
                     QrCodeView(
-                        data=nextAddress!!.address,
+                        data = nextAddress!!.address,
                         colors = QrCodeColors(
                             background = MaterialTheme.colorScheme.background,
                             foreground = MaterialTheme.colorScheme.onBackground,
                         ),
-                        modifier = Modifier.size(300.dp)
+                        modifier = Modifier
+                            .size(300.dp)
                             .padding(18.dp),
                     )
                 }

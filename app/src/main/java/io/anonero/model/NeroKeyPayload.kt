@@ -11,7 +11,7 @@ class NeroKeyPayload(
     val privateViewKey: String,
     val restoreHeight: Long,
     val version: Int
-){
+) {
 
     fun toJSONObject(): JSONObject {
         return JSONObject()

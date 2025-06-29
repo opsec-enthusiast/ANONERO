@@ -29,11 +29,11 @@ val appModule = module {
     single(named(WALLET_PREFERENCES)) { provideWalletSharedPrefs(androidApplication()) }
     single { TorService(get(named(WALLET_PREFERENCES))) }
     single { WalletState() }
-    single { AnonWalletHandler(get(named(WALLET_PREFERENCES)), get(),get()) }
+    single { AnonWalletHandler(get(named(WALLET_PREFERENCES)), get(), get()) }
     single { LogRepository(get()) }
     single { NodesRepository(get()) }
     single {
-        AppViewModel(get(),get())
+        AppViewModel(get(), get())
     }
     viewModel { OnboardViewModel(get(named(WALLET_PREFERENCES))) }
     viewModel { LogViewModel(get()) }

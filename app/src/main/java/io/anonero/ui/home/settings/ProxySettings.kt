@@ -309,7 +309,8 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         Text("Manual Proxy")
                     },
                     trailingContent = {
-                        Switch(checked = useManualProxy,
+                        Switch(
+                            checked = useManualProxy,
                             thumbContent = {
                                 Text(if (useManualProxy) "ON" else "OFF")
                             },
@@ -394,13 +395,13 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                             proxyAddress, proxyPort!!
                         ).invokeOnCompletion { error ->
                             if (error == null) {
-                             scope.launch(Dispatchers.Main) {
-                                 Toast.makeText(
-                                     AnonConfig.context,
-                                     "Proxy updated",
-                                     Toast.LENGTH_SHORT
-                                 ).show()
-                             }
+                                scope.launch(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        AnonConfig.context,
+                                        "Proxy updated",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         }
                     },

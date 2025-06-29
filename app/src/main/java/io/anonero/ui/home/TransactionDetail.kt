@@ -31,7 +31,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -181,7 +179,7 @@ fun TransactionDetailScreen(
                         }
                     ),
                     onValueChange = {
-                        if(it.text.length <= 24) {
+                        if (it.text.length <= 24) {
                             notes = it
                         }
                     },
@@ -337,7 +335,8 @@ fun DetailItem(
     subtitle: String,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    ListItem(modifier = modifier.padding(
+    ListItem(
+        modifier = modifier.padding(
         horizontal = 8.dp,
         vertical = 4.dp
     ),

@@ -3,7 +3,6 @@ package io.anonero.ui.home
 import AnonNeroTheme
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -34,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -66,7 +66,6 @@ import io.anonero.ui.home.settings.ProxySettings
 import io.anonero.ui.home.settings.SecureWipe
 import io.anonero.ui.home.settings.SeedSettingsPage
 import io.anonero.ui.home.settings.SettingsPage
-import io.anonero.ui.home.spend.QRExchangeScreen
 import io.anonero.ui.home.spend.ReviewTransactionScreen
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.util.isIgnoringBatteryOptimizations
@@ -122,7 +121,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     onClick = {
                         val intent = Intent()
                         intent.action = ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                        intent.data = Uri.parse("package:${context.packageName}")
+                        intent.data = "package:${context.packageName}".toUri()
                         context.startActivity(intent)
                         showBatteryManagerDialog = false
                     }
@@ -154,32 +153,33 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
     }
 
     SharedTransitionLayout {
-        Scaffold(contentWindowInsets = WindowInsets(
-            top = 0.dp, bottom = 0.dp
-        ), bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomNavigation,
-                enter = slideInVertically(
-                    initialOffsetY = { it }, // Slide in from the bottom
-                    animationSpec = tween(durationMillis = 500)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it }, // Slide out to the bottom
-                    animationSpec = tween(durationMillis = 500)
-                )
-            ) {
-                MainBottomNavigation(
-                    currentRoute = currentRoute,
-                    onTabSelected = {
-                        bottomNavController.navigate(it.route) {
-                            popUpTo(bottomNavController.graph.startDestinationId)
-                            launchSingleTop = true
+        Scaffold(
+            contentWindowInsets = WindowInsets(
+                top = 0.dp, bottom = 0.dp
+            ), bottomBar = {
+                AnimatedVisibility(
+                    visible = showBottomNavigation,
+                    enter = slideInVertically(
+                        initialOffsetY = { it }, // Slide in from the bottom
+                        animationSpec = tween(durationMillis = 500)
+                    ),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it }, // Slide out to the bottom
+                        animationSpec = tween(durationMillis = 500)
+                    )
+                ) {
+                    MainBottomNavigation(
+                        currentRoute = currentRoute,
+                        onTabSelected = {
+                            bottomNavController.navigate(it.route) {
+                                popUpTo(bottomNavController.graph.startDestinationId)
+                                launchSingleTop = true
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-        }) { paddingValues ->
+            }) { paddingValues ->
             Box(modifier = modifier.padding(0.dp)) {
                 NavHost(bottomNavController, startDestination = startDestination, exitTransition = {
                     fadeOut(animationSpec = tween(340))
@@ -211,7 +211,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                                     }
                                 }
                             },
-                            navigateToSend = {
+                            navigateTo = {
                                 bottomNavController.navigate(it)
                             },
                             sharedTransitionScope = this@SharedTransitionLayout,

@@ -24,16 +24,16 @@ object AnonConfig {
     var context: AnonApplication? = null
     private var walletFound: Boolean = false
 
-    const val EXPORT_OUTPUT_FILE = "export_wallet_outputs"
+    const val EXPORT_OUTPUT_FILE = "export_wallet_outputs.out"
     const val IMPORT_OUTPUT_FILE = "import_wallet_outputs"
 
-    const val EXPORT_KEY_IMAGE_FILE = "export_key_images"
+    const val EXPORT_KEY_IMAGE_FILE = "export_key_images.imgs"
     const val IMPORT_KEY_IMAGE_FILE = "import_key_images"
 
-    const val EXPORT_UNSIGNED_TX_FILE = "export_unsigned_tx"
+    const val EXPORT_UNSIGNED_TX_FILE = "export_unsigned_tx.utx"
     const val IMPORT_UNSIGNED_TX_FILE = "import_unsigned_tx"
 
-    const val EXPORT_SIGNED_TX_FILE = "export_signed_tx"
+    const val EXPORT_SIGNED_TX_FILE = "export_signed_tx.stx"
     const val IMPORT_SIGNED_TX_FILE = "import_signed_tx"
 
 
@@ -44,7 +44,7 @@ object AnonConfig {
         return NetworkType.NetworkType_Mainnet
     }
 
-    val viewOnly: Boolean get() =  BuildConfig.VIEW_ONLY
+    val viewOnly: Boolean get() = BuildConfig.VIEW_ONLY
 
     fun getDefaultWalletFile(context: Context): File {
         val walletDir = getDefaultWalletDir(context)
@@ -97,7 +97,7 @@ object AnonConfig {
         }
     }
 
-    fun  clearSpendCacheFiles(context: Context) {
+    fun clearSpendCacheFiles(context: Context) {
         val files = arrayListOf(
             EXPORT_OUTPUT_FILE,
             IMPORT_OUTPUT_FILE,
@@ -111,7 +111,7 @@ object AnonConfig {
             EXPORT_SIGNED_TX_FILE,
             IMPORT_SIGNED_TX_FILE
         );
-       context.cacheDir.listFiles()?.forEach { file ->
+        context.cacheDir.listFiles()?.forEach { file ->
             if (files.any { file.name.contains(it) }) {
                 file.delete()
             }

@@ -14,6 +14,7 @@ import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.model.node.NodeFields
+import io.anonero.store.NodesRepository
 import io.anonero.util.Formats
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
@@ -49,6 +50,7 @@ class AnonNeroService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + job)
     private val walletState: WalletState by inject(WalletState::class.java)
     private val torService: TorService by inject(TorService::class.java)
+    private val nodesRepository: NodesRepository by inject(NodesRepository::class.java)
     private val prefs: SharedPreferences by inject(named(WALLET_PREFERENCES))
 
     override fun onBind(intent: Intent): IBinder? {
@@ -70,7 +72,6 @@ class AnonNeroService : Service() {
 
     private fun start() {
         startForeground(NOTIFICATION_ID, foregroundNotification())
-        val wallet = WalletManager.instance?.wallet
         scope.launch {
             walletState.walletConnectionStatus.collect {
                 updateNotificationState()

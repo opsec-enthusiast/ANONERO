@@ -1,6 +1,6 @@
 package io.anonero.model
 
-class UnsignedTransaction internal constructor(override var handle: Long): StagingTransaction {
+class UnsignedTransaction internal constructor(override var handle: Long) : StagingTransaction {
     enum class Status {
         Status_Ok,
         Status_Error,

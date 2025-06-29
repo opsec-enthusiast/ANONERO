@@ -63,7 +63,6 @@ import androidx.compose.ui.window.SecureFlagPolicy
 import io.anonero.AnonConfig
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
-import io.anonero.store.jsonDecoder
 import io.anonero.ui.components.qr.QrCodeColors
 import io.anonero.ui.components.qr.QrCodeView
 import io.anonero.util.KeyStoreHelper
@@ -77,7 +76,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.json.JSONObject
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import kotlin.random.Random
@@ -125,7 +123,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             passPhraseDialog = true
             return
         }
-        val payload  = Json.encodeToString(NeroKeyPayload.fromWallet(wallet))
+        val payload = Json.encodeToString(NeroKeyPayload.fromWallet(wallet))
         neroPayload = payload.toString();
     }
 
@@ -182,7 +180,11 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(modifier = Modifier.padding(8.dp))
-                Text("[ИΞR0] keys", textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "[ИΞR0] keys",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Box(modifier = Modifier.padding(8.dp))
                 QrCodeView(
                     data = neroPayload,
@@ -325,7 +327,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.background,
                 ),
-                contentPadding =  PaddingValues(
+                contentPadding = PaddingValues(
                     all = 12.dp
                 ),
                 modifier = Modifier.fillMaxWidth(0.85f),

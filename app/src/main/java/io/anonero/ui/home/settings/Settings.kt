@@ -78,7 +78,8 @@ fun SettingsPage(
                     HorizontalDivider(
                         thickness = 2.5.dp
                     )
-                    SettingsMenuItem(title = "Node Settings",
+                    SettingsMenuItem(
+                        title = "Node Settings",
                         onClick = {
                             navigateTo(SettingsNodeRoute)
                         })
@@ -126,7 +127,8 @@ fun SettingsPage(
                     )
                 }
                 item {
-                    SettingsMenuItem(title = "Secure Wipe",
+                    SettingsMenuItem(
+                        title = "Secure Wipe",
                         onClick = {
                             navigateTo(SecureWipeRoute)
                         })

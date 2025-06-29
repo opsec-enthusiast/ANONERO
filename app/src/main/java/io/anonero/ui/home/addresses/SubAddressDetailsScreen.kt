@@ -98,28 +98,28 @@ fun SubAddressDetailScreen(
                 labelDialog = false
             })
 
-    if(showQR){
+    if (showQR) {
         ModalBottomSheet(
             scrimColor = MaterialTheme.colorScheme.background.copy(
                 alpha = 0.5f
             ),
-            containerColor =MaterialTheme.colorScheme.background,
+            containerColor = MaterialTheme.colorScheme.background,
             onDismissRequest = {
                 showQR = false
             }
         ) {
-           Column(
-               Modifier.fillMaxWidth(),
-               horizontalAlignment = Alignment.CenterHorizontally,
-               verticalArrangement = Arrangement.Center
-           ){
-               QrCodeView(
-                   data = subAddress.address,
-                   modifier = Modifier
-                       .size(300.dp)
-                       .padding(20.dp)
-               )
-           }
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                QrCodeView(
+                    data = subAddress.address,
+                    modifier = Modifier
+                        .size(300.dp)
+                        .padding(20.dp)
+                )
+            }
         }
     }
     Scaffold(
@@ -192,14 +192,15 @@ fun SubAddressDetailScreen(
             }
             items(transactions.size) {
                 with(sharedTransitionScope) {
-                    TransactionItem(transactions[it], Modifier
-                        .clickable {
-                            onTransactionClick(transactions[it])
-                        }
-                        .sharedElement(
-                            sharedTransitionScope.rememberSharedContentState(key = "${transactions[it].hash}"),
-                            animatedVisibilityScope = animatedContentScope
-                        )
+                    TransactionItem(
+                        transactions[it], Modifier
+                            .clickable {
+                                onTransactionClick(transactions[it])
+                            }
+                            .sharedElement(
+                                sharedTransitionScope.rememberSharedContentState(key = "${transactions[it].hash}"),
+                                animatedVisibilityScope = animatedContentScope
+                            )
                     )
                 }
             }

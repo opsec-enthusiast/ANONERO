@@ -98,7 +98,7 @@ class TorService(prefs: SharedPreferences) {
             it?.let {
                 Timber.tag(TAG).i("Tor dispose exception: ${it.message}")
             }
-           scope.cancel()
+            scope.cancel()
         }
     }
 }

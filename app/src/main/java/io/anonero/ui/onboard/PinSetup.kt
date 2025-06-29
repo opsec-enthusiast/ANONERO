@@ -225,7 +225,7 @@ fun PinSetup(
 
                                 return@items Icon(
                                     imageVector =
-                                    if (key == -2) AnonIcons.Backspace else Icons.TwoTone.Check,
+                                        if (key == -2) AnonIcons.Backspace else Icons.TwoTone.Check,
                                     tint = Color.White,
                                     contentDescription = "clear pin",
                                     modifier = Modifier

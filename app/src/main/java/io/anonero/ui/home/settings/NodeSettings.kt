@@ -373,7 +373,8 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                     key = { i -> "${availableNodes[i].toNodeString()} :${i}" }) { index ->
                     val node = availableNodes[index]
                     if (activeNode?.toNodeString() != node.toNodeString()) {
-                        NodeListItem(node,
+                        NodeListItem(
+                            node,
                             modifier = Modifier.animateItem(),
                             active = false,
                             nodeSettingsVM = nodeSettingsVM,

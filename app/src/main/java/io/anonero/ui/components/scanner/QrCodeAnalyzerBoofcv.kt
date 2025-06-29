@@ -2,7 +2,6 @@ package io.anonero.ui.components.scanner
 
 import android.graphics.ImageFormat
 import android.media.Image
-import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -102,7 +101,7 @@ class QrCodeAnalyzerBoofcv(
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         if (debugI % 100 == 10) {
-            Timber.tag("QrCodeAnalyzerBoofcv.kt").d( "$debugI analyze(image: ImageProxy)")
+            Timber.tag("QrCodeAnalyzerBoofcv.kt").d("$debugI analyze(image: ImageProxy)")
         }
         debugI++
         // We are using YUV format because, ImageProxy internally uses ImageReader to get the image

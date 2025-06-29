@@ -67,7 +67,7 @@ class NodesRepository(private val context: Context) {
     // Add a new item to the list
     suspend fun addItem(item: Node) {
         context.nodeDataStore.updateData { currentItems ->
-            if(currentItems.find { it.toNodeString() == item.toNodeString() } == null) {
+            if (currentItems.find { it.toNodeString() == item.toNodeString() } == null) {
                 currentItems + item
             } else {
                 currentItems

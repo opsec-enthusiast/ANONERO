@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -60,12 +59,14 @@ import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
+import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
-import io.anonero.ui.home.spend.ExportType
-import io.anonero.ui.home.spend.SpendQRExchangeParam
-import io.anonero.ui.home.spend.SpendScanner
-import io.anonero.ui.home.spend.SpendScannerController
+import io.anonero.ui.home.spend.qr.ExportType
+import io.anonero.ui.home.spend.qr.ImportEvents
+import io.anonero.ui.home.spend.qr.QRExchangeScreen
+import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
+import io.anonero.ui.home.spend.qr.URQRScanner
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -210,16 +211,22 @@ fun SendScreen(
     var amountField by rememberSaveable { mutableStateOf("") }
     var validSpend by rememberSaveable { mutableStateOf(false) }
     var preparingTx by remember { mutableStateOf(false) }
+    var showScanner by remember { mutableStateOf(false) }
+    var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     var inValidAddress by remember { mutableStateOf<Boolean?>(null) }
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     val scope = rememberCoroutineScope()
     val sendViewModel = koinViewModel<SendViewModel>()
-    val spendScannerController = remember { SpendScannerController() }
     val unlockedBalance by sendViewModel.balance.observeAsState(0L)
     val paymentUriFromScanner by sendViewModel.paymentUri.observeAsState(null)
     val spendType by sendViewModel.spendType.observeAsState(SpendType.NORMAL)
     val txComposeError by sendViewModel.txComposeError.observeAsState()
     val view = LocalView.current
+    val walletState: WalletState by inject(WalletState::class.java)
+
+    val showIndefiniteLoading by walletState.isLoading.asLiveData().observeAsState(false)
+
+
     val unLockedAmount = Formats.getDisplayAmount(
         unlockedBalance ?: 0L
     )
@@ -290,42 +297,6 @@ fun SendScreen(
         }
     }
 
-    SpendScanner(
-        spendScannerController = spendScannerController,
-        onDismiss = {
-
-        },
-        modifier = Modifier,
-        onKeyImagesImported = {
-            prepare()
-        },
-        onUnsignedTransactionImported = {
-            navigateToReview.invoke(
-                ReviewTransactionRoute(
-                    addressField,
-                )
-            )
-        },
-        onSignedTransactionImported = {
-
-        },
-        onOutputsImported = {
-        },
-        onError = {
-            Timber.tag(TAG).e(it)
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = it,
-                    duration = SnackbarDuration.Short
-                )
-            }
-        },
-
-        onQRCodeScanned = {
-            spendScannerController.hideScanner();
-            sendViewModel.handleScan(it)
-        }
-    )
 
     Scaffold(
         modifier = modifier,
@@ -374,11 +345,11 @@ fun SendScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.Start
             ) {
-
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f)
                 ) {
+                    WalletProgressIndicator()
                     ListItem(
                         headlineContent = {
                             Text(
@@ -390,6 +361,7 @@ fun SendScreen(
                         supportingContent = {
                             OutlinedTextField(
                                 value = addressField,
+
                                 shape = MaterialTheme.shapes.medium,
                                 minLines = 4,
                                 isError = inValidAddress == true,
@@ -398,6 +370,7 @@ fun SendScreen(
                                         Text("invalid address")
                                     }
                                 },
+                                enabled = !showIndefiniteLoading,
                                 onValueChange = {
                                     addressField = it.trim()
                                 },
@@ -454,6 +427,7 @@ fun SendScreen(
                                     imeAction = ImeAction.Next,
                                     keyboardType = KeyboardType.Number
                                 ),
+                                enabled = !showIndefiniteLoading,
                                 onValueChange = {
                                     amountField = it.trim()
                                 },
@@ -480,7 +454,8 @@ fun SendScreen(
                     IconButton(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         onClick = {
-                            spendScannerController.showScanner();
+                            showScanner = true
+                            qrScannerParam = null
                         }
                     ) {
                         Icon(AnonIcons.Scan, contentDescription = "")
@@ -502,16 +477,15 @@ fun SendScreen(
                     enabled = validSpend,
                     onClick = {
                         if (AnonConfig.viewOnly) {
-                            spendScannerController.showQRExchange(
-                                SpendQRExchangeParam(
-                                    exportType = ExportType.OUTPUT,
-                                    title = "OUTPUTS",
-                                    ctaText = "SCAN KEY IMAGES",
-                                )
+                            qrScannerParam = SpendQRExchangeParam(
+                                exportType = ExportType.OUTPUT,
+                                title = "OUTPUTS",
+                                ctaText = "SCAN KEY IMAGES",
                             )
                             return@OutlinedButton
+                        } else {
+                            prepare()
                         }
-                        prepare()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -527,6 +501,135 @@ fun SendScreen(
 
         }
     }
+//
+//    SpendScanner(
+//        spendScannerController = spendScannerController,
+//        onDismiss = {
+//            Log.i(TAG, "SendScreen: Ondimissi")
+//        },
+////        onKeyImagesImported = {
+////            prepare()
+////        },
+////        onUnsignedTransactionImported = {
+////            navigateToReview.invoke(
+////                ReviewTransactionRoute(
+////                    addressField,
+////                )
+////            )
+////        },
+////        onSignedTransactionImported = {
+////
+////        },
+////        onOutputsImported = {
+////
+////        },
+////
+//        importEvents = {
+//            when (it) {
+//                ImportEvents.IMPORT_OUTPUTS -> {
+//                    Log.i(TAG, "SendScreen: Important")
+//                }
+//
+//                ImportEvents.IMPORT_KEY_IMAGES -> {
+//                    prepare()
+//                }
+//
+//                ImportEvents.IMPORT_UNSIGNED_TX -> {
+//                    navigateToReview.invoke(
+//                        ReviewTransactionRoute(
+//                            addressField,
+//                        )
+//                    )
+//                }
+//                ImportEvents.IMPORT_SIGNED_TX -> {
+//
+//                }
+//            }
+//        },
+//        onError = {
+//            Timber.tag(TAG).e(it)
+//            scope.launch {
+//                snackbarHostState.showSnackbar(
+//                    message = it,
+//                    duration = SnackbarDuration.Short
+//                )
+//            }
+//        },
+//
+//        onQRCodeScanned = {
+//            spendScannerController.hideScanner();
+//            sendViewModel.handleScan(it)
+//        }
+//    )
+
+    if (showScanner)
+        URQRScanner(
+            onQRCodeScanned = {
+                showScanner = false
+                sendViewModel.handleScan(it)
+            },
+            onDismiss = {
+                showScanner = false
+            },
+            onURResult = {
+                when (it.getOrNull()) {
+                    ImportEvents.IMPORT_OUTPUTS -> {
+                        showScanner = false
+                        qrScannerParam = SpendQRExchangeParam(
+                            exportType = ExportType.IMAGE,
+                            title = "KEY IMAGES",
+                            ctaText = "Scan unsigned transaction",
+                        )
+                    }
+
+                    ImportEvents.IMPORT_KEY_IMAGES -> {
+                        prepare()
+                    }
+
+                    ImportEvents.IMPORT_UNSIGNED_TX -> {
+                        if (!AnonConfig.viewOnly) {
+                            navigateToReview.invoke(
+                                ReviewTransactionRoute(
+                                    addressField,
+                                )
+                            )
+                        }
+                    }
+
+                    ImportEvents.IMPORT_SIGNED_TX -> {
+                        if (AnonConfig.viewOnly) {
+                            navigateToReview.invoke(
+                                ReviewTransactionRoute(
+                                    addressField,
+                                )
+                            )
+                        }
+                    }
+
+                    null -> {
+
+                    }
+                }
+                showScanner = false
+            },
+            showScanner = showScanner
+        )
+
+    if (qrScannerParam != null) {
+        QRExchangeScreen(
+            params = qrScannerParam!!,
+            onBackPressed = {
+                qrScannerParam = null
+            },
+            onCtaCalled = {
+                qrScannerParam = null
+                showScanner = true
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+
 }
 
 @Preview(device = "id:pixel_5")

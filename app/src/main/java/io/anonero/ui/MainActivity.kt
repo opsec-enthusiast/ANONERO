@@ -92,7 +92,8 @@ class MainActivity : ComponentActivity() {
             TorSplash(enableTor = useTor) {
                 AnonNeroTheme {
                     val navController = rememberNavController()
-                    NavHost(navController = navController, popExitTransition = {
+                    NavHost(
+                        navController = navController, popExitTransition = {
                         ExitTransition.None
                     }, popEnterTransition = {
                         EnterTransition.None

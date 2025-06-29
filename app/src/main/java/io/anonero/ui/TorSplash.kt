@@ -1,6 +1,9 @@
 package io.anonero.ui
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -30,27 +33,30 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asLiveData
 import io.anonero.AnonConfig
 import io.anonero.R
+import io.anonero.model.node.NodeFields
 import io.anonero.services.TorService
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
+
 
 @Composable
 fun TorSplash(
     modifier: Modifier = Modifier,
     enableTor: Boolean,
-    content: @Composable () -> Unit = {}
+    content: @Composable () -> Unit = {},
 ) {
+
     var walletExist by remember { mutableStateOf(AnonConfig.isWalletFileExist()) }
     var anonPrefs: SharedPreferences = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
     val torService: TorService = koinInject<TorService>()
     val socks by torService.socksFlow.asLiveData().observeAsState(null)
     val scope = rememberCoroutineScope()
     var isAppReady by remember { mutableStateOf(false) }
+    var hasNetWork by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val progressAnim by animateFloatAsState(
@@ -59,7 +65,9 @@ fun TorSplash(
 
     LaunchedEffect(key1 = walletExist, socks) {
         //if user disabled tor and uses manual proxy, skip tor splash
-        if(enableTor.not()){
+
+        hasNetWork = isNetworkConnected(context)
+        if (enableTor.not()) {
             return@LaunchedEffect
         }
         scope.launch(Dispatchers.IO) {
@@ -76,7 +84,10 @@ fun TorSplash(
     }
 
     //no need to show tor splash if user disabled tor
-    if (!enableTor) {
+    //if there is no wallet file, skip tor splash
+    if (!enableTor || !walletExist || !hasNetWork || !anonPrefs.getBoolean(WALLET_USE_TOR, true) ||
+        anonPrefs.getString(NodeFields.RPC_HOST.value, "").isNullOrEmpty()
+    ) {
         return content();
     }
     AnimatedContent(targetState = isAppReady) {
@@ -120,4 +131,14 @@ fun TorSplash(
             }
         }
     }
+}
+
+fun isNetworkConnected(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
 }

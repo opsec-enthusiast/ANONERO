@@ -90,13 +90,18 @@ class WalletManager {
     ): Long
 
     fun openWallet(path: String, password: String): Wallet {
-        val walletHandle = openWalletJ(path, password, networkType.value,AnonConfig.viewOnly)
+        val walletHandle = openWalletJ(path, password, networkType.value, AnonConfig.viewOnly)
         val wallet = Wallet(walletHandle)
         manageWallet(wallet)
         return wallet
     }
 
-    private external fun openWalletJ(path: String, password: String, networkType: Int,isViewOnly:Boolean): Long
+    private external fun openWalletJ(
+        path: String,
+        password: String,
+        networkType: Int,
+        isViewOnly: Boolean
+    ): Long
 
     fun recoveryWallet(
         aFile: File,

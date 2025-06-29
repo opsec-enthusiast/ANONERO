@@ -62,6 +62,7 @@ private fun DrawScope.drawFinderSquare(
                 ),
             )
         }
+
         DotShape.Circle -> {
             drawRoundRect(
                 color = colors.foreground,

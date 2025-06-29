@@ -1,8 +1,6 @@
 package io.anonero.ui.onboard.viewonly
 
 import AnonNeroTheme
-import android.content.Context
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,16 +25,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -47,15 +42,8 @@ import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.NeroKeyPayload
-import io.anonero.model.node.Node
-import io.anonero.model.node.NodeFields
-import io.anonero.store.NodesRepository
 import io.anonero.ui.components.scanner.QRScannerDialog
-import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.json.JSONObject
-import org.koin.compose.koinInject
 
 
 @Composable
@@ -73,7 +61,7 @@ fun RestoreFromKeys(
         show = showScanner,
         onQRCodeScanned = {
             try {
-                val payload  = Json.decodeFromString<NeroKeyPayload>(it)
+                val payload = Json.decodeFromString<NeroKeyPayload>(it)
                 primaryAddress = payload.primaryAddress
                 viewKey = payload.privateViewKey
                 restoreHeight = payload.restoreHeight.toString()
@@ -218,9 +206,10 @@ fun RestoreFromKeys(
                     Icon(AnonIcons.Scan, contentDescription = "")
                 }
             }
-            val enabled = primaryAddress.isNotEmpty() && viewKey.isNotEmpty() && restoreHeight.isNotEmpty()
+            val enabled =
+                primaryAddress.isNotEmpty() && viewKey.isNotEmpty() && restoreHeight.isNotEmpty()
             OutlinedButton(
-                onClick ={
+                onClick = {
                     if (enabled) {
                         val payload = NeroKeyPayload(
                             primaryAddress = primaryAddress,
