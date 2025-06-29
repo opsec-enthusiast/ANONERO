@@ -49,18 +49,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.AnonConfig
-import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.PendingTransaction
 import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
-import io.anonero.ui.components.scanner.QRScannerDialog
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
+import io.anonero.ui.home.spend.qr.ExportType
+import io.anonero.ui.home.spend.qr.ImportEvents
+import io.anonero.ui.home.spend.qr.QRExchangeScreen
+import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
+import io.anonero.ui.home.spend.qr.URQRScanner
 import io.anonero.ui.theme.DangerColor
 import io.anonero.ui.theme.SuccessColor
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.io.File
 
 enum class BroadcastState {
@@ -77,6 +81,8 @@ data class ReviewModel(
     val total: Long,
     val txId: String
 )
+
+private const val TAG = "ReviewTransaction"
 
 class ReviewTransactionViewModel : ViewModel() {
     private val reviewModel = MutableLiveData<ReviewModel?>(null)
@@ -132,17 +138,30 @@ class ReviewTransactionViewModel : ViewModel() {
             AnonConfig.context?.cacheDir,
             AnonConfig.IMPORT_SIGNED_TX_FILE
         );
+        _broadcastError = null
         broadcastingTx.postValue(BroadcastState.IN_PROGRESS)
         return viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (pendingTransaction != null) {
                     pendingTransaction?.let { WalletManager.instance?.wallet?.send(it) }
                 }
-                if ( signedTxFile.exists()) {
-                    WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
+                if (signedTxFile.exists()) {
+                    val error =
+                        WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
+                    if (error == null) {
+                        broadcastingTx.postValue(BroadcastState.SUCCESS)
+                        signedTxFile.delete()
+                        Timber.tag(TAG).d("Transaction broadcasted...")
+                    } else {
+                        broadcastingTx.postValue(BroadcastState.ERROR)
+                        Timber.tag(TAG).e("broadcasting failed  ${error}")
+                        throw Exception(error)
+                    }
                     AnonConfig.context?.let {
                         AnonConfig.clearSpendCacheFiles(it)
                     }
+                } else {
+                    throw Exception("Signed transaction file not found")
                 }
                 WalletManager.instance?.wallet?.refreshHistory()
                 WalletManager.instance?.wallet?.store()
@@ -187,34 +206,55 @@ fun ReviewTransactionScreen(
         onBackPressed()
     }
 
-    QRScannerDialog(
-        show = showScanner,
-        onQRCodeScanned = {
-            showScanner = false
-        },
-        onUrRusult = {
-            showScanner = false
-            val ur = it.ur;
-            qrScannerParam = null;
-            if (ur.type == AnonUrRegistryTypes.XMR_TX_SIGNED.type) {
-                readyToBroadcast = true
-            }
-        },
-        onDismiss = {
-            showScanner = false
-        }
-    )
+    if (qrScannerParam != null) {
+        QRExchangeScreen(
+            params = qrScannerParam!!,
+            onBackPressed = {
+                qrScannerParam = null
+            },
+            onCtaCalled = {
+                qrScannerParam = null
+                showScanner = true
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 
-    QRExchangeDialog(
-        show = qrScannerParam != null,
-        params = qrScannerParam,
-        onCtaCalled = {
-            showScanner = true
-        },
-        onDismiss = {
-            qrScannerParam = null
-        },
-    )
+    if (showScanner)
+        URQRScanner(
+            onQRCodeScanned = {
+
+            },
+            onDismiss = {
+                showScanner = false
+            },
+            onURResult = {
+                when (it.getOrNull()) {
+                    ImportEvents.IMPORT_OUTPUTS -> {
+
+                    }
+
+                    ImportEvents.IMPORT_KEY_IMAGES -> {
+
+                    }
+
+                    ImportEvents.IMPORT_UNSIGNED_TX -> {
+
+                    }
+
+                    ImportEvents.IMPORT_SIGNED_TX -> {
+                        qrScannerParam = null;
+                        readyToBroadcast = true
+                    }
+
+                    null -> {
+
+                    }
+                }
+                showScanner = false
+            },
+            showScanner = showScanner
+        )
 
     val ctaText = if (AnonConfig.viewOnly) {
         if (!viewModel.isUnsignedTransaction() && !readyToBroadcast) {
