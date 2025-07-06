@@ -143,16 +143,22 @@ class ReviewTransactionViewModel : ViewModel() {
         broadcastingTx.postValue(BroadcastState.IN_PROGRESS)
         return viewModelScope.launch(Dispatchers.IO) {
             try {
+                val wallet = WalletManager.instance?.wallet
+                if(wallet == null) {
+                    throw Exception("Wallet is available")
+                }
                 if (pendingTransaction != null) {
                     pendingTransaction?.let {
-                        WalletManager.instance?.wallet?.send(it)
-                        WalletManager.instance?.wallet?.refreshHistory();
+                        wallet.send(it)
+                        wallet.store()
+                        wallet.refreshHistory()
                     }
                 } else
                     if (signedTxFile.exists()) {
                         val error =
-                            WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
-                        WalletManager.instance?.wallet?.refreshHistory();
+                            wallet.submitTransaction(signedTxFile.absolutePath)
+                        wallet.store()
+                        wallet.refreshHistory()
                         if (error == null) {
                             broadcastingTx.postValue(BroadcastState.SUCCESS)
                             signedTxFile.delete()

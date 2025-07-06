@@ -65,6 +65,7 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
+import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
 import io.anonero.ui.home.spend.qr.ExportType
 import io.anonero.ui.home.spend.qr.ImportEvents
@@ -268,7 +269,6 @@ fun TransactionScreen(
                     }
                 }
                 showScanner = false
-
             },
             onDismiss = {
                 showScanner = false
@@ -289,7 +289,13 @@ fun TransactionScreen(
                     }
 
                     ImportEvents.IMPORT_KEY_IMAGES -> {}
-                    ImportEvents.IMPORT_UNSIGNED_TX -> {}
+                    ImportEvents.IMPORT_UNSIGNED_TX -> {
+                        if (!AnonConfig.viewOnly) {
+                            navigateTo.invoke(ReviewTransactionRoute(
+                                "",
+                            ));
+                        }
+                    }
                     ImportEvents.IMPORT_SIGNED_TX -> {}
                 }
                 showScanner = false
