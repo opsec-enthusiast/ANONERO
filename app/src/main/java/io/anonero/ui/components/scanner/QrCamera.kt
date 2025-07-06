@@ -17,6 +17,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +29,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -44,11 +49,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -58,6 +65,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -146,7 +154,7 @@ fun QRScanner(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     var isScanned by remember { mutableStateOf(false) }
     var progrees by remember { mutableFloatStateOf(0.0f) }
-    val progressAnimDuration = 1_500
+    val progressAnimDuration = 800
     val progressAnimation by animateFloatAsState(
         targetValue = progrees,
         animationSpec = tween(durationMillis = progressAnimDuration, easing = FastOutSlowInEasing),
@@ -282,12 +290,12 @@ fun QRScanner(
                             cameraProviderFuture.addListener({
                                 cameraProvider = cameraProviderFuture.get()
 
-                                // Preview use case
+                                // Preview
                                 val preview = Preview.Builder().build().also {
                                     it.surfaceProvider = previewView.surfaceProvider
                                 }
 
-                                // ImageAnalysis use case
+                                // ImageAnalysis
                                 val imageAnalysis = ImageAnalysis.Builder()
                                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                     .build()
@@ -300,10 +308,6 @@ fun QRScanner(
                                                     val received = decoder.receivePart(result)
                                                     val progreesPercentage =
                                                         decoder.estimatedPercentComplete;
-                                                    Log.i(
-                                                        TAG,
-                                                        "SpendScanner QRScanner:onUrRusult ${received}  $progrees"
-                                                    )
                                                     if (progreesPercentage.toFloat() != progrees) {
                                                         progrees = progreesPercentage.toFloat()
                                                         view.performHapticFeedback(
@@ -312,10 +316,6 @@ fun QRScanner(
                                                     }
                                                     if (decoder.result != null) {
                                                         if (!isScanned) {
-                                                            Log.i(
-                                                                TAG,
-                                                                "SpendScanner QRScanner: ${decoder.result}   $isScanned"
-                                                            )
                                                             onUrRusult.invoke(decoder.result)
                                                         }
                                                         isScanned = true
@@ -531,6 +531,24 @@ fun QRScanner(
                                 .fillMaxSize()
                                 .padding(24.dp)
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(172.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.Black.copy(alpha = 0.5f))
+                                    .align(Alignment.Center)
+
+                            ) {
+                                Text(
+                                    "${(progrees * 100).toInt()}%", textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .align(Alignment.Center),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                )
+                            }
                             CircularProgressIndicator(
                                 strokeWidth = 6.dp,
                                 modifier = Modifier
