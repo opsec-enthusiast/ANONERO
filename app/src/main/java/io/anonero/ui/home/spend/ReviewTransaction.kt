@@ -2,6 +2,7 @@ package io.anonero.ui.home.spend
 
 import AnonNeroTheme
 import android.os.Build
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -143,26 +144,30 @@ class ReviewTransactionViewModel : ViewModel() {
         return viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (pendingTransaction != null) {
-                    pendingTransaction?.let { WalletManager.instance?.wallet?.send(it) }
-                }
-                if (signedTxFile.exists()) {
-                    val error =
-                        WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
-                    if (error == null) {
-                        broadcastingTx.postValue(BroadcastState.SUCCESS)
-                        signedTxFile.delete()
-                        Timber.tag(TAG).d("Transaction broadcasted...")
+                    pendingTransaction?.let {
+                        WalletManager.instance?.wallet?.send(it)
+                        WalletManager.instance?.wallet?.refreshHistory();
+                    }
+                } else
+                    if (signedTxFile.exists()) {
+                        val error =
+                            WalletManager.instance?.wallet?.submitTransaction(signedTxFile.absolutePath)
+                        WalletManager.instance?.wallet?.refreshHistory();
+                        if (error == null) {
+                            broadcastingTx.postValue(BroadcastState.SUCCESS)
+                            signedTxFile.delete()
+                            Timber.tag(TAG).d("Transaction broadcasted...")
+                        } else {
+                            broadcastingTx.postValue(BroadcastState.ERROR)
+                            Timber.tag(TAG).e("broadcasting failed  ${error}")
+                            throw Exception(error)
+                        }
+                        AnonConfig.context?.let {
+                            AnonConfig.clearSpendCacheFiles(it)
+                        }
                     } else {
-                        broadcastingTx.postValue(BroadcastState.ERROR)
-                        Timber.tag(TAG).e("broadcasting failed  ${error}")
-                        throw Exception(error)
+                        throw Exception("Signed transaction file not found")
                     }
-                    AnonConfig.context?.let {
-                        AnonConfig.clearSpendCacheFiles(it)
-                    }
-                } else {
-                    throw Exception("Signed transaction file not found")
-                }
                 WalletManager.instance?.wallet?.refreshHistory()
                 WalletManager.instance?.wallet?.store()
                 broadcastingTx.postValue(BroadcastState.SUCCESS)
