@@ -144,12 +144,17 @@ class ReviewTransactionViewModel : ViewModel() {
         return viewModelScope.launch(Dispatchers.IO) {
             try {
                 val wallet = WalletManager.instance?.wallet
-                if(wallet == null) {
+                if (wallet == null) {
                     throw Exception("Wallet is available")
                 }
-                if (pendingTransaction != null) {
+                if (!AnonConfig.viewOnly) {
                     pendingTransaction?.let {
-                        wallet.send(it)
+                        val result = wallet.send(it)
+                        if (!result) {
+                            throw Exception("Failed to send transaction")
+                        } else {
+                            broadcastingTx.postValue(BroadcastState.SUCCESS)
+                        }
                         wallet.store()
                         wallet.refreshHistory()
                     }
@@ -159,7 +164,8 @@ class ReviewTransactionViewModel : ViewModel() {
                             wallet.submitTransaction(signedTxFile.absolutePath)
                         wallet.store()
                         wallet.refreshHistory()
-                        if (error == null) {
+                        val success = error == "Transaction submitted!";
+                        if (success) {
                             broadcastingTx.postValue(BroadcastState.SUCCESS)
                             signedTxFile.delete()
                             Timber.tag(TAG).d("Transaction broadcasted...")
@@ -168,9 +174,7 @@ class ReviewTransactionViewModel : ViewModel() {
                             Timber.tag(TAG).e("broadcasting failed  ${error}")
                             throw Exception(error)
                         }
-                        AnonConfig.context?.let {
-                            AnonConfig.clearSpendCacheFiles(it)
-                        }
+
                     } else {
                         throw Exception("Signed transaction file not found")
                     }
