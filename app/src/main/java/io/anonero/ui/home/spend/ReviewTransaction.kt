@@ -273,15 +273,15 @@ fun ReviewTransactionScreen(
 
     val ctaText = if (AnonConfig.viewOnly) {
         if (!viewModel.isUnsignedTransaction() && !readyToBroadcast) {
-            "Share unsigned transaction"
+            "CONFIRM"
         } else {
-            "Broadcast transaction"
+            "BROADCAST TX"
         }
     } else {
         if (viewModel.isUnsignedTransaction()) {
-            "Sign and share transaction"
+            "CONFIRM"
         } else {
-            "Broadcast transaction"
+            "BROADCAST TX"
         }
     }
 
@@ -465,16 +465,16 @@ fun ReviewTransactionScreen(
                                         signing = false
                                         qrScannerParam = SpendQRExchangeParam(
                                             exportType = ExportType.SIGNED_TX,
-                                            title = "Signed transaction",
-                                            ctaText = "Share signed transaction",
+                                            title = "SIGNED TX",
+                                            ctaText = "FINISH",
                                         )
                                     }
                                 } else {
                                     if (AnonConfig.viewOnly && !readyToBroadcast) {
                                         qrScannerParam = SpendQRExchangeParam(
                                             exportType = ExportType.UN_SIGNED_TX,
-                                            title = "Unsigned transaction",
-                                            ctaText = "Scan signed transaction",
+                                            title = "UNSIGNED TX",
+                                            ctaText = "SCAN SIGNED TX",
                                         )
                                     } else {
                                         viewModel.broadCast()?.invokeOnCompletion { error ->
