@@ -277,7 +277,7 @@ fun QRExchangeScreen(
                                                 FileProvider.getUriForFile(
                                                     context, // Context
                                                     "${context.packageName}.shareProvider", // Authority
-                                                    targetFile!!
+                                                    targetFile
                                                 )
                                             } catch (e: Exception) {
                                                 Timber.tag(TAG).e(e)
@@ -303,30 +303,31 @@ fun QRExchangeScreen(
                             Text("Export as file")
                         }
                     }
-                    Button(
-                        shape = MaterialTheme.shapes.small,
-                        border = BorderStroke(
-                            1.dp,
-                            color = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                        ),
-                        contentPadding = PaddingValues(
-                            all = 12.dp
-                        ),
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                        onClick = {
-                            onCtaCalled.invoke()
-                        }) {
-                        Text(
-                            params.ctaText, style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSecondary.copy(
-                                    alpha = 0.8f
+                    if (params.ctaText.isEmpty())
+                        Button(
+                            shape = MaterialTheme.shapes.small,
+                            border = BorderStroke(
+                                1.dp,
+                                color = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ),
+                            contentPadding = PaddingValues(
+                                all = 12.dp
+                            ),
+                            modifier = Modifier.fillMaxWidth(0.85f),
+                            onClick = {
+                                onCtaCalled.invoke()
+                            }) {
+                            Text(
+                                params.ctaText, style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSecondary.copy(
+                                        alpha = 0.8f
+                                    )
                                 )
                             )
-                        )
-                    }
+                        }
                 }
 
             }

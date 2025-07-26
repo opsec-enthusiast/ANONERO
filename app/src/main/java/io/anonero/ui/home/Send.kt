@@ -256,10 +256,12 @@ fun SendScreen(
         scope.launch {
             unlockedBalance?.let { maxSpendableBalance ->
                 val amountFromString = Wallet.getAmountFromString(amountField)
+
                 validSpend = when {
                     inValidAddress == true -> false
+                    spendType == SpendType.SWEEP -> true
                     amountFromString == 0L || maxSpendableBalance == 0L -> false
-                    amountFromString > maxSpendableBalance -> false
+                    amountFromString >= maxSpendableBalance -> false
                     else -> true
                 }
             }
@@ -476,12 +478,31 @@ fun SendScreen(
                 OutlinedButton(
                     enabled = validSpend,
                     onClick = {
+
+                        val wallet = WalletManager.instance?.wallet;
+                        val spendAmount = Wallet.getAmountFromString(amountField)
+                        if (wallet == null) {
+                            return@OutlinedButton
+                        }
                         if (AnonConfig.viewOnly) {
-                            qrScannerParam = SpendQRExchangeParam(
-                                exportType = ExportType.OUTPUT,
-                                title = "OUTPUTS",
-                                ctaText = "SCAN KEY IMAGES",
-                            )
+                            var needsKeyImages: Boolean
+                            if (spendType == SpendType.SWEEP) {
+                                needsKeyImages = wallet.hasUnknownKeyImages()
+                            } else {
+                                needsKeyImages =
+                                    (spendAmount + 1_000_000_000L) > wallet.viewOnlyBalance()
+                            }
+
+                            if (needsKeyImages) {
+                                qrScannerParam = SpendQRExchangeParam(
+                                    exportType = ExportType.OUTPUT,
+                                    title = "OUTPUTS",
+                                    ctaText = "SCAN KEY IMAGES",
+                                )
+                            } else {
+                                prepare()
+                            }
+
                             return@OutlinedButton
                         } else {
                             prepare()

@@ -155,15 +155,11 @@ class ReviewTransactionViewModel : ViewModel() {
                         } else {
                             broadcastingTx.postValue(BroadcastState.SUCCESS)
                         }
-                        wallet.store()
-                        wallet.refreshHistory()
                     }
                 } else
                     if (signedTxFile.exists()) {
                         val error =
                             wallet.submitTransaction(signedTxFile.absolutePath)
-                        wallet.store()
-                        wallet.refreshHistory()
                         val success = error == "Transaction submitted!";
                         if (success) {
                             broadcastingTx.postValue(BroadcastState.SUCCESS)
@@ -174,12 +170,12 @@ class ReviewTransactionViewModel : ViewModel() {
                             Timber.tag(TAG).e("broadcasting failed  ${error}")
                             throw Exception(error)
                         }
-
                     } else {
                         throw Exception("Signed transaction file not found")
                     }
-                WalletManager.instance?.wallet?.refreshHistory()
-                WalletManager.instance?.wallet?.store()
+                wallet.startRefresh()
+                wallet.refreshHistory()
+                wallet.store()
                 broadcastingTx.postValue(BroadcastState.SUCCESS)
             } catch (ex: Exception) {
                 _broadcastError = ex
@@ -466,7 +462,7 @@ fun ReviewTransactionScreen(
                                         qrScannerParam = SpendQRExchangeParam(
                                             exportType = ExportType.SIGNED_TX,
                                             title = "SIGNED TX",
-                                            ctaText = "FINISH",
+                                            ctaText = "",
                                         )
                                     }
                                 } else {

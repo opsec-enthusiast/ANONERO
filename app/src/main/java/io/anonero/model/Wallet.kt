@@ -234,7 +234,7 @@ class Wallet {
 
     private external fun getBalance(accountIndex: Int): Long
 
-    private external fun viewOnlyBalance(): Long
+    external fun viewOnlyBalance(): Long
 
     external fun getBalanceAll(): Long
 
@@ -362,6 +362,7 @@ class Wallet {
     external fun exportOutputs(filename: String?, all: Boolean): Boolean
     external fun importOutputs(filename: String?): String?
     external fun exportKeyImages(filename: String?, all: Boolean): Boolean
+    external fun hasUnknownKeyImages(): Boolean
     external fun importKeyImages(filename: String?): Boolean
     fun loadUnsignedTransaction(inputFile: String?): UnsignedTransaction {
         val unsignedTx: Long = loadUnsignedTx(inputFile)

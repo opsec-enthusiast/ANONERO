@@ -1,6 +1,7 @@
 package io.anonero.services
 
 import android.content.SharedPreferences
+import android.util.Log
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager

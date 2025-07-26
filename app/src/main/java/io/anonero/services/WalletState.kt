@@ -1,6 +1,7 @@
 package io.anonero.services
 
 import androidx.compose.ui.util.fastDistinctBy
+import io.anonero.AnonConfig
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -57,7 +58,12 @@ class WalletState {
         getWallet?.let { wallet ->
             if (wallet.isInitialized) {
                 _balanceInfo.update { wallet.balance }
-                _unLockedBalance.update { wallet.unlockedBalance }
+                _unLockedBalance.update {
+                    if(AnonConfig.viewOnly){
+                        wallet.viewOnlyBalance()
+                    }
+                    wallet.unlockedBalance
+                }
                 _walletStatus.update { wallet.fullStatus }
                 if (wallet.status.errorString.isNotEmpty()) {
                     Timber.tag(TAG).i("StatusError %s", wallet.status.errorString)

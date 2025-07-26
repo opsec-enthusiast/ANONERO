@@ -442,6 +442,19 @@ fun TransactionScreen(
                                     }
                                 )
                             }
+                            if (!AnonConfig.viewOnly) {
+                                DropdownMenuItem(
+                                    text = { Text("Export Key Images") },
+                                    onClick = {
+                                        qrScannerParam =
+                                            SpendQRExchangeParam(
+                                                exportType = ExportType.IMAGE,
+                                                title = "KEY IMAGES",
+                                                ctaText = "",
+                                            )
+                                    }
+                                )
+                            }
                         }
                     }
                 }

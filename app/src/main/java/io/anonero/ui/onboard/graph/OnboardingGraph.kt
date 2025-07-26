@@ -99,7 +99,11 @@ fun NavGraphBuilder.onboardingGraph(
                     navController.navigateUp()
                 },
                 oNextPressed = {
-                    navController.navigate(OnboardPassPhraseScreen)
+                    if(AnonConfig.viewOnly){
+                        navController.navigate(OnboardPinScreen)
+                    }else{
+                        navController.navigate(OnboardPassPhraseScreen)
+                    }
                 }
             )
         }
@@ -163,7 +167,7 @@ fun NavGraphBuilder.onboardingGraph(
             RestoreFromKeys(
                 oNextPressed = {
                     onboardViewModel.setNeroPayload(it)
-                    navController.navigate(OnboardPinScreen)
+                    navController.navigate(OnboardNodeSetupScreen)
                 },
                 onBackPressed = {
                     navController.navigateUp()
