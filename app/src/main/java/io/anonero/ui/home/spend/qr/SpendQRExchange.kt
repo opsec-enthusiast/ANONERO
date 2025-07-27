@@ -303,7 +303,7 @@ fun QRExchangeScreen(
                             Text("Export as file")
                         }
                     }
-                    if (params.ctaText.isEmpty())
+                    if (params.ctaText.isNotBlank())
                         Button(
                             shape = MaterialTheme.shapes.small,
                             border = BorderStroke(
