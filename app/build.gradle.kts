@@ -95,7 +95,7 @@ android {
         }
 
     }
-    buildToolsVersion = "34.0.0"
+    buildToolsVersion = "36.0.0"
     ndkVersion = "29.0.13599879"
 }
 
