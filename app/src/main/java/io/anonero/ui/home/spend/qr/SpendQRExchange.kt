@@ -318,7 +318,11 @@ fun QRExchangeScreen(
                             ),
                             modifier = Modifier.fillMaxWidth(0.85f),
                             onClick = {
-                                onCtaCalled.invoke()
+                                if(params.exportType == ExportType.SIGNED_TX) {
+                                    onBackPressed.invoke()
+                                }else{
+                                    onCtaCalled.invoke()
+                                }
                             }) {
                             Text(
                                 params.ctaText, style = MaterialTheme.typography.bodyMedium.copy(

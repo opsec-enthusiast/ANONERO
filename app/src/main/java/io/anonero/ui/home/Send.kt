@@ -5,10 +5,13 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -27,6 +31,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,8 +42,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
@@ -55,6 +63,7 @@ import com.sparrowwallet.hummingbird.URDecoder
 import io.anonero.AnonConfig
 import io.anonero.icons.AnonIcons
 import io.anonero.model.AnonUrRegistryTypes
+import io.anonero.model.CoinsInfo
 import io.anonero.model.PendingTransaction
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -86,12 +95,14 @@ enum class SpendType {
 
 class SendViewModel : ViewModel() {
     private val walletState: WalletState by inject(WalletState::class.java)
-    val balance = walletState.unLockedBalance.asLiveData()
+    private val _balance = walletState.unLockedBalance.asLiveData()
     private val _paymentUri = MutableLiveData<SendScreenRoute?>(null)
+    private val _coinsSelected = MutableLiveData<Set<CoinsInfo>>(emptySet())
     private val _txComposeError = MutableLiveData<String?>(null)
     private val _spendType = MutableLiveData(SpendType.NORMAL)
     val paymentUri = _paymentUri as LiveData<SendScreenRoute?>
     val spendType = _spendType as LiveData<SpendType>
+    val coins = _coinsSelected as LiveData<Set<CoinsInfo>>
     val txComposeError = _txComposeError as LiveData<String?>
 
     suspend fun prepareTransaction(addressField: String, amount: String): PendingTransaction? {
@@ -100,7 +111,7 @@ class SendViewModel : ViewModel() {
         return withContext(Dispatchers.IO) {
             try {
                 _txComposeError.postValue(null)
-                if (spendType.value == SpendType.SWEEP) {
+                if (spendType.value == SpendType.SWEEP && _coinsSelected.value.isNullOrEmpty()) {
                     if (wallet?.unlockedBalance != wallet?.balance) {
                         return@withContext null
                     }
@@ -122,7 +133,8 @@ class SendViewModel : ViewModel() {
                 } else {
                     val pendingTx = wallet?.createTransaction(
                         dst_addr = addressField,
-                        amount = amountFromString
+                        amount = amountFromString,
+                        selectedUtxos = _coinsSelected.value?.toList() ?: listOf()
                     )
 
                     if (!pendingTx?.getErrorString().isNullOrEmpty()) {
@@ -195,15 +207,39 @@ class SendViewModel : ViewModel() {
     fun setSpendType(type: SpendType) {
         _spendType.postValue(type)
     }
+
+    // Computed balance based on selected coins or unlocked balance
+    val balance = MediatorLiveData<Long>().apply {
+        addSource(walletState.unLockedBalance.asLiveData()) { updateComputedBalance() }
+        addSource(_coinsSelected) { updateComputedBalance() }
+    }
+
+    private fun MediatorLiveData<Long>.updateComputedBalance() {
+        val selectedCoins = _coinsSelected.value
+        val unlockedBal = _balance.value ?: 0L
+        value = if (selectedCoins.isNullOrEmpty()) {
+            unlockedBal
+        } else {
+            selectedCoins.sumOf { it.amount }
+        }
+    }
+
+    fun setCoins(coins: List<String>) {
+        val walletCoins = WalletManager.instance?.wallet?.coins?.all ?: listOf();
+        val selectedCoins = walletCoins.filter { coins.contains(it.key) }.toSet()
+        _coinsSelected.postValue(
+            selectedCoins
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SendScreen(
+    modifier: Modifier = Modifier,
     onBackPress: () -> Unit = {},
     navigateToReview: (route: ReviewTransactionRoute) -> Unit = {},
     paymentUri: SendScreenRoute? = null,
-    modifier: Modifier = Modifier,
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -211,6 +247,7 @@ fun SendScreen(
     var amountField by rememberSaveable { mutableStateOf("") }
     var validSpend by rememberSaveable { mutableStateOf(false) }
     var preparingTx by remember { mutableStateOf(false) }
+    var showCoinSelection by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
     var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     var inValidAddress by remember { mutableStateOf<Boolean?>(null) }
@@ -220,6 +257,7 @@ fun SendScreen(
     val unlockedBalance by sendViewModel.balance.observeAsState(0L)
     val paymentUriFromScanner by sendViewModel.paymentUri.observeAsState(null)
     val spendType by sendViewModel.spendType.observeAsState(SpendType.NORMAL)
+    val coins by sendViewModel.coins.observeAsState(emptySet())
     val txComposeError by sendViewModel.txComposeError.observeAsState()
     val view = LocalView.current
     val walletState: WalletState by inject(WalletState::class.java)
@@ -230,6 +268,12 @@ fun SendScreen(
     val unLockedAmount = Formats.getDisplayAmount(
         unlockedBalance ?: 0L
     )
+
+    LaunchedEffect(paymentUri) {
+        if (paymentUri != null && paymentUri.coins.isNotEmpty()) {
+            sendViewModel.setCoins(paymentUri.coins)
+        }
+    }
 
     LaunchedEffect(paymentUriFromScanner) {
         paymentUriFromScanner?.let {
@@ -298,6 +342,44 @@ fun SendScreen(
             }
         }
     }
+
+
+
+
+    if (showCoinSelection)
+        ModalBottomSheet(
+            scrimColor = MaterialTheme.colorScheme.background,
+            contentColor = Color.Transparent,
+            sheetState = rememberModalBottomSheetState(
+                skipPartiallyExpanded = true
+            ),
+            contentWindowInsets = {
+                WindowInsets(
+                    left = 0.dp,
+                    top = 0.dp,
+                    right = 0.dp,
+                    bottom = 0.dp
+                )
+            },
+            shape = MaterialTheme.shapes.large,
+            dragHandle = {
+                Box(modifier = Modifier.height(0.dp))
+            },
+            onDismissRequest = {
+                showCoinSelection = false
+            }
+        ) {
+            CoinsScreen(
+                selected = coins.map { it.key }.toSet(),
+                onBackPress = {
+                    showCoinSelection = false
+                },
+                navigateToSpend = {
+                    showCoinSelection = false
+                    sendViewModel.setCoins(it.coins)
+                }
+            )
+        }
 
 
     Scaffold(
@@ -472,6 +554,24 @@ fun SendScreen(
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.error
+                        )
+
+                    if (coins.isNotEmpty())
+                        Text(
+                            text = "${if (coins.size == 1) "1 coin selected" else "${coins.size} coins selected"}",
+                            modifier = Modifier
+                                .align(CenterHorizontally)
+                                .padding(
+                                    horizontal = 16.dp,
+                                    vertical = 8.dp
+                                )
+                                .clickable {
+                                    showCoinSelection = true;
+                                }
+                                .padding(horizontal = 16.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xfffb8500)
                         )
                 }
 

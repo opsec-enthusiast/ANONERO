@@ -462,7 +462,7 @@ fun ReviewTransactionScreen(
                                         qrScannerParam = SpendQRExchangeParam(
                                             exportType = ExportType.SIGNED_TX,
                                             title = "SIGNED TX",
-                                            ctaText = "",
+                                            ctaText = "FINISH",
                                         )
                                     }
                                 } else {

@@ -28,7 +28,6 @@ data class ReviewTransactionRoute(val toAddress: String)
 @Serializable
 data object SettingsRoute
 
-
 @Serializable
 data object SettingsViewSeedRoute
 
@@ -37,6 +36,9 @@ data object SettingsExportBackUp
 
 @Serializable
 data object SettingsLogs
+
+@Serializable
+data object CoinsScreenRoute
 
 @Serializable
 data object SettingsNodeRoute

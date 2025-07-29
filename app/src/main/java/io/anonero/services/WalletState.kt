@@ -1,7 +1,10 @@
 package io.anonero.services
 
+import android.util.Log
 import androidx.compose.ui.util.fastDistinctBy
+import androidx.compose.ui.util.fastFilter
 import io.anonero.AnonConfig
+import io.anonero.model.CoinsInfo
 import io.anonero.model.Subaddress
 import io.anonero.model.TransactionInfo
 import io.anonero.model.Wallet
@@ -30,6 +33,7 @@ class WalletState {
     private val _unLockedBalance = MutableStateFlow<Long?>(null)
     private val _walletStatus = MutableStateFlow<Wallet.Status?>(null)
     private val _nextAddress = MutableStateFlow<Subaddress?>(null)
+    private val _coins = MutableStateFlow<List<CoinsInfo>>(arrayListOf())
     private val _syncProgress = MutableStateFlow<SyncProgress?>(null)
     private val _connectedDaemon = MutableStateFlow<DaemonInfo?>(null)
 
@@ -45,6 +49,7 @@ class WalletState {
     val syncProgress: Flow<SyncProgress?> = _syncProgress
 
     val nextAddress: Flow<Subaddress?> = _nextAddress
+    val coins: Flow<List<CoinsInfo>> = _coins
     val subAddresses: Flow<List<Subaddress>> = _subAddresses
 
     val walletConnectionStatus: Flow<Wallet.ConnectionStatus?> = _walletStatus.map {
@@ -96,6 +101,7 @@ class WalletState {
             if (!backgroundSync) {
                 _nextAddress.update { (wallet.getLatestSubAddress()) }
                 _subAddresses.update { (wallet.getAllUsedSubAddresses()).reversed() }
+                _coins.update { (wallet.coins?.all ?: listOf() ).fastFilter { !it.spent } }
             }
         }
     }

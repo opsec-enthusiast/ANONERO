@@ -9,4 +9,17 @@ data class CoinsInfo(
     val pub_key: String,
     val frozen: Boolean,
     val creationTime: Long,
-)
+) : Comparable<CoinsInfo> {
+
+    override fun compareTo(another: CoinsInfo): Int {
+        val b1: Long = this.amount
+        val b2 = another.amount
+        if (b1 > b2) {
+            return -1
+        } else if (b1 < b2) {
+            return 1
+        } else {
+            return this.hash.compareTo(another.hash)
+        }
+    }
+}

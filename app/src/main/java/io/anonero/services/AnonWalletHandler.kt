@@ -72,6 +72,7 @@ class AnonWalletHandler(
         wallet.setListener(handler)
         wallet.refreshHistory()
         handler?.start()
+        walletState.setLoading(true)
         walletState.update()
         try {
             val host = prefs.getString(NodeFields.RPC_HOST.value, "")
@@ -92,7 +93,6 @@ class AnonWalletHandler(
             } else {
                 throw Exception("no proxy")
             }
-            walletState.setLoading(true)
             if (host?.isNotEmpty() == true) {
                 val nodeObj = JSONObject()
                     .apply {
@@ -105,15 +105,16 @@ class AnonWalletHandler(
                     }
                 val node = Node.fromJson(nodeObj)
                 updateDaemon(node)
+                walletState.setLoading(true)
             }
             walletState.update()
             wallet.init(0)
             if (wallet.isInitialized) {
+                walletState.setLoading(false)
                 wallet.setTrustedDaemon(true)
                 wallet.startRefresh()
                 wallet.refreshHistory()
                 walletState.update()
-                walletState.setLoading(false)
             }
         } catch (e: Exception) {
             e.printStackTrace()

@@ -37,6 +37,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
     override fun unconfirmedMoneyReceived(txId: String?, amount: Long) {}
 
     override fun newBlock(height: Long) {
+        Timber.tag(name).i("newBlock: %s", height)
         updateSyncProgress(height)
     }
 

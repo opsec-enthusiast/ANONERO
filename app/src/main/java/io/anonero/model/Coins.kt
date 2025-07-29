@@ -15,7 +15,7 @@
  */
 package io.anonero.model
 
-class Coins(private val handle: Long) {
+class Coins(private val handle: Long){
     var all: List<CoinsInfo> = ArrayList()
         private set
 

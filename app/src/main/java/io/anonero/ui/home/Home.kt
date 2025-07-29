@@ -4,6 +4,7 @@ import AnonNeroTheme
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -45,6 +46,7 @@ import io.anonero.model.Subaddress
 import io.anonero.ui.components.MainBottomNavigation
 import io.anonero.ui.home.addresses.SubAddressDetailScreen
 import io.anonero.ui.home.addresses.SubAddressesScreen
+import io.anonero.ui.home.graph.routes.CoinsScreenRoute
 import io.anonero.ui.home.graph.routes.HomeScreenRoute
 import io.anonero.ui.home.graph.routes.ProxySettingsRoute
 import io.anonero.ui.home.graph.routes.ReceiveRoute
@@ -212,6 +214,9 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                                 }
                             },
                             navigateTo = {
+                                if(it is CoinsScreenRoute){
+                                    showBottomNavigation = false
+                                }
                                 bottomNavController.navigate(it)
                             },
                             sharedTransitionScope = this@SharedTransitionLayout,
@@ -301,6 +306,18 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         LogViewer(
                             onBackPress = {
                                 bottomNavController.popBackStack()
+                            }
+                        )
+                    }
+                    composable<CoinsScreenRoute> {
+                        CoinsScreen(
+                            onBackPress = {
+                                showBottomNavigation = true
+                                bottomNavController.popBackStack()
+                            },
+                            navigateToSpend = {
+                                showBottomNavigation = true
+                                bottomNavController.navigate(it)
                             }
                         )
                     }

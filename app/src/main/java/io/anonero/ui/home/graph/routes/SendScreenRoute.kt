@@ -21,7 +21,9 @@ data class SendScreenRoute(
     @SerialName("recipient_name")
     val recipientName: String = "",
     @SerialName("tx_description")
-    val txDescription: String = ""
+    val txDescription: String = "",
+    @SerialName("coins")
+    val coins: List<String> = emptyList(),
 ) {
     companion object {
         fun parse(uri: String): SendScreenRoute? {

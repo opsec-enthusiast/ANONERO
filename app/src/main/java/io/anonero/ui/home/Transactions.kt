@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -65,6 +66,7 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
+import io.anonero.ui.home.graph.routes.CoinsScreenRoute
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
 import io.anonero.ui.home.spend.qr.ExportType
@@ -429,6 +431,12 @@ fun TransactionScreen(
                                 ),
                             onDismissRequest = { showMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Coin Control") },
+                                onClick = {
+                                    navigateTo(CoinsScreenRoute)
+                                }
+                            )
                             if (AnonConfig.viewOnly) {
                                 DropdownMenuItem(
                                     text = { Text("Show Outputs") },
@@ -473,6 +481,12 @@ fun TransactionScreen(
                     modifier = Modifier
                         .padding(
                             vertical = 32.dp
+                        )
+                        . combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                navigateTo(CoinsScreenRoute)
+                            }
                         )
                         .fillParentMaxWidth()
                 ) {
