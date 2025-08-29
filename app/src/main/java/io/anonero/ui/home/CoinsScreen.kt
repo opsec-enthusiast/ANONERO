@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
@@ -44,6 +45,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.asLiveData
+import io.anonero.model.CoinsInfo
 import io.anonero.model.Wallet
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
@@ -78,6 +80,14 @@ fun CoinsScreen(
         message = "No coins available\nYour coins will appear here once you receive transactions"
     }
 
+    fun selectCoin(coin: CoinsInfo) {
+        selectedCoins = if (selectedCoins.contains(coin.pub_key)) {
+            selectedCoins - coin.pub_key
+        } else {
+            selectedCoins + coin.pub_key
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         floatingActionButtonPosition = FabPosition.Center,
@@ -99,6 +109,10 @@ fun CoinsScreen(
                 )
             ) {
                 OutlinedButton(
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.onBackground
+                    ),
                     onClick = {
                         navigateToSpend(
                             SendScreenRoute(
@@ -134,7 +148,9 @@ fun CoinsScreen(
                 },
             )
         }) {
-        LazyColumn(modifier = Modifier.padding(it)) {
+        LazyColumn(modifier = Modifier.padding(it).padding(
+            bottom = 44.dp
+        )) {
             item {
                 WalletProgressIndicator()
             }
@@ -147,11 +163,7 @@ fun CoinsScreen(
                             vertical = 6.dp
                         )
                         .clickable {
-                            selectedCoins = if (selectedCoins.contains(coin.key)) {
-                                selectedCoins - coin.key
-                            } else {
-                                selectedCoins + coin.key
-                            }
+                            selectCoin(coin)
                         },
                     headlineContent = {
                         Row(
@@ -171,7 +183,7 @@ fun CoinsScreen(
                     supportingContent = {
                         SelectionContainer {
                             Text(
-                                coin.key,
+                                coin.pub_key,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Justify
@@ -180,13 +192,9 @@ fun CoinsScreen(
                     },
                     trailingContent = {
                         Checkbox(
-                            checked = selectedCoins.contains(coin.key),
+                            checked = selectedCoins.contains(coin.pub_key),
                             onCheckedChange = { checked ->
-                                selectedCoins = if (checked) {
-                                    selectedCoins + coin.key
-                                } else {
-                                    selectedCoins - coin.key
-                                }
+                                selectCoin(coin)
                             }
                         )
                     }

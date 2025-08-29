@@ -6,6 +6,7 @@ import io.anonero.model.Wallet
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import timber.log.Timber
+import androidx.core.net.toUri
 
 
 // PaymentUri is a data class that represents a payment URI.
@@ -30,10 +31,10 @@ data class SendScreenRoute(
             try {
                 if (uri.startsWith("monero")) {
 
-                    var parsedUri = Uri.parse(uri)
+                    var parsedUri = uri.toUri()
 
                     if (parsedUri.schemeSpecificPart != "monero://") {
-                        parsedUri = Uri.parse(uri.replace("monero:", "monero://"))
+                        parsedUri = uri.replace("monero:", "monero://").toUri()
                     }
 
                     // Extract address from scheme-specific part

@@ -414,6 +414,7 @@ class Wallet {
                 }
             }
             if (amountSelected <= amount) {
+                Timber.tag("Wallet").e("insufficient wallet balance- Available/Selected: $amountSelected, amount: $amount")
                 throw java.lang.Exception("insufficient wallet balance")
             }
         }

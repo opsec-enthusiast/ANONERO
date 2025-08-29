@@ -11,15 +11,15 @@ data class CoinsInfo(
     val creationTime: Long,
 ) : Comparable<CoinsInfo> {
 
-    override fun compareTo(another: CoinsInfo): Int {
+    override fun compareTo(other: CoinsInfo): Int {
         val b1: Long = this.amount
-        val b2 = another.amount
+        val b2 = other.amount
         if (b1 > b2) {
             return -1
         } else if (b1 < b2) {
             return 1
         } else {
-            return this.hash.compareTo(another.hash)
+            return this.hash.compareTo(other.hash)
         }
     }
 }

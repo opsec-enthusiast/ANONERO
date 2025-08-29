@@ -226,7 +226,7 @@ class SendViewModel : ViewModel() {
 
     fun setCoins(coins: List<String>) {
         val walletCoins = WalletManager.instance?.wallet?.coins?.all ?: listOf();
-        val selectedCoins = walletCoins.filter { coins.contains(it.key) }.toSet()
+        val selectedCoins = walletCoins.filter { coins.contains(it.pub_key) }.toSet()
         _coinsSelected.postValue(
             selectedCoins
         )
