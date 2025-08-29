@@ -305,7 +305,7 @@ fun QRScanner(
                                             QrCodeAnalyzerBoofcv(onQrCodesDetected = {
                                                 val result = it.text
                                                 if (result.lowercase().startsWith("ur:")) {
-                                                    val received = decoder.receivePart(result)
+                                                    decoder.receivePart(result)
                                                     val progreesPercentage =
                                                         decoder.estimatedPercentComplete;
                                                     if (progreesPercentage.toFloat() != progrees) {

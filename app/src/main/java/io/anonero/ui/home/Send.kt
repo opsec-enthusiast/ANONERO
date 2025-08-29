@@ -121,7 +121,7 @@ class SendViewModel : ViewModel() {
                         keyImages = arrayListOf()
                     )
                     if (!pendingTx?.getErrorString().isNullOrEmpty()) {
-                        throw Exception(pendingTx?.getErrorString())
+                        throw Exception(pendingTx.getErrorString())
                     }
 
                     if (pendingTx != null) {
@@ -138,7 +138,7 @@ class SendViewModel : ViewModel() {
                     )
 
                     if (!pendingTx?.getErrorString().isNullOrEmpty()) {
-                        throw Exception(pendingTx?.getErrorString())
+                        throw Exception(pendingTx.getErrorString())
                     }
                     if (pendingTx != null) {
                         val unsignedTxFile =
@@ -333,6 +333,7 @@ fun SendScreen(
                     }
                     navigateToReview.invoke(ReviewTransactionRoute(addressField))
                 } else {
+                    Timber.tag(TAG).i("prepare: Pending tx is null")
                     //show error
                 }
             } catch (e: Exception) {
@@ -591,6 +592,9 @@ fun SendScreen(
                             } else {
                                 needsKeyImages =
                                     (spendAmount + 1_000_000_000L) > wallet.viewOnlyBalance()
+                                Timber.tag(TAG).i("SendScreen: needsKeyImages: %s", needsKeyImages)
+                                Timber.tag(TAG).i("SendScreen: viewOnlyBalance: %s", wallet.viewOnlyBalance())
+                                Timber.tag(TAG).i("SendScreen: spendAmount: %s", spendAmount)
                             }
 
                             if (needsKeyImages) {

@@ -180,7 +180,7 @@ public class KeyStoreHelper {
         try {
             keyStore.load(null);
         } catch (IOException | CertificateException ex) {
-            throw new IllegalStateException("Could not load KeySotre", ex);
+            throw new IllegalStateException("Could not load KeyStore", ex);
         }
         if (!keyStore.containsAlias(alias)) {
             createKeysM(alias);
@@ -208,6 +208,7 @@ public class KeyStoreHelper {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static void createKeysJBMR2(Context context, String alias) throws NoSuchProviderException,
             NoSuchAlgorithmException, InvalidAlgorithmParameterException {
 

@@ -2,7 +2,6 @@ package io.anonero.ui.home.spend
 
 import AnonNeroTheme
 import android.os.Build
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -453,17 +452,34 @@ fun ReviewTransactionScreen(
                                             AnonConfig.context?.cacheDir,
                                             AnonConfig.EXPORT_SIGNED_TX_FILE
                                         );
+                                        Timber.tag(TAG)
+                                            .i("Signing Unsigned Transaction: ${unsignedTransaction.path} to ${signedTransaction.path}")
                                         signing = true
-                                        WalletManager.instance?.wallet?.signAndExportJ(
+                                       val success = WalletManager.instance?.wallet?.signAndExportJ(
                                             unsignedTransaction.absolutePath,
                                             signedTransaction.absolutePath,
                                         )
-                                        signing = false
-                                        qrScannerParam = SpendQRExchangeParam(
-                                            exportType = ExportType.SIGNED_TX,
-                                            title = "SIGNED TX",
-                                            ctaText = "FINISH",
-                                        )
+                                        if(success == "Signed"){
+                                            readyToBroadcast = true
+                                            Timber.tag(TAG)
+                                                .i("Signing result: $success")
+                                            Timber.tag(TAG)
+                                                .i("Signing Signed Transaction: exists ? ${signedTransaction.exists()} | " +
+                                                        " size: ${signedTransaction.length()}")
+                                            signing = false
+                                            qrScannerParam = SpendQRExchangeParam(
+                                                exportType = ExportType.SIGNED_TX,
+                                                title = "SIGNED TX",
+                                                ctaText = "FINISH",
+                                            )
+                                        }else{
+                                            readyToBroadcast = false
+                                        }
+                                    }.invokeOnCompletion { error ->
+                                        if (error != null) {
+                                            Timber.tag(TAG)
+                                                .i("Signing Unsigned Transaction failed: $error")
+                                        }
                                     }
                                 } else {
                                     if (AnonConfig.viewOnly && !readyToBroadcast) {

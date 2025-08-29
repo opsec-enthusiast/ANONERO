@@ -2,6 +2,7 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import android.content.SharedPreferences
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke

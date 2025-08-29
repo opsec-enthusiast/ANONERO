@@ -1,6 +1,7 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -127,7 +129,7 @@ fun TransactionScreen(
     var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     val walletState = koinInject<WalletState>()
-
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     if (showLockScreen) {
         Dialog(
@@ -290,7 +292,13 @@ fun TransactionScreen(
 
                     }
 
-                    ImportEvents.IMPORT_KEY_IMAGES -> {}
+                    ImportEvents.IMPORT_KEY_IMAGES -> {
+                        Toast.makeText(
+                            context,
+                            "Key images imported",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                     ImportEvents.IMPORT_UNSIGNED_TX -> {
                         if (!AnonConfig.viewOnly) {
                             navigateTo.invoke(ReviewTransactionRoute(

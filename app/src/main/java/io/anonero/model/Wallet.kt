@@ -357,20 +357,21 @@ class Wallet {
         val seenTxs = java.util.ArrayList<String>()
         val utxos: List<CoinsInfo> = getUtxos()
         var amountSelected: Long = 0
-        Collections.sort(utxos)
+            Collections.sort(utxos)
         //loop through each utxo
         for (coinsInfo in utxos) {
-            if (!coinsInfo.spent && coinsInfo.frozen) { //filter out spent and locked outputs
+            WalletManager.instance?.wallet?.refreshCoins()
+            if (!coinsInfo.spent) { //filter out spent and locked outputs
                 if (sendAll) {
                     // if send all, add all utxos and set amount to send all
                     selectedUtxos.add(coinsInfo.key)
                     amountSelected = SWEEP_ALL
                 } else {
                     //if amount selected is still less than amount needed, and the utxos tx hash hasn't already been seen, add utxo
-                    if (amountSelected <= amountWithBasicFee && !seenTxs.contains(coinsInfo.hash)) {
+                    if (amountSelected <= amountWithBasicFee && !seenTxs.contains(coinsInfo.key)) {
                         selectedUtxos.add(coinsInfo.key)
                         // we don't want to spend multiple utxos from the same transaction, so we prevent that from happening here.
-                        seenTxs.add(coinsInfo.hash)
+                        seenTxs.add(coinsInfo.key)
                         amountSelected += coinsInfo.amount
                     }
                 }

@@ -58,7 +58,6 @@ class QRScannerVM : ViewModel() {
         if (urResult.type == ResultType.SUCCESS) {
             var destinationFile: File? = null
             val ur = urResult.ur
-            Timber.tag(TAG).d("processUrCode: ${ur.type}")
             when (ur.type) {
                 AnonUrRegistryTypes.XMR_TX_UNSIGNED.type -> {
                     destinationFile =
@@ -137,6 +136,7 @@ class QRScannerVM : ViewModel() {
                             if (unsignedTransaction.status == UnsignedTransaction.Status.Status_Ok) {
                                 return Result.success(ImportEvents.IMPORT_UNSIGNED_TX)
                             } else {
+                                Timber.tag(TAG).e("Failed to import unsigned transaction")
                                 return Result.failure(Exception("Failed to import unsigned transaction"))
                             }
                         } finally {

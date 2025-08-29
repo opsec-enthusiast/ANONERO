@@ -1,16 +1,21 @@
 package io.anonero.ui.onboard
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.util.KeyStoreHelper
+import io.anonero.util.PREFS_PASSPHRASE_HASH
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.content.edit
 
 
 enum class Mode {
@@ -78,6 +83,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 addressString = neroKeyPayload!!.primaryAddress,
                 spendKeyString = ""
             )
+            anonWallet?.setRestoreHeight(3460000);
             anonWallet?.store()
             delay(100)
             if (anonWallet?.status?.isOk != true) {
@@ -98,6 +104,43 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
 
     fun setNeroPayload(it: NeroKeyPayload) {
         neroKeyPayload = it
+    }
+
+    fun restoreFromSeed() {
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val context = AnonConfig.context!!.applicationContext
+//            val walletFile = AnonConfig.getDefaultWalletFile(context)
+//            AnonConfig.getDefaultWalletDir(context).deleteRecursively()
+//            AnonConfig.getDefaultWalletDir(context).mkdirs()
+//            delay(100)
+//            val anonWallet = WalletManager.instance?.recoveryWalletPolyseed(
+//                walletFile,
+//                "00000",
+//            )
+//            delay(1000)
+//
+//            Log.i("TAG", "create: done ${anonWallet?.status?.isOk}")
+//            Log.i("TAG", "create: errorString ? ${anonWallet?.status?.errorString} balance: ${ anonWallet?.viewOnlyBalance()}" )
+//            anonWallet?.store()
+//            anonWallet?.store(walletFile.path)
+//            delay(100)
+//            if (anonWallet?.status?.isOk != true) {
+//                walletFile.delete()
+//                throw CancellationException("unable to create wallet ${anonWallet?.status?.errorString}")
+//            }
+//
+//            val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, "gggg")
+//            Log.i("TAG", "create: crazyPass $crazyPass")
+//            prefs.edit(commit = true) {
+//                putString(PREFS_PASSPHRASE_HASH, crazyPass)
+//            }
+//        }.invokeOnCompletion {
+//            if (it == null) {
+//                Log.i("TAG", "create: done")
+//            }else{
+//                Log.e("TAG", "create: error", it)
+//            }
+//        }
     }
 
 }
