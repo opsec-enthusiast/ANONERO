@@ -329,7 +329,9 @@ class Wallet {
             preferredInputs = selectUtxos(amount, false)
         } else {
             preferredInputs = selectedUtxos.map { it.key }.toCollection(ArrayList())
-            checkSelectedAmounts(preferredInputs, amount, false)
+            if(!sweepAll){
+                checkSelectedAmounts(preferredInputs, amount, false)
+            }
         }
         val txHandle =
             (if (sweepAll) createSweepTransaction(

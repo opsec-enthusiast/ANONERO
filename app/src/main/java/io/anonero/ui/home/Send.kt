@@ -134,6 +134,7 @@ class SendViewModel : ViewModel() {
                     val pendingTx = wallet?.createTransaction(
                         dst_addr = addressField,
                         amount = amountFromString,
+                        sweepAll = spendType.value == SpendType.SWEEP,
                         selectedUtxos = _coinsSelected.value?.toList() ?: listOf()
                     )
 
