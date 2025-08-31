@@ -240,6 +240,7 @@ fun SendScreen(
     modifier: Modifier = Modifier,
     onBackPress: () -> Unit = {},
     navigateToReview: (route: ReviewTransactionRoute) -> Unit = {},
+    navigateToHome: () -> Unit = {},
     paymentUri: SendScreenRoute? = null,
 ) {
 
@@ -594,7 +595,8 @@ fun SendScreen(
                                 needsKeyImages =
                                     (spendAmount + 1_000_000_000L) > wallet.viewOnlyBalance()
                                 Timber.tag(TAG).i("SendScreen: needsKeyImages: %s", needsKeyImages)
-                                Timber.tag(TAG).i("SendScreen: viewOnlyBalance: %s", wallet.viewOnlyBalance())
+                                Timber.tag(TAG)
+                                    .i("SendScreen: viewOnlyBalance: %s", wallet.viewOnlyBalance())
                                 Timber.tag(TAG).i("SendScreen: spendAmount: %s", spendAmount)
                             }
 
@@ -746,6 +748,11 @@ fun SendScreen(
             params = qrScannerParam!!,
             onBackPressed = {
                 qrScannerParam = null
+            },
+            onNavigateToHome = {
+                qrScannerParam = null
+                showScanner = false
+                navigateToHome.invoke()
             },
             onCtaCalled = {
                 qrScannerParam = null

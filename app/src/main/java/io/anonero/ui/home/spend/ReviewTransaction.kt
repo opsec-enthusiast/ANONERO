@@ -2,6 +2,7 @@ package io.anonero.ui.home.spend
 
 import AnonNeroTheme
 import android.os.Build
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -190,6 +191,7 @@ fun ReviewTransactionScreen(
     reviewParams: ReviewTransactionRoute,
     modifier: Modifier = Modifier,
     onFinished: () -> Unit = {},
+    navigateToHome: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
 
@@ -222,9 +224,15 @@ fun ReviewTransactionScreen(
             onBackPressed = {
                 qrScannerParam = null
             },
+            onNavigateToHome = {
+                navigateToHome.invoke()
+            },
             onCtaCalled = {
                 qrScannerParam = null
                 showScanner = true
+                if(qrScannerParam?.exportType == ExportType.SIGNED_TX){
+                    navigateToHome.invoke()
+                }
             },
             modifier = Modifier.fillMaxSize()
         )

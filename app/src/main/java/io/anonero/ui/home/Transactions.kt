@@ -71,6 +71,7 @@ import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.home.graph.routes.CoinsScreenRoute
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
+import io.anonero.ui.home.graph.routes.TransactionsRoute
 import io.anonero.ui.home.spend.qr.ExportType
 import io.anonero.ui.home.spend.qr.ImportEvents
 import io.anonero.ui.home.spend.qr.QRExchangeScreen
@@ -249,6 +250,9 @@ fun TransactionScreen(
     if (qrScannerParam != null) {
         QRExchangeScreen(
             params = qrScannerParam!!,
+            onNavigateToHome = {
+                navigateTo.invoke(TransactionsRoute)
+            },
             onBackPressed = {
                 qrScannerParam = null
             },
@@ -256,7 +260,7 @@ fun TransactionScreen(
                 qrScannerParam = null
                 showScanner = true
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
     }
 
@@ -299,13 +303,17 @@ fun TransactionScreen(
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+
                     ImportEvents.IMPORT_UNSIGNED_TX -> {
                         if (!AnonConfig.viewOnly) {
-                            navigateTo.invoke(ReviewTransactionRoute(
-                                "",
-                            ));
+                            navigateTo.invoke(
+                                ReviewTransactionRoute(
+                                    "",
+                                )
+                            );
                         }
                     }
+
                     ImportEvents.IMPORT_SIGNED_TX -> {}
                 }
                 showScanner = false
@@ -490,7 +498,7 @@ fun TransactionScreen(
                         .padding(
                             vertical = 32.dp
                         )
-                        . combinedClickable(
+                        .combinedClickable(
                             onClick = {},
                             onLongClick = {
                                 navigateTo(CoinsScreenRoute)

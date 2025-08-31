@@ -4,6 +4,7 @@ import AnonNeroTheme
 import android.content.Intent
 import android.icu.text.SimpleDateFormat
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -149,6 +150,7 @@ fun QRExchangeScreen(
     onCtaCalled: () -> Unit,
     modifier: Modifier = Modifier,
     onBackPressed: () -> Unit = {},
+    onNavigateToHome: () -> Unit,
 ) {
 
     val viewModel = viewModel<QRExchangeScreenViewModel>()
@@ -319,7 +321,7 @@ fun QRExchangeScreen(
                             modifier = Modifier.fillMaxWidth(0.85f),
                             onClick = {
                                 if(params.exportType == ExportType.SIGNED_TX) {
-                                    onBackPressed.invoke()
+                                    onNavigateToHome()
                                 }else{
                                     onCtaCalled.invoke()
                                 }
@@ -348,6 +350,7 @@ fun QRExchangeDialog(
     show: Boolean,
     onDismiss: () -> Unit,
     onCtaCalled: () -> Unit,
+    navigateToHome: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
@@ -383,7 +386,10 @@ fun QRExchangeDialog(
                         params = params,
                         onBackPressed = onDismiss,
                         onCtaCalled = onCtaCalled,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        onNavigateToHome = {
+                            navigateToHome.invoke()
+                        }
                     )
             }
         }
