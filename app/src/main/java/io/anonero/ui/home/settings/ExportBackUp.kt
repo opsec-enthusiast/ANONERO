@@ -72,7 +72,7 @@ import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.ShakeConfig
 import io.anonero.util.WALLET_PREFERENCES
-import io.anonero.util.backup.BackUpHelper
+import io.anonero.util.backup.BackupHelper
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
 import kotlinx.coroutines.Dispatchers
@@ -95,7 +95,7 @@ class ExportBackUpViewModel : ViewModel() {
 
     fun createBackUp(passPhrase: String): Job {
         return viewModelScope.launch(Dispatchers.IO) {
-            val path = BackUpHelper.createBackUp(passPhrase, AnonConfig.context!!)
+            val path = BackupHelper.createBackUp(passPhrase, AnonConfig.context!!)
             Timber.tag(TAG).i("Backup created :$path")
             backupFile.postValue(File(path))
         }

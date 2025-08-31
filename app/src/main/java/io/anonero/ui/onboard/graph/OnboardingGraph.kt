@@ -10,15 +10,18 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import io.anonero.AnonConfig
 import io.anonero.ui.home.graph.routes.Home
+import io.anonero.ui.home.settings.LogViewer
 import io.anonero.ui.home.settings.ProxySettings
 import io.anonero.ui.onboard.Mode
 import io.anonero.ui.onboard.OnboardLoadingComposable
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.onboard.OnboardingWelcome
 import io.anonero.ui.onboard.PinSetup
+import io.anonero.ui.onboard.RestoreWallet
 import io.anonero.ui.onboard.SeedSetup
 import io.anonero.ui.onboard.SetupNodeComposable
 import io.anonero.ui.onboard.SetupPassphrase
+import io.anonero.ui.onboard.restore.RestorePreview
 import io.anonero.ui.onboard.viewonly.RestoreFromKeys
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,6 +41,9 @@ data object OnboardingProxyScreen
 data object OnboardPassPhraseScreen
 
 @Serializable
+data object OnboardLogsScreen
+
+@Serializable
 data class OnboardLoading(val message: String)
 
 @Serializable
@@ -48,6 +54,12 @@ data object OnboardPinScreen
 
 @Serializable
 data object OnboardNodeSetupScreen
+
+@Serializable
+data object OnboardRestoreScreen
+
+@Serializable
+data class OnboardRestorePreviewScreen(val backUpPath: String)
 
 @Serializable
 data object OnboardImportKeysScreen
@@ -73,6 +85,11 @@ fun NavGraphBuilder.onboardingGraph(
             OnboardingWelcome(
                 onRestoreClick = {
                     onboardViewModel.setMode(Mode.RESTORE)
+                    if (it != null) {
+                        navController.navigate(OnboardRestorePreviewScreen(it))
+                    } else {
+                        navController.navigate(OnboardNodeSetupScreen)
+                    }
                 },
                 onCreateClick = {
                     onboardViewModel.setMode(Mode.CREATE)
@@ -83,6 +100,9 @@ fun NavGraphBuilder.onboardingGraph(
                 },
                 onProxySettings = {
                     navController.navigate(OnboardingProxyScreen)
+                },
+                onLogsScreen = {
+                    navController.navigate(OnboardLogsScreen)
                 }
             )
         }
@@ -99,10 +119,45 @@ fun NavGraphBuilder.onboardingGraph(
                     navController.navigateUp()
                 },
                 oNextPressed = {
-                    if(AnonConfig.viewOnly){
+                    if (AnonConfig.viewOnly) {
                         navController.navigate(OnboardPinScreen)
-                    }else{
-                        navController.navigate(OnboardPassPhraseScreen)
+                    } else {
+                        if (onboardViewModel.getMode() == Mode.RESTORE) {
+                            navController.navigate(OnboardRestoreScreen)
+                        } else {
+                            navController.navigate(OnboardPassPhraseScreen)
+                        }
+                    }
+                }
+            )
+        }
+        composable<OnboardRestoreScreen> {
+            RestoreWallet(
+                onBackPressed = {
+                    navController.navigateUp()
+                },
+                oNextPressed = {
+                    onboardViewModel.setRestorePayload(it)
+                    navController
+                        .navigate(OnboardPassPhraseScreen)
+                }
+            )
+        }
+        composable<OnboardRestorePreviewScreen> { navBackStackEntry ->
+            val backUpPath = navBackStackEntry.toRoute<OnboardRestorePreviewScreen>()
+            RestorePreview(
+                backUpPath = backUpPath.backUpPath,
+                onBackPressed = {
+                    navController.navigateUp()
+                },
+                navigateTo = {
+                    navController.navigate(it)
+                },
+                oNextPressed = {
+                    navController.navigate(
+                        Home
+                    ) {
+                        popUpTo(LandingScreenRoute)
                     }
                 }
             )
@@ -119,15 +174,32 @@ fun NavGraphBuilder.onboardingGraph(
             )
         }
 
+
+        composable<OnboardLogsScreen>() {
+            LogViewer(
+                onBackPress = {
+                    navController.navigateUp()
+                }
+            )
+        }
+
         composable<OnboardPinScreen> {
             PinSetup(
                 onNext = { pin ->
-                    navController.navigate(OnboardLoading("Creating wallet..."))
+                    var loadingMessage = "Creating wallet..."
+                    if (onboardViewModel.getMode() == Mode.RESTORE) {
+                        loadingMessage = "Restoring wallet..."
+                    }
+                    navController.navigate(OnboardLoading(loadingMessage))
                     onboardViewModel.viewModelScope.launch {
                         if (AnonConfig.viewOnly) {
                             onboardViewModel.createViewOnly(pin)
                         } else {
-                            onboardViewModel.create(pin)
+                            if (onboardViewModel.getMode() == Mode.RESTORE) {
+                                onboardViewModel.restoreFromSeed(pin)
+                            } else {
+                                onboardViewModel.create(pin)
+                            }
                         }
                         delay(600)
                     }.invokeOnCompletion {
@@ -139,7 +211,15 @@ fun NavGraphBuilder.onboardingGraph(
                                     popUpTo(LandingScreenRoute)
                                 }
                             } else {
-                                navController.navigate(OnboardSeedScreen(onboardViewModel.getSeed()))
+                                if (onboardViewModel.getMode() == Mode.RESTORE) {
+                                    navController.navigate(
+                                        Home
+                                    ) {
+                                        popUpTo(LandingScreenRoute)
+                                    }
+                                } else {
+                                    navController.navigate(OnboardSeedScreen(onboardViewModel.getSeed()))
+                                }
                             }
                         }
                     }

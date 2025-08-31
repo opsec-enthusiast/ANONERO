@@ -1,15 +1,30 @@
 package io.anonero.util.backup
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.icu.text.SimpleDateFormat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.di.provideWalletSharedPrefs
+import io.anonero.model.Backup
+import io.anonero.model.BackupMeta
+import io.anonero.model.BackupPayload
 import io.anonero.model.NeroKeyPayload
+import io.anonero.model.NodeBackup
+import io.anonero.model.WalletBackup
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
-import org.json.JSONObject
+import io.anonero.util.KeyStoreHelper
+import io.anonero.util.PREFS_PASSPHRASE_HASH
+import io.anonero.util.RESTORE_HEIGHT
+import io.anonero.util.WALLET_PREFERENCES
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
+import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -22,60 +37,52 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
-object BackUpHelper {
+object BackupHelper {
     private const val BACKUP_VERSION = "1.0"
     const val BUFFER = 2048
     private const val TAG = "BackUpHelper"
+    val walletPrefs: SharedPreferences by inject(
+        SharedPreferences::class.java, named(WALLET_PREFERENCES)
+    )
 
     fun createBackUp(seedPassphrase: String, context: Context): String {
         val wallet = WalletManager.instance?.wallet ?: throw Exception("Wallet not found")
         val prefs = provideWalletSharedPrefs(context)
 
-        val walletPayload = JSONObject()
-            .apply {
-                put("address", wallet.address)
-                put("seed", wallet.getSeed(seedPassphrase))
-                put("restoreHeight", wallet.getRestoreHeight())
-                put("balanceAll", wallet.getBalanceAll())
-                put("numSubaddresses", wallet.numSubAddresses)
-                put("numAccounts", wallet.getNumAccounts())
-                put("isWatchOnly", wallet.isWatchOnly())
-                put("isSynchronized", wallet.isSynchronized)
-                if (AnonConfig.viewOnly) {
-                    put("nero", NeroKeyPayload.fromWallet(wallet).toJSONObject())
-                }
-            }
-        val nodePayload = JSONObject()
-            .apply {
-                put("host", prefs.getString(NodeFields.RPC_HOST.value, ""))
-                put("password", prefs.getString(NodeFields.RPC_PASSWORD.value, ""))
-                put("username", prefs.getString(NodeFields.RPC_USERNAME.value, ""))
-                put(
-                    "rpcPort",
-                    prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
-                )
-                put("networkType", AnonConfig.getNetworkType().toString())
-                put("isOnion", false)
-            }
 
-        val metaPayload = JSONObject().apply {
-            put("timestamp", System.currentTimeMillis())
-            put("network", AnonConfig.getNetworkType().toStringForBackUp())
-        }
+        val walletPayload = WalletBackup(
+            address = wallet.address,
+            seed = wallet.getSeed(seedPassphrase),
+            restoreHeight = wallet.getRestoreHeight(),
+            balanceAll = wallet.getBalanceAll(),
+            numSubaddresses = wallet.numSubAddresses,
+            numAccounts = wallet.getNumAccounts(),
+            isWatchOnly = wallet.isWatchOnly(),
+            isSynchronized = wallet.isSynchronized,
+            neroPayload = NeroKeyPayload.fromWallet(wallet)
+        );
 
 
-        val backUpPayload = JSONObject().apply {
-            put("node", nodePayload)
-            put("wallet", walletPayload)
-            put("meta", metaPayload)
-        }
+        val nodeBackup = NodeBackup(
+            host = prefs.getString(NodeFields.RPC_HOST.value, "") ?: "",
+            password = prefs.getString(NodeFields.RPC_PASSWORD.value, "") ?: "",
+            username = prefs.getString(NodeFields.RPC_USERNAME.value, "") ?: "",
+            rpcPort = prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort),
+            networkType = AnonConfig.getNetworkType().toString(),
+            isOnion = false
+        )
+        val backup = Backup(
+            meta = BackupMeta(
+                timestamp = System.currentTimeMillis(),
+                network = AnonConfig.getNetworkType().toStringForBackUp()
+            ), node = nodeBackup, wallet = walletPayload
+        )
 
-        Timber.tag(TAG).d("BackUpPayload: $backUpPayload")
 
-        val json = JSONObject().apply {
-            put("version", BACKUP_VERSION)
-            put("backup", backUpPayload)
-        }.toString()
+        val backUpPayload = BackupPayload(
+            version = BACKUP_VERSION, backup = backup
+        )
+        val json = Json.encodeToString(backUpPayload)
 
         context.cacheDir.deleteRecursively()
 
@@ -110,7 +117,7 @@ object BackUpHelper {
         return backupFileEncrypted.absolutePath
     }
 
-    fun testBackUP(destinationDir: File): Boolean {
+    fun testBackUp(destinationDir: File): Boolean {
         val items = destinationDir.listFiles()?.toList()?.filter {
             (it.name.endsWith(".keys") || it.name.endsWith(".json"))
         }
@@ -163,6 +170,60 @@ object BackUpHelper {
                     }
                 }
             }
+        }
+    }
+
+    fun extractBackUp(backupPath: String, passPhrase: String): BackupPayload? {
+        val destFile = File(AnonConfig.context?.cacheDir, "backup.anon").apply { createNewFile() }
+        val decryptedDestFile =
+            File(AnonConfig.context?.cacheDir, "backup.zip").apply { createNewFile() }
+        val extractDestination = File(AnonConfig.context?.cacheDir, "tmp_extract")
+        val inPutStream = AnonConfig.context?.contentResolver?.openInputStream(backupPath.toUri())
+        inPutStream?.copyTo(destFile.outputStream())
+        inPutStream?.close()
+        EncryptUtil.decryptFile(passPhrase, destFile, decryptedDestFile)
+        unZip(decryptedDestFile, extractDestination)
+
+        val anonJson = File(extractDestination, "anon.json")
+        val json = anonJson.readText()
+        return Json.decodeFromString<BackupPayload>(json)
+    }
+
+    fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String): Boolean {
+        try {
+            val extractDestination = File(AnonConfig.context?.cacheDir, "tmp_extract")
+            if (!extractDestination.exists() && !testBackUp(extractDestination)) {
+                return false
+            }
+
+            val anonDir = AnonConfig.getDefaultWalletDir(AnonConfig.context!!)
+
+            val node = backupPayload.backup.node
+            walletPrefs.edit(commit = true) {
+                putString(NodeFields.RPC_HOST.value, node.host)
+                putInt(NodeFields.RPC_PORT.value, node.rpcPort)
+                putString(NodeFields.RPC_USERNAME.value, node.username)
+                putString(NodeFields.RPC_PASSWORD.value, node.password)
+                putString(NodeFields.RPC_NETWORK.value, node.networkType)
+            }
+
+            val wa = backupPayload.backup.wallet
+            walletPrefs.edit(commit = true) {
+                putString(
+                    PREFS_PASSPHRASE_HASH,
+                    KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
+                )
+                putLong(RESTORE_HEIGHT, wa.restoreHeight ?: 0L)
+            }
+            extractDestination.listFiles()?.forEach { entry ->
+                if (!entry.isDirectory && !entry.name.contains("anon.json")) {
+                    entry.copyTo(File(anonDir, entry.name), true)
+                }
+            }
+            return true
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e)
+            return false
         }
     }
 

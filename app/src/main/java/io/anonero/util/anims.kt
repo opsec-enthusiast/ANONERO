@@ -1,5 +1,7 @@
 package io.anonero.util
 
+import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.offset
@@ -15,6 +17,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 
@@ -29,6 +32,19 @@ class ShakeController {
 
     fun shake(shakeConfig: ShakeConfig) {
         this.shakeConfig = shakeConfig
+    }
+
+    suspend fun shake(view: View) {
+        ShakeConfig(
+            6, translateX = 5f
+        )
+        repeat(6) {
+            delay(50)
+            view.performHapticFeedback(
+                HapticFeedbackConstants.CONTEXT_CLICK
+            )
+        }
+        delay(100)
     }
 }
 

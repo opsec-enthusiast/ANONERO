@@ -8,6 +8,7 @@ import io.anonero.model.WalletManager
 import io.anonero.model.node.DaemonInfo
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
+import io.anonero.util.RESTORE_HEIGHT
 import io.anonero.util.WALLET_PROXY
 import io.anonero.util.WALLET_PROXY_PORT
 import io.anonero.util.WALLET_USE_TOR
@@ -108,12 +109,20 @@ class AnonWalletHandler(
                 walletState.setLoading(true)
             }
             walletState.update()
+            if(wallet.isSynchronized) {
+                wallet.refreshHistory()
+            }
             wallet.init(0)
+            if(prefs.getLong(RESTORE_HEIGHT, 0L)!=0L) {
+                wallet.setRestoreHeight(prefs.getLong(RESTORE_HEIGHT, 0L));
+            }
             if (wallet.isInitialized) {
                 walletState.setLoading(false)
                 wallet.setTrustedDaemon(true)
+
                 wallet.startRefresh()
                 wallet.refreshHistory()
+
                 walletState.update()
             }
         } catch (e: Exception) {
