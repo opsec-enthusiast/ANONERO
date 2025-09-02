@@ -9,6 +9,7 @@ import io.anonero.model.node.Node
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -72,6 +73,16 @@ class NodesRepository(private val context: Context) {
             } else {
                 currentItems
             }
+        }
+    }
+
+
+    // Add a new item to the list
+    suspend fun getAll() : List<Node> {
+        try {
+            return context.nodeDataStore.data.first();
+        } catch (e: Exception) {
+            return emptyList()
         }
     }
 

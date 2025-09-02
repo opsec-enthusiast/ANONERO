@@ -192,7 +192,7 @@ class WalletManager {
         subaddressLookahead: String
     ): Long
 
-    private external fun closeJ(wallet: Wallet?): Boolean
+    external fun closeJ(wallet: Wallet?): Boolean
     fun close(wallet: Wallet): Boolean {
         unmanageWallet(wallet)
         val closed = closeJ(wallet)

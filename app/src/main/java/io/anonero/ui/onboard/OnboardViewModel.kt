@@ -1,7 +1,6 @@
 package io.anonero.ui.onboard
 
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +25,7 @@ enum class Mode {
 }
 
 private const val TAG = "OnboardViewModel"
+
 class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
 
     private var mode = Mode.CREATE
@@ -95,8 +95,9 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 throw CancellationException("unable to create wallet")
             }
             val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
-            prefs.edit().putString("passPhraseHash", crazyPass)
-                .apply()
+            prefs.edit {
+                putString("passPhraseHash", crazyPass)
+            }
             walllet = anonWallet
             delay(500)
         }
@@ -146,14 +147,16 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 restorePayload?.restoreHeight?.let {
                     putLong(RESTORE_HEIGHT, it)
                 }
-             }
-            anonWallet.close();
+            }
+            try {
+                anonWallet.close()
+            } catch (e: Exception) {
+                Timber.tag(TAG).w(e, "Unable to close wallet")
+            }
 
-            delay(300)
+            delay(500)
         }.invokeOnCompletion {
-            if (it == null) {
-
-            } else {
+            if (it != null) {
                 Timber.tag(TAG).e(it, "Unable to restore from seed")
             }
         }

@@ -3,6 +3,7 @@ package io.anonero.util.backup
 import android.content.Context
 import android.content.SharedPreferences
 import android.icu.text.SimpleDateFormat
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import io.anonero.AnonConfig
@@ -17,6 +18,7 @@ import io.anonero.model.WalletBackup
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
+import io.anonero.store.NodesRepository
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.RESTORE_HEIGHT
@@ -38,14 +40,15 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
 object BackupHelper {
-    private const val BACKUP_VERSION = "1.0"
+    private const val BACKUP_VERSION = 2
     const val BUFFER = 2048
     private const val TAG = "BackUpHelper"
     val walletPrefs: SharedPreferences by inject(
         SharedPreferences::class.java, named(WALLET_PREFERENCES)
     )
+    val nodeRepository: NodesRepository by inject(NodesRepository::class.java)
 
-    fun createBackUp(seedPassphrase: String, context: Context): String {
+    suspend fun createBackUp(seedPassphrase: String, context: Context): String {
         val wallet = WalletManager.instance?.wallet ?: throw Exception("Wallet not found")
         val prefs = provideWalletSharedPrefs(context)
 
@@ -59,7 +62,7 @@ object BackupHelper {
             numAccounts = wallet.getNumAccounts(),
             isWatchOnly = wallet.isWatchOnly(),
             isSynchronized = wallet.isSynchronized,
-            neroPayload = NeroKeyPayload.fromWallet(wallet)
+            neroPayload = NeroKeyPayload.fromWallet(wallet),
         );
 
 
@@ -74,10 +77,10 @@ object BackupHelper {
         val backup = Backup(
             meta = BackupMeta(
                 timestamp = System.currentTimeMillis(),
-                network = AnonConfig.getNetworkType().toStringForBackUp()
-            ), node = nodeBackup, wallet = walletPayload
+                network = AnonConfig.getNetworkType().toStringForBackUp(),
+            ), node = nodeBackup, wallet = walletPayload,
+            nodes = nodeRepository.getAll()
         )
-
 
         val backUpPayload = BackupPayload(
             version = BACKUP_VERSION, backup = backup
@@ -189,8 +192,9 @@ object BackupHelper {
         return Json.decodeFromString<BackupPayload>(json)
     }
 
-    fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String): Boolean {
+    suspend fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String): Boolean {
         try {
+
             val extractDestination = File(AnonConfig.context?.cacheDir, "tmp_extract")
             if (!extractDestination.exists() && !testBackUp(extractDestination)) {
                 return false
@@ -198,22 +202,39 @@ object BackupHelper {
 
             val anonDir = AnonConfig.getDefaultWalletDir(AnonConfig.context!!)
 
-            val node = backupPayload.backup.node
+            val v1Node = backupPayload.backup.node
             walletPrefs.edit(commit = true) {
-                putString(NodeFields.RPC_HOST.value, node.host)
-                putInt(NodeFields.RPC_PORT.value, node.rpcPort)
-                putString(NodeFields.RPC_USERNAME.value, node.username)
-                putString(NodeFields.RPC_PASSWORD.value, node.password)
-                putString(NodeFields.RPC_NETWORK.value, node.networkType)
+                putString(NodeFields.RPC_HOST.value, v1Node.host)
+                putInt(NodeFields.RPC_PORT.value, v1Node.rpcPort)
+                putString(NodeFields.RPC_USERNAME.value, v1Node.username)
+                putString(NodeFields.RPC_PASSWORD.value, v1Node.password)
+                putString(NodeFields.RPC_NETWORK.value, v1Node.networkType)
             }
 
-            val wa = backupPayload.backup.wallet
+            val wallet = backupPayload.backup.wallet
+            val nodes = backupPayload.backup.nodes;
+
+            nodes.forEach {
+                nodeRepository.addItem(it)
+            }
+            if (nodes.isEmpty() && v1Node.host.isNotEmpty()) {
+                val node = Node().apply {
+                    host = v1Node.host
+                    rpcPort = v1Node.rpcPort
+                    username = v1Node.username
+                    password = v1Node.password
+                    networkType = AnonConfig.getNetworkType()
+                }
+                nodes.forEach {
+                    nodeRepository.addItem(node)
+                }
+            }
             walletPrefs.edit(commit = true) {
                 putString(
                     PREFS_PASSPHRASE_HASH,
                     KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
                 )
-                putLong(RESTORE_HEIGHT, wa.restoreHeight ?: 0L)
+                putLong(RESTORE_HEIGHT, wallet.restoreHeight ?: 0L)
             }
             extractDestination.listFiles()?.forEach { entry ->
                 if (!entry.isDirectory && !entry.name.contains("anon.json")) {

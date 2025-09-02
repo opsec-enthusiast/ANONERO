@@ -31,16 +31,13 @@ enum class NodeFields(val value: String) {
 @Serializable
 open class Node {
     var networkType: NetworkType? = null
-        private set
     var rpcPort = 0
     var name: String? = null
         private set
     var host: String? = null
     private var levinPort = 0
     var username = ""
-        private set
     var password = ""
-        private set
     var trusted = true
         private set
 
