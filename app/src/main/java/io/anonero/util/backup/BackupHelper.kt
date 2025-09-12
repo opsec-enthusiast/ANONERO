@@ -39,6 +39,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 
+class NetworkMismatchException : Exception()
 object BackupHelper {
     private const val BACKUP_VERSION = 2
     const val BUFFER = 2048
@@ -189,7 +190,11 @@ object BackupHelper {
 
         val anonJson = File(extractDestination, "anon.json")
         val json = anonJson.readText()
-        return Json.decodeFromString<BackupPayload>(json)
+        val backup = Json.decodeFromString<BackupPayload>(json)
+        if(backup.backup.meta.network != AnonConfig.getNetworkType().toStringForBackUp()){
+             throw NetworkMismatchException()
+        }
+        return backup;
     }
 
     suspend fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String): Boolean {

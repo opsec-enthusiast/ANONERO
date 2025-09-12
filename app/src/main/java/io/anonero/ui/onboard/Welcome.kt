@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -138,10 +139,6 @@ fun OnboardingWelcome(
                 )
             }
         )
-
-
-
-
 
     Scaffold { paddingValues ->
         Column(

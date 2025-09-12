@@ -65,6 +65,7 @@ import io.anonero.ui.home.graph.routes.SettingsLogs
 import io.anonero.ui.home.settings.LogViewer
 import io.anonero.ui.onboard.graph.OnboardLogsScreen
 import io.anonero.util.backup.BackupHelper
+import io.anonero.util.backup.NetworkMismatchException
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
 import kotlinx.coroutines.Dispatchers
@@ -87,7 +88,7 @@ fun RestorePreview(
     backUpPath: String,
     onBackPressed: () -> Unit = {},
     oNextPressed: () -> Unit = {},
-            navigateTo: (route: Any) -> Unit = {}
+    navigateTo: (route: Any) -> Unit = {}
 ) {
 
     var passPhrase by remember { mutableStateOf<String>("") }
@@ -109,7 +110,14 @@ fun RestorePreview(
                 loadingMessage = "Extracting backup..."
                 backupPayload = BackupHelper.extractBackUp(backUpPath, passPhrase)
                 loading = false
-            } catch (e: Exception) {
+            }  catch (e: NetworkMismatchException) {
+                errorMessage = "Invalid network"
+                loading = false
+                scope.launch {
+                    errorShake.shake(view)
+                }
+            }  catch (e: Exception) {
+                errorMessage = "Unable to extract backup."
                 loading = false
                 scope.launch {
                     errorShake.shake(view)
@@ -214,7 +222,6 @@ fun RestorePreview(
         }
     }
 
-
     Scaffold(
         topBar = {
             TopAppBar(navigationIcon = {
@@ -245,7 +252,7 @@ fun RestorePreview(
                                 val success = BackupHelper.restoreBackUp(backupPayload!!, passPhrase)
                                 if (success) {
                                     BackupHelper.cleanCacheDir()
-                                    delay(650)
+                                    delay(1000)
                                     withContext(Dispatchers.Main) {
                                         oNextPressed()
                                     }
@@ -274,15 +281,16 @@ fun RestorePreview(
         if (errorMessage.isNotEmpty()) {
             return@Scaffold Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Spacer(Modifier.size(12.dp))
                 Text(
                     errorMessage,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.error,
-                        fontSize = 18.sp
+                        fontSize = 16.sp
                     )
                 )
                 OutlinedButton(
@@ -326,9 +334,6 @@ fun RestorePreview(
             val wallet = backupPayload!!.backup.wallet
             val node = backupPayload!!.backup.node
             val meta = backupPayload!!.backup.meta
-            backupPayload!!.version
-            wallet.neroPayload != null
-            val neroPayload = wallet.neroPayload
 
             LocalDateTime.ofInstant(
                 Instant.ofEpochMilli(meta.timestamp), java.time.ZoneId.systemDefault()
@@ -343,7 +348,6 @@ fun RestorePreview(
                     )
                     .fillMaxSize()
             ) {
-                if (neroPayload == null) {
 
                     item {
                         Text(
@@ -395,66 +399,66 @@ fun RestorePreview(
                         }
                     }
 
-                } else {
-                    item {
-                        Text(
-                            "Wallet | Nero ",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(
-                                top = 8.dp
-                            ),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = MaterialTheme.colorScheme.onSecondary.copy(
-                                    alpha = 0.8f
-                                )
-                            )
-                        )
-                    }
-                    item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(
-                                vertical = 8.dp
-                            )
-                        )
-                    }
-                    item {
-                        ListWidget(
-                            title = "Primary Address",
-                            subtitle = "${neroPayload.primaryAddress}",
-                            modifier = Modifier.padding(
-                                bottom = 8.dp
-                            )
-                        )
-                    }
-                    item {
-                        ListWidget(
-                            title = "Private View Key",
-                            subtitle = "${neroPayload.primaryAddress}",
-                            modifier = Modifier.padding(
-                                bottom = 8.dp
-                            )
-                        )
-                    }
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+
+//                    item {
+//                        Text(
+//                            "Wallet | Nero ",
+//                            textAlign = TextAlign.Center,
+//                            modifier = Modifier.padding(
+//                                top = 8.dp
+//                            ),
+//                            style = MaterialTheme.typography.titleMedium.copy(
+//                                color = MaterialTheme.colorScheme.onSecondary.copy(
+//                                    alpha = 0.8f
+//                                )
+//                            )
+//                        )
+//                    }
+//                    item {
+//                        HorizontalDivider(
+//                            modifier = Modifier.padding(
+//                                vertical = 8.dp
+//                            )
+//                        )
+//                    }
+//                    item {
+//                        ListWidget(
+//                            title = "Primary Address",
+//                            subtitle = "${neroPayload.primaryAddress}",
+//                            modifier = Modifier.padding(
+//                                bottom = 8.dp
+//                            )
+//                        )
+//                    }
+//                    item {
+//                        ListWidget(
+//                            title = "Private View Key",
+//                            subtitle = "${neroPayload.primaryAddress}",
+//                            modifier = Modifier.padding(
+//                                bottom = 8.dp
+//                            )
+//                        )
+//                    }
+//                    item {
+//                        Row(
+//                            modifier = Modifier.fillMaxWidth(),
+//                            verticalAlignment = Alignment.CenterVertically,
+//                            horizontalArrangement = Arrangement.SpaceBetween
+//                        ) {
+////                            ListWidget(
+////                                title = "Restore Height",
+////                                subtitle = "${neroPayload.version}",
+////                                modifier = Modifier.weight(1f)
+////                            )
+////                            Spacer(Modifier.width(8.dp))
 //                            ListWidget(
 //                                title = "Restore Height",
-//                                subtitle = "${neroPayload.version}",
+//                                subtitle = "${neroPayload.restoreHeight}",
 //                                modifier = Modifier.weight(1f)
 //                            )
-//                            Spacer(Modifier.width(8.dp))
-                            ListWidget(
-                                title = "Restore Height",
-                                subtitle = "${neroPayload.restoreHeight}",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
+//                        }
+//                    }
+//
 
                 item {
                     Text(

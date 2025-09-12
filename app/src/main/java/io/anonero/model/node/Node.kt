@@ -192,10 +192,8 @@ open class Node {
     fun toJson(): JSONObject {
         val jsonObject = JSONObject()
         try {
-            if (username.isNotEmpty() && password.isNotEmpty()) {
-                jsonObject.put("username", username)
-                jsonObject.put("password", password)
-            }
+            jsonObject.put("username", username)
+            jsonObject.put("password", password)
             jsonObject.put("host", host)
             jsonObject.put("rpcPort", rpcPort)
             when (networkType) {

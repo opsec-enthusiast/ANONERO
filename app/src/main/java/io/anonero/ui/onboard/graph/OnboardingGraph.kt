@@ -174,7 +174,6 @@ fun NavGraphBuilder.onboardingGraph(
             )
         }
 
-
         composable<OnboardLogsScreen>() {
             LogViewer(
                 onBackPress = {
