@@ -10,19 +10,25 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +36,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -88,12 +95,12 @@ fun getWalletSeed(passPhrase: String): String? {
 
 fun generatePlaceHolderSeed(): List<String> {
     return (1..16).map {
-        (1..Random.nextInt(4, 8)).joinToString("") { "*" }
+        (1..Random.nextInt(6, 8)).joinToString("") { "*" }
     }
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
 
@@ -216,7 +223,9 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                 ),
             containerColor = MaterialTheme.colorScheme.secondary,
             properties = DialogProperties(
-                securePolicy = SecureFlagPolicy.SecureOn, dismissOnBackPress = false
+                securePolicy = SecureFlagPolicy.SecureOn,
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
             ),
             title = {
                 Text(
@@ -302,6 +311,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
         )
 
 
+    val wallet = WalletManager.instance?.wallet
     Scaffold(
         topBar = {
             TopAppBar(
@@ -353,56 +363,129 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     horizontal = 8.dp
                 )
         ) {
-            LazyVerticalGrid(
-                modifier = Modifier.padding(
-                    vertical = 12.dp,
-                    horizontal = 8.dp
-                ),
-                columns = GridCells.Fixed(
-                    2
-                )
-            ) {
-                items(seedWords.size) { index ->
-                    Column(
-                        modifier = Modifier.padding(
-                            vertical = 4.dp
-                        ), Arrangement.Center, Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(
-                                vertical = 12.dp,
-                                horizontal = 8.dp
-                            )
-                        ) {
+            LazyColumn {
+                item {
+                    ListItem(
+                        headlineContent = {
                             Text(
-                                "${index + 1}",
-                                style = MaterialTheme
-                                    .typography.titleMedium.copy(
-                                        fontWeight = FontWeight.W800,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.primary.copy(
-                                            alpha = 0.8f
-                                        )
-                                    ),
-                                modifier = Modifier
-                                    .width(26.dp)
-                                    .align(Alignment.CenterVertically),
+                                text = "Primary Address",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
                             )
-                            Column(
-                                horizontalAlignment = Alignment.Start
-                            ) {
+                        },
+                        supportingContent = {
+                            SelectionContainer {
                                 Text(
-                                    seedWords[index],
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "${wallet?.address ?: ""}",
+                                    modifier = Modifier.padding(start = 4.dp)
                                 )
-                                HorizontalDivider(
-                                    color = Color.Gray,
-                                    thickness = .5.dp
-                                )
-
                             }
                         }
-                    }
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp
+                    )
+                }
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = "Polyseed",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        },
+                        supportingContent = {
+                            FlowRow(
+                                modifier = Modifier.padding(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                seedWords.forEach {
+                                    AssistChip(
+                                        onClick = {},
+                                        label = { Text(it) },
+                                        colors = AssistChipDefaults.assistChipColors()
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp
+                    )
+                }
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = "View Key",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        },
+                        supportingContent = {
+                            SelectionContainer {
+                                Text(
+                                    text = "${wallet?.getSecretViewKey()}",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp
+                    )
+                }
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = "Spend Key",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        },
+                        supportingContent = {
+                            SelectionContainer {
+                                Text(
+                                    text = "${wallet?.getSecretSpendKey()}",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp
+                    )
+                }
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = "Restore Height",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        },
+                        supportingContent = {
+                            SelectionContainer {
+                                Text(
+                                    text = "${wallet?.getRestoreHeight() ?: ""}",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    )
                 }
             }
         }
