@@ -65,6 +65,7 @@ val keys = listOf(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PinSetup(
+    changePin: Boolean = false,
     onNext: (pin: String) -> Unit = {},
 ) {
     val view = LocalView.current
@@ -114,7 +115,7 @@ fun PinSetup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (confirming) "Confirm PIN" else "Enter PIN")
+                Text(if (confirming) "Confirm PIN" else if (changePin) "Enter New PIN" else "Enter PIN")
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier

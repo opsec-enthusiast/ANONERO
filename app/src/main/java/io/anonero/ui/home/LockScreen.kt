@@ -1,6 +1,8 @@
 package io.anonero.ui.home
 
 import AnonNeroTheme
+import android.content.SharedPreferences
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
@@ -52,13 +54,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.MainActivity
 import io.anonero.ui.viewmodels.AppViewModel
+import io.anonero.util.CrazyPassEncoder
+import io.anonero.util.PREFS_PIN_HASH
 import io.anonero.util.ShakeConfig
+import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
 import io.anonero.util.shuffleExcept
@@ -69,6 +75,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
 import timber.log.Timber
 
 const val BackSpaceKey = -2
@@ -79,7 +86,7 @@ val keys = listOf(
 
 @Serializable
 enum class LockScreenMode {
-    OPEN_WALLET, LOCK_SCREEN
+    OPEN_WALLET, LOCK_SCREEN, VERYFY_PIN
 }
 
 @Serializable
@@ -98,6 +105,7 @@ fun LockScreen(
 ) {
     val view = LocalView.current
     val activity = LocalActivity.current
+    val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
     val currentPin = remember { mutableStateListOf<Int>() }
     var pinError by remember { mutableStateOf(false) }
     var pinKeys by remember { mutableStateOf(keys) }
@@ -137,8 +145,36 @@ fun LockScreen(
         if (pin.length >= 4) {
             scope.launch(Dispatchers.IO) {
                 try {
-                    if (mode == LockScreenMode.OPEN_WALLET) {
+                    if (mode == LockScreenMode.VERYFY_PIN) {
+                        val prefsHash = prefs.getString(PREFS_PIN_HASH, "")
+                        val pinHash = CrazyPassEncoder.encode(
+                            pin.toByteArray().let { bytes ->
+                                if (bytes.size < 32) {
+                                    bytes + ByteArray(32 - bytes.size)
+                                } else bytes
+                            }
+                        )
+                        if (prefsHash == pinHash) {
+                            onUnLocked(pin, shortCut)
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                showError()
+                            }
+                        }
+                    } else if (mode == LockScreenMode.OPEN_WALLET) {
                         val result = appViewModel.openWallet(pin)
+                        prefs.edit(commit = true) {
+                            putString(
+                                PREFS_PIN_HASH,
+                                CrazyPassEncoder.encode(
+                                    pin.toByteArray().let { bytes ->
+                                        if (bytes.size < 32) {
+                                            bytes + ByteArray(32 - bytes.size)
+                                        } else bytes
+                                    }
+                                )
+                            )
+                        }
                         withContext(Dispatchers.Main) {
                             if (result) {
                                 appViewModel.startService()
@@ -212,7 +248,7 @@ fun LockScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text("UNLOCK WALLET")
+                Text(if (mode == LockScreenMode.VERYFY_PIN) "ENTER CURRENT PIN" else "UNLOCK WALLET")
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier
@@ -313,34 +349,36 @@ fun LockScreen(
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .alpha(if (currentPin.size > 4) 1f else 0f)
-                        .wrapContentHeight(),
-                ) {
-                    IconButton(onClick = {
-                        if (currentPin.size > 4)
-                            checkPin(LockScreenShortCut.RECEIVE)
-                    }) {
-                        Icon(
-                            AnonIcons.ArrowDownLeft,
-                            contentDescription = "Receive",
-                            modifier = Modifier.size(64.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(24.dp))
-                    IconButton(onClick = {
-                        if (currentPin.size > 4)
-                            checkPin(LockScreenShortCut.SEND)
-                    }) {
-                        Icon(
-                            AnonIcons.ArrowUpRight,
-                            tint = MaterialTheme.colorScheme.primary,
-                            contentDescription = "Send",
-                            modifier = Modifier.size(64.dp)
-                        )
-                    }
+                if (mode != LockScreenMode.VERYFY_PIN) {
+                    Row(
+                        modifier = Modifier
+                            .alpha(if (currentPin.size > 4) 1f else 0f)
+                            .wrapContentHeight(),
+                    ) {
+                        IconButton(onClick = {
+                            if (currentPin.size > 4)
+                                checkPin(LockScreenShortCut.RECEIVE)
+                        }) {
+                            Icon(
+                                AnonIcons.ArrowDownLeft,
+                                contentDescription = "Receive",
+                                modifier = Modifier.size(64.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(24.dp))
+                        IconButton(onClick = {
+                            if (currentPin.size > 4)
+                                checkPin(LockScreenShortCut.SEND)
+                        }) {
+                            Icon(
+                                AnonIcons.ArrowUpRight,
+                                tint = MaterialTheme.colorScheme.primary,
+                                contentDescription = "Send",
+                                modifier = Modifier.size(64.dp)
+                            )
+                        }
 
+                    }
                 }
             }
         }

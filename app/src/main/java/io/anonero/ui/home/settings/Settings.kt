@@ -1,10 +1,12 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import android.content.SharedPreferences
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,25 +23,48 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.edit
+import com.dokar.sonner.ToastType
+import com.dokar.sonner.Toaster
+import com.dokar.sonner.rememberToasterState
 import io.anonero.AnonConfig
 import io.anonero.BuildConfig
 import io.anonero.R
+import io.anonero.model.WalletManager
+import io.anonero.ui.home.LockScreen
+import io.anonero.ui.home.LockScreenMode
 import io.anonero.ui.home.graph.routes.ProxySettingsRoute
 import io.anonero.ui.home.graph.routes.SecureWipeRoute
 import io.anonero.ui.home.graph.routes.SettingsExportBackUp
 import io.anonero.ui.home.graph.routes.SettingsLogs
 import io.anonero.ui.home.graph.routes.SettingsNodeRoute
 import io.anonero.ui.home.graph.routes.SettingsViewSeedRoute
+import io.anonero.ui.onboard.PinSetup
+import io.anonero.util.CrazyPassEncoder
+import io.anonero.util.PREFS_PIN_HASH
+import io.anonero.util.WALLET_PREFERENCES
+import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
+import timber.log.Timber
 
 typealias NavigateTo<T> = (to: T) -> Unit
+
+private const val TAG = "SettingsPage"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +73,83 @@ fun SettingsPage(
     onBackPress: () -> Unit = {},
     navigateTo: (param: Any) -> Unit = {},
 ) {
+
+    val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
+    val toastState = rememberToasterState()
+    var showLockScreen by remember { mutableStateOf(false) }
+    var newPinDialog by remember { mutableStateOf(false) }
+
+    if (showLockScreen) {
+        Dialog(
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnClickOutside = true,
+                dismissOnBackPress = true,
+                decorFitsSystemWindows = false
+            ),
+            onDismissRequest = {
+                showLockScreen = false
+            }) {
+            LockScreen(
+                mode = LockScreenMode.VERYFY_PIN,
+                modifier = Modifier.fillMaxHeight(0.95f),
+                onUnLocked = { _, shortCut ->
+                    showLockScreen = false
+                    newPinDialog = true
+                }
+            )
+        }
+    }
+    if (newPinDialog) {
+        Dialog(
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnClickOutside = true,
+                dismissOnBackPress = true,
+                decorFitsSystemWindows = false
+            ),
+            onDismissRequest = {
+                newPinDialog = false
+            }) {
+            PinSetup(
+                changePin = true,
+                onNext = {
+                   try {
+                       WalletManager.instance?.wallet?.setPassword(it)
+                       toastState.show("PIN changed successfully",
+                           type = ToastType.Success,
+                       )
+                       prefs.edit(commit = true) {
+                           putString(
+                               PREFS_PIN_HASH,
+                               CrazyPassEncoder.encode(
+                                   it.toByteArray().let { bytes ->
+                                       if (bytes.size < 32) {
+                                           bytes + ByteArray(32 - bytes.size)
+                                       } else bytes
+                                   }
+                               )
+                           )
+                       }
+                   }catch (e: Exception) {
+                       toastState.show("Error changing PIN. Check logs for more details",
+                           type = ToastType.Error
+                       )
+                       Timber.tag(TAG).e(e)
+                   }finally {
+                       newPinDialog = false
+                   }
+                }
+            )
+        }
+    }
+
+    Toaster(
+        state = toastState,
+        maxVisibleToasts = 2,
+        alignment = Alignment.TopCenter,
+        darkTheme = true
+    )
     Scaffold(
         topBar = {
             TopAppBar(
@@ -133,7 +235,9 @@ fun SettingsPage(
                             )
                         }
                     item {
-                        SettingsMenuItem(title = "Change PIN")
+                        SettingsMenuItem(title = "Change PIN", onClick = {
+                            showLockScreen = true
+                        })
                         HorizontalDivider(
                             thickness = 2.5.dp
                         )
