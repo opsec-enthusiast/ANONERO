@@ -2,6 +2,7 @@ package io.anonero.model
 
 import io.anonero.model.node.Node
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -79,6 +80,7 @@ data class WalletBackup(
     val numAccounts: Int,
     val numSubaddresses: Int,
     val restoreHeight: Long?,
+    val primaryAddress: String = "",
     val seed: String?,
     val neroPayload: NeroKeyPayload? = null
 )

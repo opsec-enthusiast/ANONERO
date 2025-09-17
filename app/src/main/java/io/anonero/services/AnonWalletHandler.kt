@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import org.json.JSONObject
 import timber.log.Timber
+import androidx.core.content.edit
 
 
 class InvalidPin : Exception("invalid pin")
@@ -84,8 +85,9 @@ class AnonWalletHandler(
             val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
             val useTor = prefs.getBoolean(WALLET_USE_TOR, true)
             if (useTor || proxyHost.isNullOrBlank()) {
+                torService.start();
                 while (torService.socks == null) {
-                    delay(100)
+                    delay(200)
                 }
                 val socket = torService.socks
                 WalletManager.instance?.setProxy("${socket?.value}")
@@ -175,15 +177,15 @@ class AnonWalletHandler(
         Timber.tag(TAG).d("setProxy %s%s", proxy, port.toString())
         //disable proxy
         if (proxy == null && port == null) {
-            prefs.edit().apply {
+            prefs.edit {
                 remove(WALLET_PROXY)
                 remove(WALLET_PROXY_PORT)
-            }.apply()
+            }
         } else {
-            prefs.edit().apply {
+            prefs.edit {
                 putString(WALLET_PROXY, proxy)
                 putInt(WALLET_PROXY_PORT, port ?: -1)
-            }.apply()
+            }
             val proxyHost = prefs.getString(WALLET_PROXY, "")
             val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
             if (proxyHost?.isNotEmpty() == true && proxyPort != -1) {

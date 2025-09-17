@@ -3,7 +3,6 @@ package io.anonero.util.backup
 import android.content.Context
 import android.content.SharedPreferences
 import android.icu.text.SimpleDateFormat
-import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import io.anonero.AnonConfig
@@ -61,6 +60,7 @@ object BackupHelper {
             balanceAll = wallet.getBalanceAll(),
             numSubaddresses = wallet.numSubAddresses,
             numAccounts = wallet.getNumAccounts(),
+            primaryAddress = wallet.address,
             isWatchOnly = wallet.isWatchOnly(),
             isSynchronized = wallet.isSynchronized,
             neroPayload = NeroKeyPayload.fromWallet(wallet),

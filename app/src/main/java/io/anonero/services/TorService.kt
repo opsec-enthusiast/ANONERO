@@ -58,7 +58,6 @@ class TorService(prefs: SharedPreferences) {
             val socketAddr = it.socks.firstOrNull()
             if (socketAddr != null) {
                 _socks = socketAddr
-                _socksSharedFlow.tryEmit(socketAddr) // Ensure the value is emitted
                 scope.launch {
                     _socksSharedFlow.emit(socketAddr) // Ensure the value is emitted
                 }
