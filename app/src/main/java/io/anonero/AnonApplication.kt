@@ -3,14 +3,19 @@ package io.anonero
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.SharedPreferences
 import io.anonero.di.appModule
 import io.anonero.model.WalletManager
+import io.anonero.model.node.NodeFields
 import io.anonero.services.TorService
 import io.anonero.store.LogRepository
+import io.anonero.store.NodesRepository
 import io.anonero.ui.util.AnonLogTree
+import io.anonero.util.WALLET_PREFERENCES
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.GlobalContext.startKoin
+import org.koin.core.qualifier.named
 import timber.log.Timber
 import timber.log.Timber.DebugTree
 
@@ -36,7 +41,11 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         plantLog()
         Thread.setDefaultUncaughtExceptionHandler(this)
         val torService: TorService = get()
-        torService.start()
+        val prefs: SharedPreferences = get(named(WALLET_PREFERENCES))
+        val host = prefs.getString(NodeFields.RPC_HOST.value, "")
+        if(!host.isNullOrEmpty()){
+            torService.start()
+        }
         AnonConfig.clearSpendCacheFiles(this)
     }
 

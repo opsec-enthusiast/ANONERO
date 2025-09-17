@@ -87,6 +87,8 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
 import java.util.regex.Pattern
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
 private const val TAG = "ProxySettings"
 
@@ -169,10 +171,10 @@ class ProxySettingsViewModel(
         _useManualProxy.postValue(!anonPrefs.getBoolean(WALLET_USE_TOR, true))
         val socks = torService.socks
         if (anonPrefs.getBoolean(WALLET_USE_TOR, true) && socks != null) {
-            anonPrefs.edit()
-                .putString(WALLET_PROXY, socks.address.value)
-                .putInt(WALLET_PROXY_PORT, socks.port.value)
-                .apply()
+            anonPrefs.edit {
+                putString(WALLET_PROXY, socks.address.value)
+                    .putInt(WALLET_PROXY_PORT, socks.port.value)
+            }
             _proxyAddress.postValue(anonWalletHandler.getProxy())
         }
     }
@@ -182,10 +184,10 @@ class ProxySettingsViewModel(
         if (enable && socks != null) {
             _useManualProxy.postValue(false)
             setProxy(socks.address.value, socks.port.value)
-            anonPrefs.edit().putBoolean(WALLET_USE_TOR, true).apply()
+            anonPrefs.edit { putBoolean(WALLET_USE_TOR, true) }
         } else {
             _useManualProxy.postValue(true)
-            anonPrefs.edit().putBoolean(WALLET_USE_TOR, false).apply()
+            anonPrefs.edit { putBoolean(WALLET_USE_TOR, false) }
         }
     }
 }
@@ -342,7 +344,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     onValueChange = { text ->
                         proxyAddress = text
                         try {
-                            Uri.parse(text)
+                            text.toUri()
                         } catch (_: Exception) {
 
                         }

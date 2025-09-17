@@ -8,8 +8,10 @@ import io.anonero.AnonConfig
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
+import io.anonero.util.CrazyPassEncoder
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
+import io.anonero.util.PREFS_PIN_HASH
 import io.anonero.util.RESTORE_HEIGHT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +43,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
     fun getSeed() = walllet?.getSeed(passPhrase) ?: ""
 
 
-    suspend fun create(pin: String) {
+    suspend fun create(pin: String)  {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
             val context = AnonConfig.context!!.applicationContext
@@ -62,8 +64,21 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 throw CancellationException("unable to create wallet")
             }
             val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
-            prefs.edit().putString("passPhraseHash", crazyPass)
-                .apply()
+            prefs.edit {
+                putString(PREFS_PASSPHRASE_HASH, crazyPass)
+            }
+
+            //adds padding to the pin if it's less than 32 bytes
+            val pinHash = CrazyPassEncoder.encode(
+                pin.toByteArray().let { bytes ->
+                    if (bytes.size < 32) {
+                        bytes + ByteArray(32 - bytes.size)
+                    } else bytes
+                }
+            )
+            prefs.edit {
+                putString(PREFS_PIN_HASH, pinHash)
+            }
             walllet = anonWallet
             delay(500)
         }

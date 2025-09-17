@@ -93,6 +93,9 @@ class MainActivity : ComponentActivity() {
             TorSplash(enableTor = useTor) {
                 AnonNeroTheme {
                     val navController = rememberNavController()
+                    navController.addOnDestinationChangedListener { x, destination, d ->
+                        Timber.tag(TAG).d("destination changed to ${destination.route}")
+                    }
                     NavHost(
                         navController = navController, popExitTransition = {
                         ExitTransition.None

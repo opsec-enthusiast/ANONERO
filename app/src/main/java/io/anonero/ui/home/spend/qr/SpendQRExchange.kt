@@ -134,7 +134,6 @@ class QRExchangeScreenViewModel : ViewModel() {
     }
 
     fun setUR(file: File, type: String) {
-        Timber.tag(TAG).i("Setting Export UR: $file, $type")
         val content = file.readBytes()
         val ur = UR.fromBytes(type, content)
         _ur.postValue(ur)

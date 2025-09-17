@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -63,21 +64,22 @@ fun TorSplash(
         targetValue = if (socks != null) .98f else 0.4f, label = "progressAnim"
     )
 
-    LaunchedEffect(key1 = walletExist, socks) {
-        //if user disabled tor and uses manual proxy, skip tor splash
-
-        hasNetWork = isNetworkConnected(context)
-        if (enableTor.not()) {
-            return@LaunchedEffect
-        }
-        scope.launch(Dispatchers.IO) {
-            walletExist = AnonConfig.getDefaultWalletFile(context).exists()
+    if(walletExist){
+        LaunchedEffect(key1 = walletExist, socks) {
             //if user disabled tor and uses manual proxy, skip tor splash
-            if (!anonPrefs.getBoolean(WALLET_USE_TOR, true)) {
-                isAppReady = true
-            } else {
-                if ((socks != null)) scope.launch(Dispatchers.IO) {
+            hasNetWork = isNetworkConnected(context)
+            if (enableTor.not()) {
+                return@LaunchedEffect
+            }
+            scope.launch(Dispatchers.IO) {
+                walletExist = AnonConfig.getDefaultWalletFile(context).exists()
+                //if user disabled tor and uses manual proxy, skip tor splash
+                if (!anonPrefs.getBoolean(WALLET_USE_TOR, true)) {
                     isAppReady = true
+                } else {
+                    if ((socks != null)) scope.launch(Dispatchers.IO) {
+                        isAppReady = true
+                    }
                 }
             }
         }

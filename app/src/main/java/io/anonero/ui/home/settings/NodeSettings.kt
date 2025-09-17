@@ -69,12 +69,14 @@ import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import io.anonero.services.AnonWalletHandler
+import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import io.anonero.store.NodesRepository
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.theme.DangerColor
 import io.anonero.ui.theme.DarkOrange
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -86,6 +88,9 @@ import org.json.JSONObject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
+import kotlin.getValue
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 private const val TAG = "NodeSettings"
 
@@ -95,6 +100,8 @@ class NodeSettingsViewModel(
 ) : ViewModel() {
 
     private val walletState: WalletState by inject(WalletState::class.java)
+
+    private val torService: TorService by inject(TorService::class.java)
     private val walletHandler: AnonWalletHandler by inject(AnonWalletHandler::class.java)
     private val uriValidationError = MutableLiveData<String?>()
     private val _nodes = MutableStateFlow<List<Node>>(emptyList())
@@ -106,7 +113,7 @@ class NodeSettingsViewModel(
         if (daemonInfo?.daemon == null) {
             return@combine null
         }
-        val uri = Uri.parse("http://${daemonInfo.daemon}")
+        val uri = "http://${daemonInfo.daemon}".toUri()
         nodeList.find { node ->
             node.host == uri.host &&
                     node.rpcPort == uri.port
@@ -144,7 +151,7 @@ class NodeSettingsViewModel(
                     "http://$cleanURL"
                 }
             }
-            val validatedUrl = Uri.parse(urlForParsing)
+            val validatedUrl = urlForParsing.toUri()
             if (validatedUrl.host == null) {
                 uriValidationError.postValue("Invalid Url")
                 return null
@@ -196,6 +203,7 @@ class NodeSettingsViewModel(
                 )
 
                 editor.apply()
+                torService.start()
                 walletHandler.updateDaemon(node)
                 walletState.setLoading(false)
                 walletState.update()
@@ -228,25 +236,25 @@ class NodeSettingsViewModel(
     fun disconnect() {
         viewModelScope.launch(Dispatchers.IO) {
             WalletManager.instance?.wallet?.pauseRefresh()
-            val editor = prefs.edit()
-            editor.putString(
-                NodeFields.RPC_HOST.value,
-                null
-            )
-            editor.putInt(
-                NodeFields.RPC_PORT.value, 0
+            prefs.edit {
+                putString(
+                    NodeFields.RPC_HOST.value,
+                    null
+                )
+                putInt(
+                    NodeFields.RPC_PORT.value, 0
 
-            )
-            editor.putString(
-                NodeFields.RPC_USERNAME.value,
-                null
+                )
+                putString(
+                    NodeFields.RPC_USERNAME.value,
+                    null
 
-            )
-            editor.putString(
-                NodeFields.RPC_PASSWORD.value,
-                null
-            )
-            editor.apply()
+                )
+                putString(
+                    NodeFields.RPC_PASSWORD.value,
+                    null
+                )
+            }
             walletHandler.updateDaemon(null)
             walletState.update()
             walletState.setLoading(false)

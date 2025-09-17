@@ -13,8 +13,8 @@ android {
         applicationId = "io.anonero"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.5"
+        versionCode = 3
+        versionName = "0.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -149,6 +149,8 @@ dependencies {
     implementation(libs.io.matthewnelson.kmp.tor.runtime)
     implementation(libs.io.matthewnelson.kmp.resource.exec.tor)
     implementation(libs.com.sparrowwallet.hummingbird)
+    implementation("io.github.dokar3:sonner:0.3.8")
+    implementation(libs.io.github.dokar3.sonner)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

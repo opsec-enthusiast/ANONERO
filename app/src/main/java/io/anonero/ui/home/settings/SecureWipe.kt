@@ -78,6 +78,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import timber.log.Timber
+import androidx.core.content.edit
 
 
 private const val TAG = "SecureWipe"
@@ -107,7 +108,7 @@ class SecureWipeViewModel(
             delay(1200)
             _wipeProgress.postValue(.6f)
             _wipeProgressMessage.postValue("Clearing Preferences")
-            sharedPreferences.edit().clear().apply()
+            sharedPreferences.edit { clear() }
             delay(800)
             _wipeProgress.postValue(.7f)
             _wipeProgressMessage.postValue("Clearing Nodes")

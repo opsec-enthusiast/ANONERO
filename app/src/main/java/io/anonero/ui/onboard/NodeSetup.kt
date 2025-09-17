@@ -46,10 +46,12 @@ import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
+import io.anonero.services.TorService
 import io.anonero.store.NodesRepository
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.koin.compose.koinInject
+import androidx.core.net.toUri
 
 
 @Composable
@@ -64,6 +66,7 @@ fun SetupNodeComposable(
     val localContext = LocalContext.current
     val scope = rememberCoroutineScope()
     val nodesRepository = koinInject<NodesRepository>()
+    val torService = koinInject<TorService>()
 
     LaunchedEffect(true) {
         val prefs = localContext.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
@@ -147,6 +150,7 @@ fun SetupNodeComposable(
                             keyboardOptions = KeyboardOptions(
                                 imeAction = ImeAction.Next,
                             ),
+                            isError = error.isNotEmpty(),
                             placeholder = {
                                 Text(
                                     text = "http://address.onion:port",
@@ -222,6 +226,7 @@ fun SetupNodeComposable(
             OutlinedButton(
                 onClick = {
                     scope.launch {
+                        error = ""
                         val prefs = localContext.getSharedPreferences(
                             AnonConfig.PREFS,
                             Context.MODE_PRIVATE
@@ -239,7 +244,7 @@ fun SetupNodeComposable(
                                         "http://$cleanURL"
                                     }
                                 }
-                                val validatedUrl = Uri.parse(urlForParsing)
+                                val validatedUrl = urlForParsing.toUri()
                                 if (validatedUrl.host == null) {
                                     error = "Invalid Url"
                                 }
@@ -270,6 +275,7 @@ fun SetupNodeComposable(
                                 Node.fromJson(nodeJson)?.let {
                                     nodesRepository.addItem(it)
                                 }
+                                torService.start()
                             }
                             oNextPressed()
                         } catch (_: Exception) {

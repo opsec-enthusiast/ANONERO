@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.anonero.AnonConfig
@@ -60,6 +61,7 @@ fun RestoreFromKeys(
     QRScannerDialog(
         show = showScanner,
         onQRCodeScanned = {
+            error = ""
             try {
                 val payload = Json.decodeFromString<NeroKeyPayload>(it)
                 primaryAddress = payload.primaryAddress
@@ -204,6 +206,14 @@ fun RestoreFromKeys(
                     }
                 ) {
                     Icon(AnonIcons.Scan, contentDescription = "")
+                }
+                if (error.isNotEmpty()) {
+                    Text(
+                        text = error,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp).fillMaxWidth()
+                    )
                 }
             }
             val enabled =

@@ -1,5 +1,6 @@
 package io.anonero.ui.onboard.graph
 
+import android.util.Log
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavGraphBuilder
@@ -23,8 +24,10 @@ import io.anonero.ui.onboard.SetupNodeComposable
 import io.anonero.ui.onboard.SetupPassphrase
 import io.anonero.ui.onboard.restore.RestorePreview
 import io.anonero.ui.onboard.viewonly.RestoreFromKeys
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
 
