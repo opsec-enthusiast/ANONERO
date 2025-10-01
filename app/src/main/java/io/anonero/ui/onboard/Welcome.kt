@@ -64,7 +64,10 @@ fun OnboardingWelcome(
         )
     ) {
         restoreOptions = false
-        onRestoreClick(it?.toString())
+        if(it == null) {
+            return@rememberLauncherForActivityResult
+        }
+        onRestoreClick(it.toString())
     }
 
     fun chooseFile() {
@@ -125,7 +128,6 @@ fun OnboardingWelcome(
                 }
             }, containerColor = MaterialTheme.colorScheme.secondary,
             properties = DialogProperties(
-                securePolicy = SecureFlagPolicy.SecureOn,
                 usePlatformDefaultWidth = false,
 
                 ),

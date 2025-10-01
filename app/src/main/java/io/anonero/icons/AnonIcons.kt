@@ -1241,7 +1241,58 @@ object AnonIcons {
             }.build()
             return _ShieldCheck!!
         }
+
+    val Server: ImageVector
+        get() {
+            if (_Server != null) return _Server!!
+
+            _Server = ImageVector.Builder(
+                name = "NodeIcon",
+                defaultWidth = 24.dp,
+                defaultHeight = 24.dp,
+                viewportWidth = 24f,
+                viewportHeight = 24f
+            ).apply {
+                path(
+                    fill = SolidColor(Color.Black), // same as "currentColor"
+                    pathFillType = PathFillType.EvenOdd
+                ) {
+                    moveTo(21f, 9.884f)
+                    arcToRelative(0.73f, 0.73f, 0f, false, false, -0.364f, -0.646f)
+                    lineToRelative(-7.494f, -4.395f)
+                    arcToRelative(2.21f, 2.21f, 0f, false, false, -2.23f, -0.003f)
+                    lineTo(3.368f, 9.237f)
+                    arcToRelative(0.73f, 0.73f, 0f, false, false, -0.365f, 0.647f)
+                    horizontalLineTo(3f)
+                    verticalLineToRelative(4.43f)
+                    horizontalLineToRelative(0.004f)
+                    arcToRelative(0.73f, 0.73f, 0f, false, false, 0.376f, 0.621f)
+                    lineToRelative(7.563f, 4.243f)
+                    arcToRelative(2.21f, 2.21f, 0f, false, false, 2.167f, -0.003f)
+                    lineToRelative(7.515f, -4.24f)
+                    arcToRelative(0.73f, 0.73f, 0f, false, false, 0.375f, -0.62f)
+                    verticalLineTo(9.884f)
+                    close()
+                    moveTo(4.764f, 10.447f)
+                    arcToRelative(0.375f, 0.375f, 0f, true, false, -0.368f, 0.654f)
+                    lineToRelative(6.359f, 3.587f)
+                    arcToRelative(2.585f, 2.585f, 0f, false, false, 2.551f, -0.006f)
+                    lineToRelative(6.278f, -3.582f)
+                    arcToRelative(0.375f, 0.375f, 0f, false, false, -0.372f, -0.652f)
+                    lineToRelative(-6.278f, 3.583f)
+                    arcToRelative(2.065f, 2.065f, 0f, false, true, -1.81f, 0.004f)
+                    lineToRelative(-6.36f, -3.588f)
+                    close()
+                }
+            }.build()
+
+            return _Server!!
+        }
+
+
 }
+
+private var _Server: ImageVector? = null
 
 
 private var _ShieldCheck: ImageVector? = null

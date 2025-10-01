@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,9 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,12 +56,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastJoinToString
 import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
 import io.anonero.R
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -77,9 +73,24 @@ data class RestorePayload(
 fun RestoreWallet(
     onBackPressed: () -> Unit = {},
     oNextPressed: (RestorePayload) -> Unit = {},
+    onboardViewModel: OnboardViewModel?,
 ) {
-    var restoreHeight by remember { mutableStateOf("") }
-     var seed by remember { mutableStateOf("") }
+
+    var restoreHeight by remember {
+        mutableStateOf(onboardViewModel?.getRestorePayload()?.restoreHeight?.toString() ?: "")
+    }
+    var restoreHeightError by remember {
+        mutableStateOf<String?>(
+            null
+        )
+    }
+     var seed by remember {
+        mutableStateOf(
+            onboardViewModel?.getRestorePayload()?.seed?.fastJoinToString (
+                separator = " "
+            ) ?: ""
+        )
+    }
     var seedList by remember { mutableStateOf(emptyList<String>()) }
     var wordsList by remember { mutableStateOf(emptyList<String>()) }
     val scope = rememberCoroutineScope()
@@ -98,25 +109,26 @@ fun RestoreWallet(
 
     fun validateSeed() {
         invalidSeed = false
-        seedList = seed.split(" ")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        scope.launch {
+            seedList = seed.split(" ")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
 
-        if (seedList.size != 16) {
-            invalidSeed = false
-        } else {
-            seedList
-                .forEach {
-                    if (!wordsList.contains(it.trim())) {
-                        invalidSeed = true
-                        return@forEach
+            if (seedList.size != 16 || seedList.size != 24) {
+                invalidSeed = false
+            } else {
+                seedList
+                    .forEach {
+                        if (!wordsList.contains(it.trim())) {
+                            invalidSeed = true
+                            return@forEach
+                        }
                     }
-                }
+            }
+            if (invalidSeed) {
+                seedList = listOf()
+            }
         }
-        if (invalidSeed) {
-            seedList = listOf()
-        }
-
     }
 
     Scaffold { paddingValues ->
@@ -183,6 +195,7 @@ fun RestoreWallet(
                             shape = MaterialTheme.shapes.medium,
                             onValueChange = {
                                 seed = it
+                                validateSeed()
                             },
                             isError = invalidSeed,
                             supportingText = {
@@ -238,6 +251,15 @@ fun RestoreWallet(
                                 imeAction = ImeAction.Done,
                                 keyboardType = KeyboardType.Number
                             ),
+                            isError = restoreHeightError != null,
+                            supportingText = {
+                                if (restoreHeightError != null)
+                                    Text(
+                                        restoreHeightError!!,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
@@ -247,6 +269,10 @@ fun RestoreWallet(
             OutlinedButton(
                 onClick = {
                     if (enabled) {
+                         if (seedList.size == 25 && restoreHeight.isEmpty()) {
+                            restoreHeightError = "Restore height required for 25 word seed"
+                            return@OutlinedButton
+                        }
                         oNextPressed(
                             RestorePayload(
                                 seed = seedList,
@@ -274,7 +300,11 @@ fun RestoreWallet(
 @Composable
 private fun SetupNodeComposablePreview() {
     AnonNeroTheme {
-        RestoreWallet()
+        RestoreWallet(
+            onBackPressed = {},
+            oNextPressed = { },
+            onboardViewModel = null
+        )
     }
 }
 

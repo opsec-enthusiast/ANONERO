@@ -3,7 +3,6 @@ package io.anonero.ui.onboard
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.Wallet
@@ -16,7 +15,6 @@ import io.anonero.util.RESTORE_HEIGHT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -43,7 +41,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
     fun getSeed() = walllet?.getSeed(passPhrase) ?: ""
 
 
-    suspend fun create(pin: String)  {
+    suspend fun create(pin: String) {
         if (AnonConfig.context == null) return
         withContext(Dispatchers.IO) {
             val context = AnonConfig.context!!.applicationContext
@@ -130,51 +128,64 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
         restorePayload = it
     }
 
-    fun restoreFromSeed(pin: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (restorePayload == null) return@launch
+    fun getRestorePayload(): RestorePayload? {
+        return restorePayload
+    }
 
-            val context = AnonConfig.context!!.applicationContext
-            val walletFile = AnonConfig.getDefaultWalletFile(context)
-            AnonConfig.getDefaultWalletDir(context).deleteRecursively()
-            AnonConfig.getDefaultWalletDir(context).mkdirs()
-            delay(100)
-            val anonWallet = WalletManager.instance?.recoveryWalletPolyseed(
+    suspend fun restoreFromSeed(pin: String) {
+        if (restorePayload == null) return
+
+        val context = AnonConfig.context!!.applicationContext
+        val walletFile = AnonConfig.getDefaultWalletFile(context)
+        AnonConfig.getDefaultWalletDir(context).deleteRecursively()
+        AnonConfig.getDefaultWalletDir(context).mkdirs()
+        delay(100)
+        val anonWallet = if (restorePayload!!.seed.size == 25) {
+            WalletManager.instance?.recoveryWallet(
+                walletFile,
+                pin,
+                restorePayload!!.seed.joinToString(" "),
+                passPhrase,
+                restorePayload!!.restoreHeight ?: 0
+            )
+        } else if (restorePayload!!.seed.size == 16) {
+            WalletManager.instance?.recoveryWalletPolyseed(
                 walletFile,
                 pin,
                 restorePayload!!.seed.joinToString(" "),
                 passPhrase,
             )
-            delay(1000)
+        } else {
+            null
+        }
+        if (anonWallet == null) {
+            throw Exception("unable to create wallet from seed, invalid seed length ${restorePayload!!.seed.size}")
+        }
+        delay(1000)
+        restorePayload?.restoreHeight?.let {
+            anonWallet?.setRestoreHeight(it)
+        }
+        anonWallet?.store()
+        anonWallet?.store(walletFile.path)
+        delay(100)
+        if (anonWallet?.status?.isOk != true) {
+            walletFile.delete()
+            throw CancellationException("unable to create wallet ${anonWallet?.status?.errorString}")
+        }
+        val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
+        prefs.edit(commit = true) {
+            putString(PREFS_PASSPHRASE_HASH, crazyPass)
             restorePayload?.restoreHeight?.let {
-                anonWallet?.setRestoreHeight(it)
-            }
-            anonWallet?.store()
-            anonWallet?.store(walletFile.path)
-            delay(100)
-            if (anonWallet?.status?.isOk != true) {
-                walletFile.delete()
-                throw CancellationException("unable to create wallet ${anonWallet?.status?.errorString}")
-            }
-            val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
-            prefs.edit(commit = true) {
-                putString(PREFS_PASSPHRASE_HASH, crazyPass)
-                restorePayload?.restoreHeight?.let {
-                    putLong(RESTORE_HEIGHT, it)
-                }
-            }
-            try {
-                anonWallet.close()
-            } catch (e: Exception) {
-                Timber.tag(TAG).w(e, "Unable to close wallet")
-            }
-
-            delay(500)
-        }.invokeOnCompletion {
-            if (it != null) {
-                Timber.tag(TAG).e(it, "Unable to restore from seed")
+                putLong(RESTORE_HEIGHT, it)
             }
         }
+        try {
+            anonWallet.close()
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Unable to close wallet")
+        }
+
+        delay(500)
     }
 
 }

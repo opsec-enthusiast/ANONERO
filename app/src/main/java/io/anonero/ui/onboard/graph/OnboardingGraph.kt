@@ -1,6 +1,19 @@
 package io.anonero.ui.onboard.graph
 
-import android.util.Log
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavGraphBuilder
@@ -73,9 +86,11 @@ fun NavGraphBuilder.onboardingGraph(
     onboardViewModel: OnboardViewModel
 ) {
 
+
     navigation<LandingScreenRoute>(
         startDestination = OnboardingWelcomeScreen,
     ) {
+
         dialog<OnboardLoading>(
             dialogProperties = DialogProperties(
                 dismissOnBackPress = false,
@@ -91,7 +106,7 @@ fun NavGraphBuilder.onboardingGraph(
                     if (it != null) {
                         navController.navigate(OnboardRestorePreviewScreen(it))
                     } else {
-                        navController.navigate(OnboardNodeSetupScreen)
+                        navController.navigate(OnboardRestoreScreen)
                     }
                 },
                 onCreateClick = {
@@ -125,24 +140,21 @@ fun NavGraphBuilder.onboardingGraph(
                     if (AnonConfig.viewOnly) {
                         navController.navigate(OnboardPinScreen)
                     } else {
-                        if (onboardViewModel.getMode() == Mode.RESTORE) {
-                            navController.navigate(OnboardRestoreScreen)
-                        } else {
-                            navController.navigate(OnboardPassPhraseScreen)
-                        }
+                        navController.navigate(OnboardPassPhraseScreen)
                     }
                 }
             )
         }
         composable<OnboardRestoreScreen> {
             RestoreWallet(
+                onboardViewModel = onboardViewModel,
                 onBackPressed = {
                     navController.navigateUp()
                 },
                 oNextPressed = {
                     onboardViewModel.setRestorePayload(it)
                     navController
-                        .navigate(OnboardPassPhraseScreen)
+                        .navigate(OnboardNodeSetupScreen)
                 }
             )
         }
@@ -186,6 +198,20 @@ fun NavGraphBuilder.onboardingGraph(
         }
 
         composable<OnboardPinScreen> {
+            var showErrorMessage by remember { mutableStateOf<String?>(null) }
+            OnboardErrorDialog(
+                showErrorMessage = showErrorMessage,
+                isRestoreMode = onboardViewModel.getMode() == Mode.RESTORE,
+                onClose = {
+                    showErrorMessage = null
+                    navController.popBackStack()
+                },
+                onShowLogs = {
+                    showErrorMessage = null
+                    navController.popBackStack()
+                    navController.navigate(OnboardLogsScreen)
+                }
+            )
             PinSetup(
                 onNext = { pin ->
                     var loadingMessage = "Creating wallet..."
@@ -198,7 +224,9 @@ fun NavGraphBuilder.onboardingGraph(
                             onboardViewModel.createViewOnly(pin)
                         } else {
                             if (onboardViewModel.getMode() == Mode.RESTORE) {
-                                onboardViewModel.restoreFromSeed(pin)
+                                withContext(Dispatchers.IO) {
+                                    onboardViewModel.restoreFromSeed(pin)
+                                }
                             } else {
                                 onboardViewModel.create(pin)
                             }
@@ -223,6 +251,9 @@ fun NavGraphBuilder.onboardingGraph(
                                     navController.navigate(OnboardSeedScreen(onboardViewModel.getSeed()))
                                 }
                             }
+                        } else {
+                            navController.popBackStack()
+                            showErrorMessage = it.message ?: "Unknown error";
                         }
                     }
                 }
@@ -256,5 +287,73 @@ fun NavGraphBuilder.onboardingGraph(
                 }
             )
         }
+    }
+}
+
+
+@Composable
+fun OnboardErrorDialog(
+    showErrorMessage: String?,
+    isRestoreMode: Boolean,
+    onClose: () -> Unit,
+    onShowLogs: () -> Unit
+) {
+    if (showErrorMessage != null) {
+        AlertDialog(
+            onDismissRequest = onClose,
+            confirmButton = {
+                Button(
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onBackground,
+                    ),
+                    onClick = onClose
+                ) { Text("Close") }
+            },
+            modifier = Modifier
+                .border(
+                    1.dp,
+                    color = MaterialTheme.colorScheme.onSecondary.copy(alpha = .2f),
+                    shape = MaterialTheme.shapes.medium,
+                ),
+            dismissButton = {
+                Button(
+                    onClick = onShowLogs,
+                    shape = MaterialTheme.shapes.small,
+                    border = BorderStroke(
+                        1.dp,
+                        color = MaterialTheme.colorScheme.onSecondary
+                    ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    )
+                ) {
+                    Text(
+                        "Logs",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.secondary,
+            title = {
+                Text(
+                    text = "Unable to ${if (isRestoreMode) "Restore" else "Create"} wallet",
+                )
+            },
+            text = {
+                Text(
+                    text = showErrorMessage,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                )
+            }
+        )
     }
 }

@@ -1,6 +1,5 @@
 package io.anonero.services
 
-import android.util.Log
 import androidx.compose.ui.util.fastDistinctBy
 import androidx.compose.ui.util.fastFilter
 import io.anonero.AnonConfig
@@ -64,7 +63,7 @@ class WalletState {
             if (wallet.isInitialized) {
                 _balanceInfo.update { wallet.balance }
                 _unLockedBalance.update {
-                    if(AnonConfig.viewOnly){
+                    if (AnonConfig.viewOnly) {
                         wallet.viewOnlyBalance()
                     }
                     wallet.unlockedBalance
@@ -101,9 +100,10 @@ class WalletState {
             if (!backgroundSync) {
                 _nextAddress.update { (wallet.getLatestSubAddress()) }
                 _subAddresses.update { (wallet.getAllUsedSubAddresses()).reversed() }
-                _coins.update { (wallet.coins?.all ?: listOf() ).fastFilter { !it.spent } }
+                _coins.update { (wallet.coins?.all ?: listOf()).fastFilter { !it.spent } }
             }
         }
+        setLoading(false)
     }
 
     fun setLoading(b: Boolean) {
@@ -161,6 +161,30 @@ class WalletState {
             it.getLatestSubAddress().let { subAddresses ->
                 _nextAddress.update { subAddresses }
             }
+        }
+    }
+
+    fun refresh() {
+        if (getWallet?.fullStatus?.connectionStatus == Wallet.ConnectionStatus.ConnectionStatus_Connected) {
+            setLoading(true);
+            getWallet?.startRefresh();
+        };
+        getWallet?.refreshHistory()
+    }
+
+    fun resyncBlockchain(): Result<Boolean> {
+        setLoading(true);
+        try {
+            if (getWallet?.fullStatus?.connectionStatus != Wallet.ConnectionStatus.ConnectionStatus_Connected) {
+                return Result.failure(Exception("Please connect to daemon for resync"))
+            }
+            getWallet?.rescanBlockchainAsync()
+            return Result.success(true)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e)
+            return Result.failure(e)
+        } finally {
+            setLoading(false);
         }
     }
 

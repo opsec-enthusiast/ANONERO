@@ -119,12 +119,10 @@ class AnonWalletHandler(
                 wallet.setRestoreHeight(prefs.getLong(RESTORE_HEIGHT, 0L));
             }
             if (wallet.isInitialized) {
+                wallet.refreshHistory()
                 walletState.setLoading(false)
                 wallet.setTrustedDaemon(true)
-
                 wallet.startRefresh()
-                wallet.refreshHistory()
-
                 walletState.update()
             }
         } catch (e: Exception) {
