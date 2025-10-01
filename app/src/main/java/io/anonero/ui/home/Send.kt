@@ -1,6 +1,7 @@
 package io.anonero.ui.home
 
 import android.os.Build
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -115,7 +116,10 @@ class SendViewModel : ViewModel() {
                     if (wallet?.unlockedBalance != wallet?.balance) {
                         return@withContext null
                     }
-                    val pendingTx = wallet?.createSweepTransaction(
+                    if(wallet?.fullStatus?.connectionStatus != Wallet.ConnectionStatus.ConnectionStatus_Connected) {
+                        throw Exception("Wallet not connected to node. please check network")
+                    }
+                    val pendingTx = wallet.createSweepTransaction(
                         dstAddr = addressField,
                         priority = PendingTransaction.Priority.Priority_Default,
                         keyImages = arrayListOf()
@@ -131,7 +135,10 @@ class SendViewModel : ViewModel() {
                     }
                     pendingTx
                 } else {
-                    val pendingTx = wallet?.createTransaction(
+                    if(wallet?.fullStatus?.connectionStatus != Wallet.ConnectionStatus.ConnectionStatus_Connected) {
+                        throw Exception("Wallet not connected to node. please check network")
+                    }
+                    val pendingTx = wallet.createTransaction(
                         dst_addr = addressField,
                         amount = amountFromString,
                         sweepAll = spendType.value == SpendType.SWEEP,
@@ -629,66 +636,6 @@ fun SendScreen(
 
         }
     }
-//
-//    SpendScanner(
-//        spendScannerController = spendScannerController,
-//        onDismiss = {
-//            Log.i(TAG, "SendScreen: Ondimissi")
-//        },
-////        onKeyImagesImported = {
-////            prepare()
-////        },
-////        onUnsignedTransactionImported = {
-////            navigateToReview.invoke(
-////                ReviewTransactionRoute(
-////                    addressField,
-////                )
-////            )
-////        },
-////        onSignedTransactionImported = {
-////
-////        },
-////        onOutputsImported = {
-////
-////        },
-////
-//        importEvents = {
-//            when (it) {
-//                ImportEvents.IMPORT_OUTPUTS -> {
-//                    Log.i(TAG, "SendScreen: Important")
-//                }
-//
-//                ImportEvents.IMPORT_KEY_IMAGES -> {
-//                    prepare()
-//                }
-//
-//                ImportEvents.IMPORT_UNSIGNED_TX -> {
-//                    navigateToReview.invoke(
-//                        ReviewTransactionRoute(
-//                            addressField,
-//                        )
-//                    )
-//                }
-//                ImportEvents.IMPORT_SIGNED_TX -> {
-//
-//                }
-//            }
-//        },
-//        onError = {
-//            Timber.tag(TAG).e(it)
-//            scope.launch {
-//                snackbarHostState.showSnackbar(
-//                    message = it,
-//                    duration = SnackbarDuration.Short
-//                )
-//            }
-//        },
-//
-//        onQRCodeScanned = {
-//            spendScannerController.hideScanner();
-//            sendViewModel.handleScan(it)
-//        }
-//    )
 
     if (showScanner)
         URQRScanner(
