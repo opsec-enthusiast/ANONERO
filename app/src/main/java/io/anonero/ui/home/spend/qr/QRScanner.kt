@@ -1,5 +1,6 @@
 package io.anonero.ui.home.spend.qr
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -38,6 +39,7 @@ import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -54,7 +56,7 @@ enum class ImportEvents {
 }
 
 class QRScannerVM : ViewModel() {
-    fun processUrCode(urResult: URDecoder.Result): Result<ImportEvents> {
+    suspend  fun  processUrCode(urResult: URDecoder.Result): Result<ImportEvents> {
         if (urResult.type == ResultType.SUCCESS) {
             var destinationFile: File? = null
             val ur = urResult.ur
@@ -99,6 +101,7 @@ class QRScannerVM : ViewModel() {
                             val status = wallet.importOutputs(filePath);
                             _loaderState.postValue(false);
                             if (status?.lowercase() == "imported") {
+                                Timber.tag(TAG).i("Imported outputs")
                                 return Result.success(ImportEvents.IMPORT_OUTPUTS)
                             } else {
                                 return Result.failure(Exception("Failed to import outputs"))
@@ -115,6 +118,7 @@ class QRScannerVM : ViewModel() {
                         _currentImportState.postValue(AnonUrRegistryTypes.XMR_KEY_IMAGE)
                         try {
                             val status = wallet.importKeyImages(filePath);
+                            delay(1_520)
                             Timber.tag(TAG).i("Import key images status $status")
                             if (status) {
                                 return Result.success(ImportEvents.IMPORT_KEY_IMAGES)

@@ -2,7 +2,6 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import android.content.SharedPreferences
-import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -27,12 +27,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -58,11 +60,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.dokar.sonner.ToastType
+import com.dokar.sonner.Toaster
+import com.dokar.sonner.rememberToasterState
 import io.anonero.AnonConfig
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -72,11 +79,11 @@ import io.anonero.services.AnonWalletHandler
 import io.anonero.services.TorService
 import io.anonero.services.WalletState
 import io.anonero.store.NodesRepository
+import io.anonero.ui.components.DaemonStatus
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.theme.DangerColor
 import io.anonero.ui.theme.DarkOrange
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -86,11 +93,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
-import kotlin.getValue
-import androidx.core.net.toUri
-import androidx.core.content.edit
+import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "NodeSettings"
 
@@ -269,9 +275,12 @@ class NodeSettingsViewModel(
 fun NodeSettings(onBackPress: () -> Unit = {}) {
     val nodeSettingsVM = koinViewModel<NodeSettingsViewModel>()
     var showNodeDetails by remember { mutableStateOf(false) }
+    val walletState = koinInject<WalletState>()
+    var showMenu by remember { mutableStateOf(false) }
     val availableNodes by nodeSettingsVM.nodes.collectAsState(arrayListOf())
     val activeNode by nodeSettingsVM.activeNode.collectAsState(null)
     val scope = rememberCoroutineScope()
+    val toastState = rememberToasterState()
 
     if (showNodeDetails)
         Dialog(
@@ -322,6 +331,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
             }
         }
 
+
     Scaffold(
         topBar = {
             Column {
@@ -339,6 +349,54 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                                 showNodeDetails = true
                             }
                         ) { Text("Add Node") }
+                        IconButton(
+                            colors = IconButtonDefaults.iconButtonColors(
+                                contentColor = Color.White
+                            ),
+                            onClick = {
+                                showMenu = !showMenu
+                            }
+                        ) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                            DropdownMenu(
+                                expanded = showMenu,
+                                containerColor = MaterialTheme.colorScheme.background,
+                                modifier = Modifier
+                                    .border(
+                                        1.dp,
+                                        color = MaterialTheme.colorScheme.onSecondary.copy(
+                                            alpha = .2f
+                                        ),
+                                        shape = MaterialTheme.shapes.medium,
+                                    ),
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Resync BlockChain") },
+                                    onClick = {
+                                        showMenu = false
+                                        val result = walletState.resyncBlockchain()
+                                        if (result.isFailure) {
+                                            scope.launch {
+                                                toastState.show(
+                                                    "Error : ${result.exceptionOrNull()?.message}",
+                                                    type = ToastType.Warning,
+                                                    duration = 6.seconds
+                                                )
+                                            }
+                                        }else{
+                                            scope.launch {
+                                                toastState.show(
+                                                    "Resync initiated… this may take a while.",
+                                                    type = ToastType.Success,
+                                                )
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
                     },
                     title = {
                         Text("Nodes")
@@ -348,6 +406,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
             }
         }
     ) {
+
         LazyColumn(modifier = Modifier.padding(it)) {
             if (activeNode != null)
                 item(key = activeNode?.toNodeString() ?: "active") {
@@ -401,6 +460,16 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                 }
         }
     }
+    Toaster(
+        state = toastState,
+        maxVisibleToasts = 4,
+        alignment = Alignment.BottomCenter,
+        darkTheme = true,
+        richColors = true,
+        containerPadding= PaddingValues(
+            bottom = 64.dp,
+        ),
+    )
 }
 
 @Composable
@@ -453,29 +522,7 @@ fun NodeListItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (active) {
-                    val color: Color = when (daemonStatus?.connectionStatus) {
-                        null -> {
-                            DarkOrange
-                        }
-
-                        Wallet.ConnectionStatus.ConnectionStatus_Disconnected -> {
-                            Color.Red
-                        }
-
-                        Wallet.ConnectionStatus.ConnectionStatus_Connected -> {
-                            Color.Green
-                        }
-
-                        Wallet.ConnectionStatus.ConnectionStatus_WrongVersion -> {
-                            DangerColor
-                        }
-
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(color, shape = CircleShape)
-                    )
+                    DaemonStatus(daemonStatus?.connectionStatus)
                 } else {
                     Box(
                         modifier = Modifier
