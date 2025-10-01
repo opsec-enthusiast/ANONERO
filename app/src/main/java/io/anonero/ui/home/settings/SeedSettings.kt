@@ -2,11 +2,14 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import android.content.SharedPreferences
+import android.util.Log
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +40,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -87,6 +91,10 @@ fun getWalletSeed(passPhrase: String): String? {
     return WalletManager.instance?.wallet?.getSeed(passPhrase)
 }
 
+fun getLegacySeed(passPhrase: String): String? {
+    return WalletManager.instance?.wallet?.getLegacySeed(passPhrase)
+}
+
 fun generatePlaceHolderSeed(): List<String> {
     return (1..16).map {
         (1..Random.nextInt(6, 8)).joinToString("") { "*" }
@@ -101,6 +109,11 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
     val prefs = koinInject<SharedPreferences>(named(WALLET_PREFERENCES))
 
     var seedWords by remember {
+        mutableStateOf(
+            generatePlaceHolderSeed()
+        )
+    }
+    var legacySeed by remember {
         mutableStateOf(
             generatePlaceHolderSeed()
         )
@@ -142,9 +155,13 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             val hashedPass = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
             if (hash == hashedPass) {
                 val seed = getWalletSeed(passPhrase)?.split(" ")
+                val legacy = getLegacySeed(passPhrase)?.split(" ")
                 if (seed != null) {
                     seedWords = seed
                     passPhraseDialog = false
+                }
+                if (legacy != null) {
+                    legacySeed = legacy
                 }
             } else {
                 errorShake.shake(
@@ -304,6 +321,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             }
         )
 
+    var showLegacy by remember { mutableStateOf(false) }
 
     val wallet = WalletManager.instance?.wallet
     Scaffold(
@@ -335,6 +353,35 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
+                                text = "Show Legacy Seed",
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        },
+                        supportingContent = {
+
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = showLegacy,
+                                onCheckedChange = {
+                                    showLegacy = it
+                                }
+                            )
+                        },
+                        modifier = Modifier
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp
+                    )
+                }
+
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
                                 text = "Primary Address",
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -359,37 +406,50 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Polyseed",
+                                text = if (showLegacy) "Legacy Seed" else "Polyseed",
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 4.dp)
+                                modifier = Modifier
+                                    .padding(start = 4.dp)
+                                    .animateContentSize()
                             )
                         },
                         supportingContent = {
                             FlowRow(
-                                modifier = Modifier.padding(4.dp),
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .fillMaxWidth()
+                                    .animateContentSize()
+                                    .clickable {
+                                        showLegacy = !showLegacy
+                                    },
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalArrangement = Arrangement.spacedBy(0.dp)
                             ) {
-                                seedWords.forEach {
-                                    Text(it, modifier = Modifier
-                                        .padding(
-                                           4.dp
-                                        )
-                                        .background(Color.Gray.copy(
-                                            alpha = 0.3f
-                                        ),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(
-                                            vertical = 4.dp,
-                                            horizontal = 8.dp
-                                        )
+                                val seed = if (showLegacy) legacySeed else seedWords
+                                seed.forEach {
+                                    Text(
+                                        it, modifier = Modifier
+                                            .padding(
+                                                4.dp
+                                            )
+                                            .background(
+                                                Color.Gray.copy(
+                                                    alpha = 0.3f
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(
+                                                vertical = 4.dp,
+                                                horizontal = 8.dp
+                                            )
                                     )
                                 }
                             }
                         }
+
                     )
                 }
+
                 item {
                     HorizontalDivider(
                         thickness = 1.dp
@@ -502,7 +562,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     }
                 }
                 item {
-                    Box (
+                    Box(
                         Modifier.height(
                             44.dp
                         )
