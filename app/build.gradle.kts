@@ -72,6 +72,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
 
     }
@@ -151,6 +152,8 @@ dependencies {
     implementation(libs.com.sparrowwallet.hummingbird)
     implementation("io.github.dokar3:sonner:0.3.8")
     implementation(libs.io.github.dokar3.sonner)
+    implementation(libs.androidx.compose.material3)
+    implementation("dev.chrisbanes.haze:haze:1.6.10")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
