@@ -185,14 +185,20 @@ object BackupHelper {
         val inPutStream = AnonConfig.context?.contentResolver?.openInputStream(backupPath.toUri())
         inPutStream?.copyTo(destFile.outputStream())
         inPutStream?.close()
-        EncryptUtil.decryptFile(passPhrase, destFile, decryptedDestFile)
-        unZip(decryptedDestFile, extractDestination)
+        val backup: BackupPayload
+        try {
+            EncryptUtil.decryptFile(passPhrase, destFile, decryptedDestFile)
+            unZip(decryptedDestFile, extractDestination)
 
-        val anonJson = File(extractDestination, "anon.json")
-        val json = anonJson.readText()
-        val backup = Json.decodeFromString<BackupPayload>(json)
-        if(backup.backup.meta.network != AnonConfig.getNetworkType().toStringForBackUp()){
-             throw NetworkMismatchException()
+            val anonJson = File(extractDestination, "anon.json")
+            val json = anonJson.readText()
+            backup = Json.decodeFromString<BackupPayload>(json)
+            if(backup.backup.meta.network != AnonConfig.getNetworkType().toStringForBackUp()){
+                 throw NetworkMismatchException()
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e)
+            throw e;
         }
         return backup;
     }

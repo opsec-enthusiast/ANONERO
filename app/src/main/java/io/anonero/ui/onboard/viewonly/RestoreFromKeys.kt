@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard.viewonly
 
 import AnonNeroTheme
+import AnonOutlineButton
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -218,7 +219,7 @@ fun RestoreFromKeys(
             }
             val enabled =
                 primaryAddress.isNotEmpty() && viewKey.isNotEmpty() && restoreHeight.isNotEmpty()
-            OutlinedButton(
+            AnonOutlineButton (
                 onClick = {
                     if (enabled) {
                         val payload = NeroKeyPayload(
@@ -236,8 +237,6 @@ fun RestoreFromKeys(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
             ) {
                 Text("NEXT")
             }

@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -169,7 +170,7 @@ fun SetupPassphrase(
                 )
             }
 
-            OutlinedButton(
+            AnonOutlineButton(
                 enabled = passPhraseMatched && passPhrase.length >= 4,
                 onClick = {
                     oNextPressed(passPhrase)
@@ -179,8 +180,6 @@ fun SetupPassphrase(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
             ) {
                 Text("NEXT")
             }

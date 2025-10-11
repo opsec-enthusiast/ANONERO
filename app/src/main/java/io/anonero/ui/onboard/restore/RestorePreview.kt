@@ -1,5 +1,6 @@
 package io.anonero.ui.onboard.restore
 
+import AnonOutlineButton
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -252,7 +253,7 @@ fun RestorePreview(
                         fontSize = 16.sp
                     )
                 )
-                OutlinedButton(
+                AnonOutlineButton(
                     onClick = {
                         navigateTo(OnboardLogsScreen)
                     },
@@ -262,8 +263,6 @@ fun RestorePreview(
                         .padding(
                             horizontal = 16.dp,
                         ),
-                    shape = MaterialTheme.shapes.medium,
-                    contentPadding = PaddingValues(12.dp)
                 ) {
                     Text("View Logs")
                 }
@@ -454,7 +453,7 @@ fun RestorePreview(
                 }
                 item {
                     if (errorMessage.isEmpty()) {
-                        OutlinedButton(
+                        AnonOutlineButton(
                             enabled = !loading,
                             onClick = {
                                 scope.launch(Dispatchers.IO) {
@@ -480,15 +479,7 @@ fun RestorePreview(
                                 }
 
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .safeContentPadding()
-                                .padding(
-                                    horizontal = 16.dp,
-                                ),
-                            shape = MaterialTheme.shapes.medium,
-                            contentPadding = PaddingValues(12.dp)
-                        ) {
+                        ){
                             Text("Restore Wallet")
                         }
                     }

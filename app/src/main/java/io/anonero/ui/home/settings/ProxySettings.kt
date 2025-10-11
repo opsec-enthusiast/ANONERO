@@ -3,6 +3,7 @@ package io.anonero.ui.home.settings
 import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility

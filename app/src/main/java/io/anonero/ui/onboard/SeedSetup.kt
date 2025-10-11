@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -98,7 +99,7 @@ fun SeedSetup(
                 }
             }
 
-            OutlinedButton(
+            AnonOutlineButton(
                 onClick = {
                     oNextPressed()
                 },
@@ -107,9 +108,7 @@ fun SeedSetup(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
-            ) {
+                               ) {
                 Text("NEXT")
             }
         }

@@ -1,6 +1,7 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
@@ -383,21 +384,9 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                                 )
                             )
                         }
-                        Button(
-                            shape = MaterialTheme.shapes.small,
+                        AnonOutlineButton(
                             modifier = Modifier
-                                .padding(
-                                    vertical = 24.dp,
-                                )
-                                .fillMaxWidth(0.85f),
-                            border = BorderStroke(
-                                1.dp,
-                                color = MaterialTheme.colorScheme.onBackground
-                            ),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.background,
-                                contentColor = MaterialTheme.colorScheme.onBackground
-                            ),
+                                .fillMaxWidth(0.9f),
                             onClick = {
                                 exportToExternDir()
                             }) { Text("Export to File") }

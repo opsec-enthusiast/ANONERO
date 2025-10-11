@@ -1,13 +1,14 @@
 package io.anonero.ui.home.spend
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.os.Build
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.PendingTransaction
 import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
@@ -64,6 +67,7 @@ import io.anonero.ui.theme.SuccessColor
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
@@ -118,16 +122,20 @@ class ReviewTransactionViewModel : ViewModel() {
                 )
             )
         } else if (pendingTransaction != null) {
-            this.pendingTransaction = pendingTransaction
-            reviewModel.postValue(
-                ReviewModel(
-                    address = null,
-                    amount = pendingTransaction.getAmount(),
-                    fee = pendingTransaction.getFee(),
-                    total = pendingTransaction.getFee() + pendingTransaction.getAmount(),
-                    txId = pendingTransaction.firstTxId
+            if(pendingTransaction.getFirstTxIdJ() != null){
+                this.pendingTransaction = pendingTransaction
+                reviewModel.postValue(
+                    ReviewModel(
+                        address = null,
+                        amount = pendingTransaction.getAmount(),
+                        fee = pendingTransaction.getFee(),
+                        total = pendingTransaction.getFee() + pendingTransaction.getAmount(),
+                        txId = pendingTransaction.getFirstTxIdJ()!!
+                    )
                 )
-            )
+            }else{
+                Timber.tag(TAG).e("Pending transaction has no txId")
+            }
         }
     }
 
@@ -141,6 +149,7 @@ class ReviewTransactionViewModel : ViewModel() {
         );
         _broadcastError = null
         broadcastingTx.postValue(BroadcastState.IN_PROGRESS)
+
         return viewModelScope.launch(Dispatchers.IO) {
             try {
                 val wallet = WalletManager.instance?.wallet
@@ -230,7 +239,7 @@ fun ReviewTransactionScreen(
             onCtaCalled = {
                 qrScannerParam = null
                 showScanner = true
-                if(qrScannerParam?.exportType == ExportType.SIGNED_TX){
+                if (qrScannerParam?.exportType == ExportType.SIGNED_TX) {
                     navigateToHome.invoke()
                 }
             },
@@ -365,18 +374,33 @@ fun ReviewTransactionScreen(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
+
                     Column(
                         Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(300.dp),
-                            strokeWidth = 2.dp
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_anon),
+                                contentDescription = "Anon nero icon",
+                                modifier = Modifier
+                                    .size(110.dp)
+                            )
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(300.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                        Text(
+                            "Broadcast in progress...",
+                            modifier = Modifier.padding(top = 12.dp)
                         )
-                        Text("Broadcast in progress...", modifier = Modifier.padding(top = 12.dp))
                     }
+
                 }
                 AnimatedVisibility(
                     visible = broadcastState == BroadcastState.STAGING,
@@ -448,7 +472,7 @@ fun ReviewTransactionScreen(
                                 )
                             }
                         }
-                        OutlinedButton(
+                        AnonOutlineButton(
                             onClick = {
                                 if (viewModel.isUnsignedTransaction()) {
                                     scope.launch {
@@ -463,24 +487,27 @@ fun ReviewTransactionScreen(
                                         Timber.tag(TAG)
                                             .i("Signing Unsigned Transaction: ${unsignedTransaction.path} to ${signedTransaction.path}")
                                         signing = true
-                                       val success = WalletManager.instance?.wallet?.signAndExportJ(
-                                            unsignedTransaction.absolutePath,
-                                            signedTransaction.absolutePath,
-                                        )
-                                        if(success == "Signed"){
+                                        val success =
+                                            WalletManager.instance?.wallet?.signAndExportJ(
+                                                unsignedTransaction.absolutePath,
+                                                signedTransaction.absolutePath,
+                                            )
+                                        if (success == "Signed") {
                                             readyToBroadcast = true
                                             Timber.tag(TAG)
                                                 .i("Signing result: $success")
                                             Timber.tag(TAG)
-                                                .i("Signing Signed Transaction: exists ? ${signedTransaction.exists()} | " +
-                                                        " size: ${signedTransaction.length()}")
+                                                .i(
+                                                    "Signing Signed Transaction: exists ? ${signedTransaction.exists()} | " +
+                                                            " size: ${signedTransaction.length()}"
+                                                )
                                             signing = false
                                             qrScannerParam = SpendQRExchangeParam(
                                                 exportType = ExportType.SIGNED_TX,
                                                 title = "SIGNED TX",
                                                 ctaText = "FINISH",
                                             )
-                                        }else{
+                                        } else {
                                             readyToBroadcast = false
                                         }
                                     }.invokeOnCompletion { error ->
@@ -515,12 +542,6 @@ fun ReviewTransactionScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(
-                                    horizontal = 12.dp
-                                ),
-
-                            shape = MaterialTheme.shapes.medium,
-                            contentPadding = PaddingValues(12.dp)
                         ) {
                             if (signing) {
                                 CircularProgressIndicator(

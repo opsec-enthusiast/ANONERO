@@ -1,9 +1,15 @@
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import io.anonero.R
 import io.anonero.ui.theme.Black
 import io.anonero.ui.theme.DarkGray
@@ -59,4 +65,23 @@ fun AnonNeroTheme(
             labelMedium = Typography.labelMedium.copy(fontFamily = robotoMonoFamily),
         )
     )
+}
+
+@Composable
+fun AnonOutlineButton(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+    child: @Composable () -> Unit
+) {
+    OutlinedButton(
+        enabled = enabled,
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        child()
+    }
 }

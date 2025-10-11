@@ -1,6 +1,7 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.content.SharedPreferences
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -13,13 +14,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -71,7 +70,6 @@ import com.dokar.sonner.ToastType
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import io.anonero.AnonConfig
-import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
@@ -82,7 +80,6 @@ import io.anonero.store.NodesRepository
 import io.anonero.ui.components.DaemonStatus
 import io.anonero.ui.components.WalletProgressIndicator
 import io.anonero.ui.theme.DangerColor
-import io.anonero.ui.theme.DarkOrange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -146,6 +143,10 @@ class NodeSettingsViewModel(
 
     fun validate(rpcUrl: String, rpcUsername: String, rpcPassPhrase: String): Node? {
         uriValidationError.postValue(null)
+        if( rpcUrl.isBlank()) {
+            uriValidationError.postValue("URL cannot be empty")
+            return null
+        }
         try {
             val cleanURL = rpcUrl.trim().lowercase()
             val urlForParsing = if (cleanURL.startsWith("http")) {
@@ -384,7 +385,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                                                     duration = 6.seconds
                                                 )
                                             }
-                                        }else{
+                                        } else {
                                             scope.launch {
                                                 toastState.show(
                                                     "Resync initiated… this may take a while.",
@@ -466,7 +467,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
         alignment = Alignment.BottomCenter,
         darkTheme = true,
         richColors = true,
-        containerPadding= PaddingValues(
+        containerPadding = PaddingValues(
             bottom = 64.dp,
         ),
     )
@@ -579,17 +580,18 @@ fun NodeForm(
     val labelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
     Column(
         modifier = Modifier
-            .fillMaxHeight(.9f)
+            .fillMaxWidth()
             .background(Color.Black),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
-            modifier = Modifier
+            modifier = Modifier.weight(8f)
                 .verticalScroll(
                     rememberScrollState()
-                ),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                )
+            ,
+            verticalArrangement = Arrangement.Top,
         ) {
             ListItem(
                 headlineContent = {
@@ -621,7 +623,6 @@ fun NodeForm(
                     )
                 },
             )
-
             ListItem(
                 headlineContent = {
                     Text(
@@ -699,26 +700,26 @@ fun NodeForm(
 
             }
         }
-        Column(
+        Box(
             modifier = Modifier
-                .safeContentPadding()
+                .fillMaxWidth()
+                .weight(1.5f)
+                .padding(bottom = 8.dp)
+            ,
+            contentAlignment = Alignment.Center
         ) {
-            OutlinedButton(
+            AnonOutlineButton(
+                modifier = Modifier
+                    .fillMaxWidth(
+                        .9f
+                    ),
                 onClick = {
-                    onBackPress.invoke()
                     val node = nodeSettingsVM.validate(rpcHost, rpcUsername, rpcPassPhrase)
                     if (node != null) {
                         onConnect(node)
+                        onBackPress.invoke()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = 4.dp
-                    ),
-
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
             ) {
                 Text("Connect")
             }

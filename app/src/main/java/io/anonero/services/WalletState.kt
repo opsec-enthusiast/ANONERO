@@ -165,6 +165,9 @@ class WalletState {
     }
 
     fun refresh() {
+        if(getWallet?.isInitialized != true) {
+            return;
+        }
         if (getWallet?.fullStatus?.connectionStatus == Wallet.ConnectionStatus.ConnectionStatus_Connected) {
             setLoading(true);
             getWallet?.startRefresh();

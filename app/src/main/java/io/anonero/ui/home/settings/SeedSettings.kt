@@ -1,6 +1,7 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.content.SharedPreferences
 import android.util.Log
 import android.view.HapticFeedbackConstants
@@ -353,35 +354,6 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Show Legacy Seed",
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        },
-                        supportingContent = {
-
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = showLegacy,
-                                onCheckedChange = {
-                                    showLegacy = it
-                                }
-                            )
-                        },
-                        modifier = Modifier
-                    )
-                }
-                item {
-                    HorizontalDivider(
-                        thickness = 1.dp
-                    )
-                }
-
-                item {
-                    ListItem(
-                        headlineContent = {
-                            Text(
                                 text = "Primary Address",
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -532,18 +504,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     )
                 }
                 item {
-                    Button(
-                        shape = MaterialTheme.shapes.small,
-                        border = BorderStroke(
-                            1.dp,
-                            color = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                        ),
-                        contentPadding = PaddingValues(
-                            all = 14.dp
-                        ),
+                    AnonOutlineButton(
                         modifier = Modifier
                             .padding(
                                 horizontal = 8.dp,

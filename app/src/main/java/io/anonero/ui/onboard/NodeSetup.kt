@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -223,7 +224,7 @@ fun SetupNodeComposable(
                 )
             }
 
-            OutlinedButton(
+            AnonOutlineButton(
                 onClick = {
                     scope.launch {
                         error = ""
@@ -289,9 +290,7 @@ fun SetupNodeComposable(
                         horizontal = 12.dp
                     ),
 
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
-            ) {
+                ) {
                 Text("NEXT")
             }
         }

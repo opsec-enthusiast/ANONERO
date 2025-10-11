@@ -28,9 +28,6 @@ class PendingTransaction internal constructor(override var handle: Long) : Stagi
     external fun getAmount(): Long
     external fun getDust(): Long
     external fun getFee(): Long
-    val firstTxId: String
-        get() = getFirstTxIdJ() ?: throw IndexOutOfBoundsException()
-
     external fun getFirstTxIdJ(): String?
     external fun getTxCount(): Long
 

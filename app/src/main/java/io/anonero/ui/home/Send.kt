@@ -1,8 +1,10 @@
 package io.anonero.ui.home
 
+import AnonOutlineButton
 import android.os.Build
 import android.util.Log
 import android.view.HapticFeedbackConstants
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +65,7 @@ import androidx.lifecycle.viewModelScope
 import com.sparrowwallet.hummingbird.ResultType
 import com.sparrowwallet.hummingbird.URDecoder
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.CoinsInfo
@@ -78,7 +82,9 @@ import io.anonero.ui.home.spend.qr.QRExchangeScreen
 import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
 import io.anonero.ui.home.spend.qr.URQRScanner
 import io.anonero.util.Formats
+import io.anonero.util.backup.BackupHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -424,11 +430,26 @@ fun SendScreen(
             Column(
                 Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = CenterHorizontally
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(300.dp),
-                    strokeWidth = 2.dp
+                Box(
+                    contentAlignment = Alignment.Center
+                ){
+                    Image(
+                        painter = painterResource(R.drawable.ic_anon),
+                        contentDescription = "Anon nero icon",
+                        modifier = Modifier
+                            .size(110.dp)
+                    )
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(300.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+                Text(
+                    "Constructing transaction...",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             }
         } else {
@@ -584,15 +605,18 @@ fun SendScreen(
                             color = Color(0xfffb8500)
                         )
                 }
-
-                OutlinedButton(
+                AnonOutlineButton(
                     enabled = validSpend,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 16.dp,
+                        ),
                     onClick = {
-
                         val wallet = WalletManager.instance?.wallet;
                         val spendAmount = Wallet.getAmountFromString(amountField)
                         if (wallet == null) {
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         }
                         if (AnonConfig.viewOnly) {
                             var needsKeyImages: Boolean
@@ -617,19 +641,12 @@ fun SendScreen(
                                 prepare()
                             }
 
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         } else {
                             prepare()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = 16.dp,
-                        ),
-                    shape = MaterialTheme.shapes.medium,
-                    contentPadding = PaddingValues(12.dp)
-                ) {
+                ){
                     Text("NEXT")
                 }
             }

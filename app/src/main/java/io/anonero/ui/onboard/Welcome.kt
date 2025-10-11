@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -174,14 +175,13 @@ fun OnboardingWelcome(
                 verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.Bottom),
             ) {
                 if (!AnonConfig.viewOnly)
-                    OutlinedButton(
+                    AnonOutlineButton(
                         onClick = onCreateClick,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.width(200.dp)
+                        modifier = Modifier.width(220.dp)
                     ) {
                         Text("Create Wallet")
                     }
-                OutlinedButton(
+                AnonOutlineButton(
                     onClick = {
                         if (AnonConfig.viewOnly) {
                             onRestoreFromKeys()
@@ -189,8 +189,7 @@ fun OnboardingWelcome(
                             restoreOptions = true;
                         }
                     },
-                    shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.width(200.dp)
+                    modifier = Modifier.width(220.dp)
                 ) {
                     Text("Restore Wallet", color = MaterialTheme.colorScheme.primary)
                 }

@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -266,12 +267,12 @@ fun RestoreWallet(
                 )
             }
             val enabled = seedList.isNotEmpty();
-            OutlinedButton(
+            AnonOutlineButton (
                 onClick = {
                     if (enabled) {
                          if (seedList.size == 25 && restoreHeight.isEmpty()) {
                             restoreHeightError = "Restore height required for 25 word seed"
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         }
                         oNextPressed(
                             RestorePayload(
@@ -287,8 +288,7 @@ fun RestoreWallet(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
+
             ) {
                 Text("NEXT")
             }

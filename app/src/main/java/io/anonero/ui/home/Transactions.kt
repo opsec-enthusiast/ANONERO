@@ -171,7 +171,7 @@ fun TransactionScreen(
             }) {
             LockScreen(
                 mode = LockScreenMode.LOCK_SCREEN,
-                modifier = Modifier.fillMaxHeight(0.95f),
+                modifier = Modifier.fillMaxSize(),
                 onUnLocked = { _, shortCut ->
                     scope.launch {
                         walletState.setBackGroundSync(false)
