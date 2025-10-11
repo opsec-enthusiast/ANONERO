@@ -186,7 +186,7 @@ fun SettingsPage(
                 ) {
                     item {
                         Text(
-                            "Connection",
+                            stringResource(R.string.settings_connection),
                             style = settingsMenuHeaderStyle,
                             modifier = Modifier.padding(
                                 vertical = 12.dp,
@@ -199,7 +199,7 @@ fun SettingsPage(
                             thickness = 2.5.dp
                         )
                         SettingsMenuItem(
-                            title = "Node Settings",
+                            title = stringResource(R.string.settings_node_settings),
                             onClick = {
                                 navigateTo(SettingsNodeRoute)
                             })
@@ -208,7 +208,7 @@ fun SettingsPage(
                         )
                     }
                     item {
-                        SettingsMenuItem(title = "Proxy Settings", onClick = {
+                        SettingsMenuItem(title = stringResource(R.string.settings_proxy_settings), onClick = {
                             navigateTo(ProxySettingsRoute)
                         })
                         HorizontalDivider(
@@ -217,7 +217,7 @@ fun SettingsPage(
                     }
                     item {
                         Text(
-                            "Security",
+                            stringResource(R.string.settings_security),
                             style = settingsMenuHeaderStyle,
                             modifier = Modifier.padding(
                                 vertical = 12.dp,
@@ -227,7 +227,7 @@ fun SettingsPage(
                     }
                     if (!AnonConfig.viewOnly)
                         item {
-                            SettingsMenuItem(title = "Seed ", onClick = {
+                            SettingsMenuItem(title = stringResource(R.string.settings_seed), onClick = {
                                 navigateTo(SettingsViewSeedRoute)
                             })
                             HorizontalDivider(
@@ -235,7 +235,7 @@ fun SettingsPage(
                             )
                         }
                     item {
-                        SettingsMenuItem(title = "Change PIN", onClick = {
+                        SettingsMenuItem(title = stringResource(R.string.settings_change_pin), onClick = {
                             showLockScreen = true
                         })
                         HorizontalDivider(
@@ -243,7 +243,7 @@ fun SettingsPage(
                         )
                     }
                     item {
-                        SettingsMenuItem(title = "Export Backup", onClick = {
+                        SettingsMenuItem(title = stringResource(R.string.settings_export_backup), onClick = {
                             navigateTo(SettingsExportBackUp)
                         })
                         HorizontalDivider(
@@ -252,7 +252,7 @@ fun SettingsPage(
                     }
                     item {
                         SettingsMenuItem(
-                            title = "Secure Wipe",
+                            title = stringResource(R.string.settings_secure_wipe),
                             onClick = {
                                 navigateTo(SecureWipeRoute)
                             })
@@ -261,7 +261,7 @@ fun SettingsPage(
                         )
                     }
                     item {
-                        SettingsMenuItem(title = "Logs", onClick = {
+                        SettingsMenuItem(title = stringResource(R.string.settings_logs), onClick = {
                             navigateTo(SettingsLogs)
                         })
                         HorizontalDivider(
@@ -278,7 +278,7 @@ fun SettingsPage(
                     .padding(bottom = 64.dp)
             ) {
                 Text(
-                    "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    stringResource(R.string.settings_app_version, stringResource(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                     style = MaterialTheme.typography.labelLarge.copy(
                         color = MaterialTheme.colorScheme.onSecondary.copy(
                             alpha = 0.6f,

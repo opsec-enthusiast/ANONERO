@@ -13,6 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewModelScope
@@ -23,6 +25,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.home.settings.LogViewer
 import io.anonero.ui.home.settings.ProxySettings
@@ -199,6 +202,7 @@ fun NavGraphBuilder.onboardingGraph(
 
         composable<OnboardPinScreen> {
             var showErrorMessage by remember { mutableStateOf<String?>(null) }
+            val context = LocalContext.current
             OnboardErrorDialog(
                 showErrorMessage = showErrorMessage,
                 isRestoreMode = onboardViewModel.getMode() == Mode.RESTORE,
@@ -214,9 +218,9 @@ fun NavGraphBuilder.onboardingGraph(
             )
             PinSetup(
                 onNext = { pin ->
-                    var loadingMessage = "Creating wallet..."
+                    var loadingMessage = context.getString(R.string.creating_wallet)
                     if (onboardViewModel.getMode() == Mode.RESTORE) {
-                        loadingMessage = "Restoring wallet..."
+                        loadingMessage = context.getString(R.string.restoring_wallet)
                     }
                     navController.navigate(OnboardLoading(loadingMessage))
                     onboardViewModel.viewModelScope.launch {
@@ -312,7 +316,7 @@ fun OnboardErrorDialog(
                         containerColor = MaterialTheme.colorScheme.onBackground,
                     ),
                     onClick = onClose
-                ) { Text("Close") }
+                ) { Text(stringResource(R.string.close)) }
             },
             modifier = Modifier
                 .border(
@@ -333,7 +337,7 @@ fun OnboardErrorDialog(
                     )
                 ) {
                     Text(
-                        "Logs",
+                        stringResource(R.string.logs),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSecondary.copy(alpha = 0.8f)
                         )
@@ -343,7 +347,13 @@ fun OnboardErrorDialog(
             containerColor = MaterialTheme.colorScheme.secondary,
             title = {
                 Text(
-                    text = "Unable to ${if (isRestoreMode) "Restore" else "Create"} wallet",
+                    text = stringResource(
+                        R.string.wallet,
+                        stringResource(R.string.unable_to),
+                        if (isRestoreMode) stringResource(
+                            R.string.restore
+                        ) else stringResource(R.string.create)
+                    ),
                 )
             },
             text = {

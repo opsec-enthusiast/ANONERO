@@ -33,7 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,7 +60,7 @@ fun RestoreFromKeys(
     var restoreHeight by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var showScanner by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     QRScannerDialog(
         show = showScanner,
         onQRCodeScanned = {
@@ -69,7 +71,7 @@ fun RestoreFromKeys(
                 viewKey = payload.privateViewKey
                 restoreHeight = payload.restoreHeight.toString()
             } catch (e: Exception) {
-                error = "Invalid QR Code"
+                error = context.getString(R.string.invalid_qr_code)
             }
             showScanner = false
         },
@@ -117,7 +119,7 @@ fun RestoreFromKeys(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "IMPORT VIEW KEYS",
+                    text = stringResource(R.string.import_view_keys),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -132,7 +134,7 @@ fun RestoreFromKeys(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "PRIMARY ADDRESS",
+                            text = stringResource(R.string.primary_address),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -157,7 +159,7 @@ fun RestoreFromKeys(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "PRIVATE VIEW KEY",
+                            text = stringResource(R.string.private_view_key),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -180,7 +182,7 @@ fun RestoreFromKeys(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "RESTORE HEIGHT",
+                            text = stringResource(R.string.restore_height),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -213,7 +215,9 @@ fun RestoreFromKeys(
                         text = error,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .fillMaxWidth()
                     )
                 }
             }
@@ -238,7 +242,7 @@ fun RestoreFromKeys(
                         horizontal = 12.dp
                     ),
             ) {
-                Text("NEXT")
+                Text(stringResource(R.string.next))
             }
         }
     }

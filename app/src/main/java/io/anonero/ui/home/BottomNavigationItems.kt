@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.ui.home.graph.routes.ReceiveRoute
 import io.anonero.ui.home.graph.routes.SendScreenRoute
@@ -26,22 +28,22 @@ data class BottomNavigationItem(
 fun getRoutes(): ArrayList<BottomNavigationItem> {
     return arrayListOf(
         BottomNavigationItem(
-            title = "Transactions",
+            title = AnonConfig.context?.getString(R.string.transactions) ?: "",
             icon = AnonIcons.Home,
             route = TransactionsRoute
         ),
         BottomNavigationItem(
-            title = "Receive",
+            title = AnonConfig.context?.getString(R.string.receive) ?: "",
             icon = AnonIcons.QrCode,
             route = ReceiveRoute
         ),
         BottomNavigationItem(
-            title = "Send",
+            title = AnonConfig.context?.getString(R.string.send) ?: "",
             icon = Icons.AutoMirrored.Outlined.Send,
             route = SendScreenRoute("")
         ),
         BottomNavigationItem(
-            title = "Settings",
+            title = AnonConfig.context?.getString(R.string.settings) ?: "",
             icon = Icons.Default.Settings,
             route = SettingsRoute
         ),

@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -115,7 +116,9 @@ fun PinSetup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (confirming) "Confirm PIN" else if (changePin) "Enter New PIN" else "Enter PIN")
+                Text(if (confirming) stringResource(R.string.confirm_pin) else if (changePin) stringResource(R.string.enter_new_pin) else stringResource(
+                    R.string.enter_pin
+                ))
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier

@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +71,7 @@ import com.dokar.sonner.ToastType
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.WalletManager
 import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
@@ -586,7 +588,8 @@ fun NodeForm(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
-            modifier = Modifier.weight(8f)
+            modifier = Modifier
+                .weight(8f)
                 .verticalScroll(
                     rememberScrollState()
                 )
@@ -721,7 +724,7 @@ fun NodeForm(
                     }
                 },
             ) {
-                Text("Connect")
+                Text(stringResource(R.string.connect))
             }
         }
     }

@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,6 +55,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sparrowwallet.hummingbird.UR
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.WalletManager
 import io.anonero.ui.components.AnimatedQrCode
@@ -301,7 +303,7 @@ fun QRExchangeScreen(
                                 .padding(top = 8.dp)
                                 .align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Export as file")
+                            Text(stringResource(R.string.export_as_file))
                         }
                     }
                     if (params.ctaText.isNotBlank())

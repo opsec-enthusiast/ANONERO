@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -59,7 +60,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
             delay(100)
             if (anonWallet?.status?.isOk != true) {
                 walletFile.delete()
-                throw CancellationException("unable to create wallet")
+                throw CancellationException(context.getString(R.string.unable_to_create_wallet))
             }
             val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
             prefs.edit {
@@ -105,7 +106,7 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
             delay(100)
             if (anonWallet?.status?.isOk != true) {
                 walletFile.delete()
-                throw CancellationException("unable to create wallet")
+                throw CancellationException(context.getString(R.string.unable_to_create_wallet))
             }
             val crazyPass: String = KeyStoreHelper.getCrazyPass(AnonConfig.context, passPhrase)
             prefs.edit {

@@ -52,6 +52,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +68,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.util.Formats
 import io.anonero.util.KeyStoreHelper
@@ -200,7 +202,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
             ),
             title = {
                 Text(
-                    text = "Enter Seed Phrase",
+                    text = stringResource(R.string.enter_seed_phrase),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontSize = 18.sp
                     )
@@ -252,7 +254,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                         ),
                     onClick = {
                         createBackUp()
-                    }) { Text("Create") }
+                    }) { Text(stringResource(R.string.create)) }
             },
             dismissButton = {
                 Button(
@@ -270,7 +272,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                     )
                 ) {
                     Text(
-                        "Cancel",
+                        stringResource(R.string.cancel),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSecondary.copy(
                                 alpha = 0.8f
@@ -293,7 +295,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                     }
                 },
                 title = {
-                    Text("Encrypted Backup")
+                    Text(stringResource(R.string.encrypted_backup))
                 }
             )
         }
@@ -321,7 +323,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                         strokeWidth = 2.dp
                     )
                     Spacer(Modifier.height(16.dp))
-                    Text("Generating Backup")
+                    Text(stringResource(R.string.generating_backup))
                 }
             } else {
                 if (backupFile != null) {
@@ -367,7 +369,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                                 }
                             )
                             Text(
-                                "Backup Generated Successfully!", textAlign = TextAlign.Center,
+                                stringResource(R.string.backup_generated_successfully), textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -377,7 +379,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                                     )
                             )
                             Text(
-                                "Save it to a secure location, such as an external drive or encrypted storage, to keep it safe",
+                                stringResource(R.string.save_backup_instruction),
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color.Gray
@@ -389,7 +391,7 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
                                 .fillMaxWidth(0.9f),
                             onClick = {
                                 exportToExternDir()
-                            }) { Text("Export to File") }
+                            }) { Text(stringResource(R.string.export_to_file)) }
                     }
                 }
             }

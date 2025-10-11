@@ -40,8 +40,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -283,17 +285,18 @@ fun ReviewTransactionScreen(
             showScanner = showScanner
         )
 
+    val context = LocalContext.current;
     val ctaText = if (AnonConfig.viewOnly) {
         if (!viewModel.isUnsignedTransaction() && !readyToBroadcast) {
-            "CONFIRM"
+            stringResource(R.string.confirm).capitalize()
         } else {
-            "BROADCAST TX"
+            stringResource(R.string.broadcast_tx)
         }
     } else {
         if (viewModel.isUnsignedTransaction()) {
-            "CONFIRM"
+           stringResource(R.string.confirm).capitalize()
         } else {
-            "BROADCAST TX"
+            stringResource(R.string.broadcast_tx)
         }
     }
 
@@ -342,7 +345,10 @@ fun ReviewTransactionScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Unable to broadcast transaction\n ${viewModel.broadCastError?.message}",
+                            stringResource(
+                                R.string.unable_to_broadcast_transaction,
+                                viewModel.broadCastError?.message ?: "Unknown Error"
+                            ),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = DangerColor
                             ),
@@ -396,7 +402,7 @@ fun ReviewTransactionScreen(
                             )
                         }
                         Text(
-                            "Broadcast in progress...",
+                            stringResource(R.string.broadcast_in_progress),
                             modifier = Modifier.padding(top = 12.dp)
                         )
                     }
@@ -416,7 +422,7 @@ fun ReviewTransactionScreen(
                         LazyColumn {
                             item {
                                 ListItem(
-                                    headlineContent = { Text("Address", style = titleStyle) },
+                                    headlineContent = { Text(stringResource(R.string.address), style = titleStyle) },
                                     supportingContent = {
                                         Text(
                                             reviewModel!!.address ?: reviewParams.toAddress,
@@ -427,7 +433,7 @@ fun ReviewTransactionScreen(
                             }
                             item {
                                 ListItem(
-                                    headlineContent = { Text("Amount", style = titleStyle) },
+                                    headlineContent = { Text(stringResource(R.string.amount), style = titleStyle) },
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
@@ -441,7 +447,7 @@ fun ReviewTransactionScreen(
                             item {
 
                                 ListItem(
-                                    headlineContent = { Text("Fee", style = titleStyle) },
+                                    headlineContent = { Text(stringResource(R.string.fee), style = titleStyle) },
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
@@ -454,7 +460,7 @@ fun ReviewTransactionScreen(
                             }
                             item {
                                 ListItem(
-                                    headlineContent = { Text("Total", style = titleStyle) },
+                                    headlineContent = { Text(stringResource(R.string.total), style = titleStyle) },
                                     supportingContent = {
                                         Text(
                                             Formats.getDisplayAmount(
@@ -474,6 +480,7 @@ fun ReviewTransactionScreen(
                         }
                         AnonOutlineButton(
                             onClick = {
+
                                 if (viewModel.isUnsignedTransaction()) {
                                     scope.launch {
                                         val unsignedTransaction = File(
@@ -505,7 +512,7 @@ fun ReviewTransactionScreen(
                                             qrScannerParam = SpendQRExchangeParam(
                                                 exportType = ExportType.SIGNED_TX,
                                                 title = "SIGNED TX",
-                                                ctaText = "FINISH",
+                                                ctaText = context.getString(R.string.finish)    ,
                                             )
                                         } else {
                                             readyToBroadcast = false

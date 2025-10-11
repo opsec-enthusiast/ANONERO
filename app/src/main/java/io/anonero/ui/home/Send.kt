@@ -49,8 +49,10 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -360,6 +362,7 @@ fun SendScreen(
     }
 
 
+    val context = LocalContext.current
 
 
     if (showCoinSelection)
@@ -447,7 +450,7 @@ fun SendScreen(
                     )
                 }
                 Text(
-                    "Constructing transaction...",
+                    stringResource(R.string.constructing_transaction),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 12.dp)
                 )
@@ -468,7 +471,7 @@ fun SendScreen(
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Address",
+                                text = stringResource(R.string.address),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -482,7 +485,7 @@ fun SendScreen(
                                 isError = inValidAddress == true,
                                 supportingText = {
                                     if (inValidAddress == true) {
-                                        Text("invalid address")
+                                        Text(stringResource(R.string.invalid_address))
                                     }
                                 },
                                 enabled = !showIndefiniteLoading,
@@ -522,7 +525,7 @@ fun SendScreen(
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Amount",
+                                text = stringResource(R.string.amount),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -551,7 +554,10 @@ fun SendScreen(
                         },
                     )
                     Text(
-                        if (sweep) "Sweeping balance: $unLockedAmount (minus fees)" else "Available balance: $unLockedAmount ",
+                        if (sweep) "${stringResource(R.string.sweeping_balance)} $unLockedAmount ${
+                            stringResource(
+                                R.string.minus_fees
+                            )}" else "${stringResource(R.string.available_balance)} $unLockedAmount ",
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -589,7 +595,10 @@ fun SendScreen(
 
                     if (coins.isNotEmpty())
                         Text(
-                            text = "${if (coins.size == 1) "1 coin selected" else "${coins.size} coins selected"}",
+                            text = "${if (coins.size == 1) stringResource(R.string._1_coin_selected) else "${coins.size} ${
+                                stringResource(
+                                    R.string.coins_selected
+                                )}"}",
                             modifier = Modifier
                                 .align(CenterHorizontally)
                                 .padding(
@@ -634,8 +643,8 @@ fun SendScreen(
                             if (needsKeyImages) {
                                 qrScannerParam = SpendQRExchangeParam(
                                     exportType = ExportType.OUTPUT,
-                                    title = "OUTPUTS",
-                                    ctaText = "SCAN KEY IMAGES",
+                                    title = context.getString(R.string.outputs),
+                                    ctaText = context.getString(R.string.scan_key_images),
                                 )
                             } else {
                                 prepare()
@@ -647,7 +656,7 @@ fun SendScreen(
                         }
                     },
                 ){
-                    Text("NEXT")
+                    Text(stringResource(R.string.next))
                 }
             }
 
@@ -669,8 +678,8 @@ fun SendScreen(
                         showScanner = false
                         qrScannerParam = SpendQRExchangeParam(
                             exportType = ExportType.IMAGE,
-                            title = "KEY IMAGES",
-                            ctaText = "SCAN UNSIGNED TX",
+                            title = context.getString(R.string.key_images),
+                            ctaText = context.getString(R.string.scan_unsigned_tx),
                         )
                     }
 

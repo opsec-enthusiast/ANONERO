@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -107,7 +109,7 @@ fun SetupNodeComposable(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = Color.White
                     )
                 }
@@ -121,7 +123,7 @@ fun SetupNodeComposable(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "NODE CONNECTION",
+                    text = stringResource(R.string.node_connection),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -136,7 +138,7 @@ fun SetupNodeComposable(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "NODE",
+                            text = stringResource(R.string.node).capitalize(),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -154,7 +156,7 @@ fun SetupNodeComposable(
                             isError = error.isNotEmpty(),
                             placeholder = {
                                 Text(
-                                    text = "http://address.onion:port",
+                                    text = stringResource(R.string.onion_address_example),
                                     color = labelColor
                                 )
                             },
@@ -168,7 +170,7 @@ fun SetupNodeComposable(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "Username",
+                            text = stringResource(R.string.username),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -179,7 +181,7 @@ fun SetupNodeComposable(
                             shape = MaterialTheme.shapes.medium,
                             placeholder = {
                                 Text(
-                                    text = "(Optional)",
+                                    text = stringResource(R.string.optional),
                                     color = labelColor
                                 )
                             },
@@ -197,7 +199,7 @@ fun SetupNodeComposable(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "PASSWORD",
+                            text = stringResource(R.string.password),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -214,7 +216,7 @@ fun SetupNodeComposable(
                             ),
                             placeholder = {
                                 Text(
-                                    text = "(Optional)",
+                                    text = stringResource(R.string.optional),
                                     color = labelColor
                                 )
                             },
@@ -291,7 +293,7 @@ fun SetupNodeComposable(
                     ),
 
                 ) {
-                Text("NEXT")
+                Text(stringResource(R.string.next))
             }
         }
     }

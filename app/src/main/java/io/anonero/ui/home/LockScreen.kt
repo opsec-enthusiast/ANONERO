@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -248,7 +249,12 @@ fun LockScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (mode == LockScreenMode.VERYFY_PIN) "ENTER CURRENT PIN" else "UNLOCK WALLET")
+                Text(
+                    if (mode == LockScreenMode.VERYFY_PIN)
+                        stringResource(R.string.enter_current_pin)
+                    else
+                        stringResource(R.string.unlock_wallet)
+                )
                 Spacer(modifier = Modifier.padding(top = 12.dp))
                 Row(
                     Modifier
