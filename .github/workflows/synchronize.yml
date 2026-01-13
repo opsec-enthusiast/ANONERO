@@ -1,0 +1,91 @@
+---
+name: Synchronize from Upstream
+
+"on":
+  schedule:
+    # Run every day at 00:00 UTC
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Install and start Tor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tor
+          sudo systemctl start tor
+          sleep 15
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure git to use Tor SOCKS proxy
+        run: |
+          git config --global http.proxy  socks5h://127.0.0.1:9050
+          git config --global https.proxy socks5h://127.0.0.1:9050
+
+      - name: Add upstream Tor remote
+        run: |
+          git remote remove upstream 2>/dev/null || true
+          UPSTREAM_URL="http://git.anonero5wmhraxqsvzq2ncgptq6gq45qoto6fnkfwughfl4gbt44swad.onion/ANONERO/ANONERO.git"
+          git remote add upstream "$UPSTREAM_URL"
+          git remote -v
+
+      - name: Fetch upstream main via Tor
+        run: git fetch upstream main
+
+      - name: Preserve .github temporarily
+        run: |
+          # Move .github out to avoid being overwritten
+          if [ -d ".github" ]; then
+            mv .github /tmp/.github_backup
+          fi
+
+      - name: Merge upstream/main into main
+        run: |
+          git checkout main
+          # Merge using "theirs" strategy to favor upstream changes
+          git merge upstream/main \
+            --strategy=recursive \
+            -X theirs \
+            --allow-unrelated-histories || true
+
+      - name: Restore .github
+        run: |
+          if [ -d "/tmp/.github_backup" ]; then
+            mv /tmp/.github_backup .github
+          fi
+
+      - name: Commit preserved workflows if needed
+        run: |
+          # Only add .github if there are actual changes
+          if ! git diff --quiet; then
+            git add .github
+            git commit -m "Preserve GitHub workflows"
+          else
+            echo "No workflow changes to commit"
+          fi
+
+      - name: Push changes to GitHub
+        run: |
+          git push origin main --force
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
