@@ -24,6 +24,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          token: ${{ secrets.WORKFLOW_TOKEN }}
 
       - name: Install and start Tor
         run: |
@@ -87,5 +88,4 @@ jobs:
       - name: Push changes to GitHub
         run: |
           git push origin main --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+
