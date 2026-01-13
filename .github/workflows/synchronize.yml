@@ -40,7 +40,7 @@ jobs:
 
       - name: Configure git to use Tor SOCKS proxy
         run: |
-          git config --global http.proxy  socks5h://127.0.0.1:9050
+          git config --global http.proxy socks5h://127.0.0.1:9050
           git config --global https.proxy socks5h://127.0.0.1:9050
 
       - name: Add upstream Tor remote
