@@ -9,6 +9,7 @@ name: Synchronize from Upstream
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   sync:
