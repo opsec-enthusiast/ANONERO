@@ -121,9 +121,6 @@ class SendViewModel : ViewModel() {
             try {
                 _txComposeError.postValue(null)
                 if (spendType.value == SpendType.SWEEP && _coinsSelected.value.isNullOrEmpty()) {
-                    if (wallet?.unlockedBalance != wallet?.balance) {
-                        return@withContext null
-                    }
                     if(wallet?.fullStatus?.connectionStatus != Wallet.ConnectionStatus.ConnectionStatus_Connected) {
                         throw Exception("Wallet not connected to node. please check network")
                     }
