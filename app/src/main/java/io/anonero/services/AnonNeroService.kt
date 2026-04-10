@@ -48,6 +48,11 @@ class AnonNeroService : Service() {
     private val job = SupervisorJob()
     private var updateJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + job)
+    private fun isNetworkAvailable(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
     private val walletState: WalletState by inject(WalletState::class.java)
     private val torService: TorService by inject(TorService::class.java)
     private val nodesRepository: NodesRepository by inject(NodesRepository::class.java)
@@ -122,10 +127,23 @@ class AnonNeroService : Service() {
                     "Wallet Locked: Synced: ${wallet.getBlockChainHeight()} "
                 } else if (!wallet.isInitialized) {
                     "Loading wallet..."
+                } else if (!isNetworkAvailable()) {
+                    // Network is offline — skip the blocking RPC call and mark
+                    // disconnected immediately so the bar shows without waiting
+                    // for a 30-second timeout
+                    walletState.setConnectionStatus(Wallet.ConnectionStatus.ConnectionStatus_Disconnected)
+                    "Disconnected"
                 } else {
-                    val connectionStatus = wallet.fullStatus.connectionStatus
-                        ?: Wallet.ConnectionStatus.ConnectionStatus_Disconnected
-                    when (connectionStatus) {
+                    // Network is available — probe the daemon with a live RPC call
+                    val daemonHeight = withContext(Dispatchers.IO) {
+                        wallet.getDaemonBlockChainHeight()
+                    }
+                    val liveStatus = if (daemonHeight > 0)
+                        Wallet.ConnectionStatus.ConnectionStatus_Connected
+                    else
+                        Wallet.ConnectionStatus.ConnectionStatus_Disconnected
+                    walletState.setConnectionStatus(liveStatus)
+                    when (liveStatus) {
                         Wallet.ConnectionStatus.ConnectionStatus_Disconnected -> {
                             "Daemon Disconnected"
                         }

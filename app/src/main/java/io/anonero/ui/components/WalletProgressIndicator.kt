@@ -1,6 +1,9 @@
 package io.anonero.ui.components
 
-import android.util.Log
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
@@ -11,22 +14,46 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.asLiveData
+import io.anonero.model.Wallet
 import io.anonero.services.WalletState
 import io.anonero.util.Formats
 import org.koin.java.KoinJavaComponent.inject
 import java.util.Locale
+
+@Composable
+fun networkConnected(): State<Boolean> {
+    val context = LocalContext.current
+    return produceState(
+        initialValue = run {
+            val cm = ContextCompat.getSystemService(context, ConnectivityManager::class.java)
+            val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
+            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        }
+    ) {
+        val cm = ContextCompat.getSystemService(context, ConnectivityManager::class.java)
+            ?: return@produceState
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) { value = true }
+            override fun onLost(network: Network) { value = false }
+        }
+        cm.registerNetworkCallback(request, callback)
+        awaitDispose { cm.unregisterNetworkCallback(callback) }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,12 +62,17 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier, refreshIndicatorProgr
 
     val showIndefiniteLoading by walletState.isLoading.asLiveData().observeAsState(false)
     val syncProgress by walletState.syncProgress.asLiveData().observeAsState(null)
+    val connectionStatus by walletState.connectionStatus.asLiveData().observeAsState(null)
+    val isConnected = connectionStatus == Wallet.ConnectionStatus.ConnectionStatus_Connected
+    val isNetworkConnected by networkConnected()
+    val isSyncing = syncProgress != null && syncProgress!!.left > 0L
     AnimatedVisibility(
-        (showIndefiniteLoading || syncProgress != null || refreshIndicatorProgress != 0.0f),
+        (showIndefiniteLoading || syncProgress != null || !isConnected || !isNetworkConnected || refreshIndicatorProgress != 0.0f),
         modifier = modifier
             .animateContentSize()
     ) {
-        if (syncProgress != null && syncProgress!!.left != 0L) {
+        if (isSyncing) {
+            val progress = syncProgress ?: return@AnimatedVisibility
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -50,7 +82,7 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier, refreshIndicatorProgr
             ) {
                 LinearProgressIndicator(
                     progress = {
-                        syncProgress!!.progress
+                        progress.progress
                     },
                     trackColor = MaterialTheme.colorScheme.primary.copy(
                         alpha = 0.2f
@@ -59,11 +91,11 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier, refreshIndicatorProgr
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                 )
-                if (syncProgress!!.left > 50) {
+                if (progress.left > 50) {
                     Text(
                         "${
                             Formats.convertNumber(
-                                syncProgress?.left!!,
+                                progress.left,
                                 Locale.getDefault()
                             )
                         } blocks left",
@@ -71,34 +103,29 @@ fun WalletProgressIndicator(modifier: Modifier = Modifier, refreshIndicatorProgr
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
-
                 }
             }
+        } else if (refreshIndicatorProgress != 0.0f && !showIndefiniteLoading && isConnected && isNetworkConnected) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                progress = {
+                    refreshIndicatorProgress
+                },
+                trackColor = MaterialTheme.colorScheme.primary.copy(
+                    alpha = 0.2f
+                ),
+            )
         } else {
-            val showRefreshState =
-                refreshIndicatorProgress.toFloat() != 0.0f || refreshIndicatorProgress.toFloat() != 0.0f;
-            if (showIndefiniteLoading )
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    trackColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = 0.2f
-                    ),
-                )
-            if(showRefreshState && !showIndefiniteLoading){
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    progress = {
-                        refreshIndicatorProgress.toFloat()
-                    },
-                    trackColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = 0.2f
-                    ),
-                )
-            }
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                trackColor = MaterialTheme.colorScheme.primary.copy(
+                    alpha = 0.2f
+                ),
+            )
         }
 
     }
