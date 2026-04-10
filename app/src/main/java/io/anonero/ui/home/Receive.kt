@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.services.WalletState
 import io.anonero.ui.components.SubAddressLabelDialog
@@ -136,7 +137,8 @@ fun ReceiveScreen(
                         modifier = Modifier.clickable {
                             nextAddress?.let {
                                 clipboardManager.setText(AnnotatedString(text = it.address))
-                                Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT)
+                                Toast.makeText(context,
+                                    context.getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }

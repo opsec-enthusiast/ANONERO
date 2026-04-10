@@ -1,8 +1,10 @@
 package io.anonero.ui.home
 
+import AnonOutlineButton
 import android.os.Build
 import android.util.Log
 import android.view.HapticFeedbackConstants
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +49,10 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +67,7 @@ import androidx.lifecycle.viewModelScope
 import com.sparrowwallet.hummingbird.ResultType
 import com.sparrowwallet.hummingbird.URDecoder
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.CoinsInfo
@@ -78,7 +84,9 @@ import io.anonero.ui.home.spend.qr.QRExchangeScreen
 import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
 import io.anonero.ui.home.spend.qr.URQRScanner
 import io.anonero.util.Formats
+import io.anonero.util.backup.BackupHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -113,9 +121,6 @@ class SendViewModel : ViewModel() {
             try {
                 _txComposeError.postValue(null)
                 if (spendType.value == SpendType.SWEEP && _coinsSelected.value.isNullOrEmpty()) {
-                    if (wallet?.unlockedBalance != wallet?.balance) {
-                        return@withContext null
-                    }
                     if(wallet?.fullStatus?.connectionStatus != Wallet.ConnectionStatus.ConnectionStatus_Connected) {
                         throw Exception("Wallet not connected to node. please check network")
                     }
@@ -354,6 +359,7 @@ fun SendScreen(
     }
 
 
+    val context = LocalContext.current
 
 
     if (showCoinSelection)
@@ -424,11 +430,26 @@ fun SendScreen(
             Column(
                 Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = CenterHorizontally
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(300.dp),
-                    strokeWidth = 2.dp
+                Box(
+                    contentAlignment = Alignment.Center
+                ){
+                    Image(
+                        painter = painterResource(R.drawable.ic_anon),
+                        contentDescription = "Anon nero icon",
+                        modifier = Modifier
+                            .size(110.dp)
+                    )
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(300.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+                Text(
+                    stringResource(R.string.constructing_transaction),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             }
         } else {
@@ -447,7 +468,7 @@ fun SendScreen(
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Address",
+                                text = stringResource(R.string.address),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -461,7 +482,7 @@ fun SendScreen(
                                 isError = inValidAddress == true,
                                 supportingText = {
                                     if (inValidAddress == true) {
-                                        Text("invalid address")
+                                        Text(stringResource(R.string.invalid_address))
                                     }
                                 },
                                 enabled = !showIndefiniteLoading,
@@ -501,7 +522,7 @@ fun SendScreen(
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Amount",
+                                text = stringResource(R.string.amount),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -530,7 +551,10 @@ fun SendScreen(
                         },
                     )
                     Text(
-                        if (sweep) "Sweeping balance: $unLockedAmount (minus fees)" else "Available balance: $unLockedAmount ",
+                        if (sweep) "${stringResource(R.string.sweeping_balance)} $unLockedAmount ${
+                            stringResource(
+                                R.string.minus_fees
+                            )}" else "${stringResource(R.string.available_balance)} $unLockedAmount ",
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -568,7 +592,10 @@ fun SendScreen(
 
                     if (coins.isNotEmpty())
                         Text(
-                            text = "${if (coins.size == 1) "1 coin selected" else "${coins.size} coins selected"}",
+                            text = "${if (coins.size == 1) stringResource(R.string._1_coin_selected) else "${coins.size} ${
+                                stringResource(
+                                    R.string.coins_selected
+                                )}"}",
                             modifier = Modifier
                                 .align(CenterHorizontally)
                                 .padding(
@@ -584,15 +611,18 @@ fun SendScreen(
                             color = Color(0xfffb8500)
                         )
                 }
-
-                OutlinedButton(
+                AnonOutlineButton(
                     enabled = validSpend,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 16.dp,
+                        ),
                     onClick = {
-
                         val wallet = WalletManager.instance?.wallet;
                         val spendAmount = Wallet.getAmountFromString(amountField)
                         if (wallet == null) {
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         }
                         if (AnonConfig.viewOnly) {
                             var needsKeyImages: Boolean
@@ -610,27 +640,20 @@ fun SendScreen(
                             if (needsKeyImages) {
                                 qrScannerParam = SpendQRExchangeParam(
                                     exportType = ExportType.OUTPUT,
-                                    title = "OUTPUTS",
-                                    ctaText = "SCAN KEY IMAGES",
+                                    title = context.getString(R.string.outputs),
+                                    ctaText = context.getString(R.string.scan_key_images),
                                 )
                             } else {
                                 prepare()
                             }
 
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         } else {
                             prepare()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = 16.dp,
-                        ),
-                    shape = MaterialTheme.shapes.medium,
-                    contentPadding = PaddingValues(12.dp)
-                ) {
-                    Text("NEXT")
+                ){
+                    Text(stringResource(R.string.next))
                 }
             }
 
@@ -652,8 +675,8 @@ fun SendScreen(
                         showScanner = false
                         qrScannerParam = SpendQRExchangeParam(
                             exportType = ExportType.IMAGE,
-                            title = "KEY IMAGES",
-                            ctaText = "SCAN UNSIGNED TX",
+                            title = context.getString(R.string.key_images),
+                            ctaText = context.getString(R.string.scan_unsigned_tx),
                         )
                     }
 

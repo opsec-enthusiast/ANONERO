@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -235,7 +237,7 @@ fun RestoreWallet(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "RESTORE HEIGHT",
+                            text = stringResource(R.string.restore_height),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -266,12 +268,12 @@ fun RestoreWallet(
                 )
             }
             val enabled = seedList.isNotEmpty();
-            OutlinedButton(
+            AnonOutlineButton (
                 onClick = {
                     if (enabled) {
                          if (seedList.size == 25 && restoreHeight.isEmpty()) {
                             restoreHeightError = "Restore height required for 25 word seed"
-                            return@OutlinedButton
+                            return@AnonOutlineButton
                         }
                         oNextPressed(
                             RestorePayload(
@@ -287,10 +289,9 @@ fun RestoreWallet(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
+
             ) {
-                Text("NEXT")
+                Text(stringResource(R.string.next))
             }
         }
     }

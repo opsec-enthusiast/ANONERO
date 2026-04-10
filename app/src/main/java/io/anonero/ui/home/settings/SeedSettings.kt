@@ -1,6 +1,7 @@
 package io.anonero.ui.home.settings
 
 import AnonNeroTheme
+import AnonOutlineButton
 import android.content.SharedPreferences
 import android.util.Log
 import android.view.HapticFeedbackConstants
@@ -58,6 +59,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
 import io.anonero.ui.components.qr.QrCodeColors
@@ -200,7 +203,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             ) {
                 Box(modifier = Modifier.padding(8.dp))
                 Text(
-                    "[ИΞR0] keys",
+                    stringResource(id = R.string.nero_keys),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -240,7 +243,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
             ),
             title = {
                 Text(
-                    text = "Enter Seed Phrase",
+                    text = stringResource(id = R.string.enter_seed_phrase),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontSize = 18.sp
                     )
@@ -292,7 +295,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                         ),
                     onClick = {
                         getSeed()
-                    }) { Text("View") }
+                    }) { Text(stringResource(id = R.string.view)) }
             },
             dismissButton = {
                 Button(
@@ -310,7 +313,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     )
                 ) {
                     Text(
-                        "Cancel",
+                        stringResource(id = R.string.cancel),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSecondary.copy(
                                 alpha = 0.8f
@@ -353,36 +356,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Show Legacy Seed",
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        },
-                        supportingContent = {
-
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = showLegacy,
-                                onCheckedChange = {
-                                    showLegacy = it
-                                }
-                            )
-                        },
-                        modifier = Modifier
-                    )
-                }
-                item {
-                    HorizontalDivider(
-                        thickness = 1.dp
-                    )
-                }
-
-                item {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = "Primary Address",
+                                text = stringResource(id = R.string.primary_address),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -406,7 +380,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = if (showLegacy) "Legacy Seed" else "Polyseed",
+                                text = if (showLegacy) stringResource(id = R.string.legacy_seed) else stringResource(id = R.string.polyseed),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .padding(start = 4.dp)
@@ -459,7 +433,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "View Key",
+                                text = stringResource(id = R.string.view_key),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -483,7 +457,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Spend Key",
+                                text = stringResource(id = R.string.spend_key),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -508,7 +482,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "Restore Height",
+                                text = stringResource(id = R.string.restore_height),
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(start = 4.dp)
                             )
@@ -532,18 +506,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                     )
                 }
                 item {
-                    Button(
-                        shape = MaterialTheme.shapes.small,
-                        border = BorderStroke(
-                            1.dp,
-                            color = MaterialTheme.colorScheme.onSecondary
-                        ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                        ),
-                        contentPadding = PaddingValues(
-                            all = 14.dp
-                        ),
+                    AnonOutlineButton(
                         modifier = Modifier
                             .padding(
                                 horizontal = 8.dp,
@@ -553,7 +516,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                             exportForNero()
                         }) {
                         Text(
-                            "Export [ИΞR0] keys", style = MaterialTheme.typography.bodyMedium.copy(
+                            stringResource(id = R.string.export_nero_keys), style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onSecondary.copy(
                                     alpha = 0.8f
                                 )

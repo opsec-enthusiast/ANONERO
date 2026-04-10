@@ -46,6 +46,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -79,6 +80,7 @@ import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import timber.log.Timber
 import androidx.core.content.edit
+import io.anonero.R
 
 
 private const val TAG = "SecureWipe"
@@ -246,20 +248,20 @@ fun SecureWipe(
             title = {
                 Column {
                     Text(
-                        text = "Securely Wipe",
+                        text = stringResource(id = R.string.securely_wipe_title),
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontSize = 18.sp
                         )
                     )
                     Spacer(Modifier.padding(12.dp))
                     Text(
-                        text = "This action will permanently erase all wallet data and encryption keys using secure deletion methods. This process cannot be undone.",
+                        text = stringResource(id = R.string.securely_wipe_warning),
                         style = MaterialTheme.typography.bodyMedium.copy(
                         )
                     )
                     Spacer(Modifier.padding(8.dp))
                     Text(
-                        text = "Enter wallet passphrase to continue",
+                        text = stringResource(id = R.string.securely_wipe_passphrase_prompt),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Light
                     )
@@ -309,7 +311,7 @@ fun SecureWipe(
                         ),
                     onClick = {
                         clearWallet()
-                    }) { Text("Wipe") }
+                    }) { Text(stringResource(id = R.string.wipe)) }
             },
             dismissButton = {
                 Button(
@@ -330,7 +332,7 @@ fun SecureWipe(
                     )
                 ) {
                     Text(
-                        "Cancel",
+                        stringResource(id = R.string.cancel),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSecondary.copy(
                                 alpha = 0.8f

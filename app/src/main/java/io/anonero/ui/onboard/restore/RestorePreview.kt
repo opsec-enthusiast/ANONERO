@@ -1,5 +1,6 @@
 package io.anonero.ui.onboard.restore
 
+import AnonOutlineButton
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +48,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
+import io.anonero.R
 import io.anonero.model.BackupPayload
 import io.anonero.model.Wallet
 import io.anonero.ui.onboard.graph.OnboardLogsScreen
@@ -144,7 +147,7 @@ fun RestorePreview(
             securePolicy = SecureFlagPolicy.SecureOn, dismissOnBackPress = false
         ), title = {
             Text(
-                text = "Enter Seed Phrase", style = MaterialTheme.typography.titleSmall.copy(
+                text = stringResource(R.string.enter_seed_phrase), style = MaterialTheme.typography.titleSmall.copy(
                     fontSize = 18.sp
                 )
             )
@@ -187,7 +190,7 @@ fun RestorePreview(
 
                     ), onClick = {
                     restoreFromBackup()
-                }) { Text("Restore") }
+                }) { Text(stringResource(R.string.restore)) }
         }, dismissButton = {
             Button(
                 onClick = {
@@ -200,7 +203,7 @@ fun RestorePreview(
                 )
             ) {
                 Text(
-                    "Cancel", style = MaterialTheme.typography.bodyMedium.copy(
+                    stringResource(R.string.cancel), style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSecondary.copy(
                             alpha = 0.8f
                         )
@@ -226,7 +229,7 @@ fun RestorePreview(
                 }
             }, title = {
                 Text(
-                    "Backup Preview",
+                    stringResource(R.string.backup_preview),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = MaterialTheme.colorScheme.onSecondary.copy(
@@ -252,7 +255,7 @@ fun RestorePreview(
                         fontSize = 16.sp
                     )
                 )
-                OutlinedButton(
+                AnonOutlineButton(
                     onClick = {
                         navigateTo(OnboardLogsScreen)
                     },
@@ -262,8 +265,6 @@ fun RestorePreview(
                         .padding(
                             horizontal = 16.dp,
                         ),
-                    shape = MaterialTheme.shapes.medium,
-                    contentPadding = PaddingValues(12.dp)
                 ) {
                     Text("View Logs")
                 }
@@ -399,7 +400,7 @@ fun RestorePreview(
                             .padding(8.dp),
                         headlineContent = {
                             Text(
-                                "Node ",
+                                stringResource(R.string.node).lowercase(),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(
                                     top = 8.dp
@@ -420,7 +421,7 @@ fun RestorePreview(
                                         )
                                     )
                                     ListWidget(
-                                        title = "Host",
+                                        title = stringResource(R.string.host),
                                         subtitle = "${node.host}:${node.rpcPort}",
                                         modifier = Modifier.padding(
                                             bottom = 8.dp
@@ -433,7 +434,7 @@ fun RestorePreview(
                                     )
                                     if (node.password.isNotEmpty())
                                         ListWidget(
-                                            title = "Password",
+                                            title = stringResource(R.string.password),
                                             subtitle = "${node.password}",
                                         )
                                     if (node.password.isNotEmpty())
@@ -444,7 +445,7 @@ fun RestorePreview(
                                         )
                                     if (node.username.isNotEmpty())
                                         ListWidget(
-                                            title = "Username",
+                                            title = stringResource(R.string.username),
                                             subtitle = "${node.username}",
                                         )
 
@@ -454,7 +455,7 @@ fun RestorePreview(
                 }
                 item {
                     if (errorMessage.isEmpty()) {
-                        OutlinedButton(
+                        AnonOutlineButton(
                             enabled = !loading,
                             onClick = {
                                 scope.launch(Dispatchers.IO) {
@@ -480,15 +481,7 @@ fun RestorePreview(
                                 }
 
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .safeContentPadding()
-                                .padding(
-                                    horizontal = 16.dp,
-                                ),
-                            shape = MaterialTheme.shapes.medium,
-                            contentPadding = PaddingValues(12.dp)
-                        ) {
+                        ){
                             Text("Restore Wallet")
                         }
                     }
@@ -520,9 +513,9 @@ fun RestorePreview(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
-                                top = 8.dp,
-                                bottom = 8.dp
-                            )
+                                    top = 8.dp,
+                                    bottom = 8.dp
+                                )
                         )
                     }
                 }

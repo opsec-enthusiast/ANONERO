@@ -353,7 +353,15 @@ class Wallet {
 
     @Throws(java.lang.Exception::class)
     fun selectUtxos(amount: Long, sendAll: Boolean): java.util.ArrayList<String> {
-        val basicFeeEstimate = calculateBasicFee(amount)
+        if(balance <= 0){
+            throw java.lang.Exception("insufficient wallet balance")
+        }
+        val basicFeeEstimate = try {
+            calculateBasicFee(amount)
+        } catch (e: Exception) {
+            Timber.tag("Wallet").e(e)
+             return arrayListOf()
+        }
         val amountWithBasicFee = amount + basicFeeEstimate
         val selectedUtxos = java.util.ArrayList<String>()
         val seenTxs = java.util.ArrayList<String>()

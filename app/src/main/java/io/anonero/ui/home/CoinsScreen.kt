@@ -39,12 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.asLiveData
+import io.anonero.R
 import io.anonero.model.CoinsInfo
 import io.anonero.model.Wallet
 import io.anonero.services.WalletState
@@ -73,11 +75,11 @@ fun CoinsScreen(
 
     var message: String? = null;
     if (loading) {
-        message = "Wallet is loading\n please wait..."
+        message = stringResource(R.string.wallet_loading)
     } else if (!nodeConnected) {
-        message = "Node disconnected\nplease connect to a node to view coins"
+        message = stringResource(R.string.node_disconnected)
     } else if(coins.isEmpty()) {
-        message = "No coins available\nYour coins will appear here once you receive transactions"
+        message = stringResource(R.string.no_coins_available)
     }
 
     fun selectCoin(coin: CoinsInfo) {
@@ -130,7 +132,7 @@ fun CoinsScreen(
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(12.dp)
                 ) {
-                    Text(if (selected.size != 0) "Confirm" else "Spend")
+                    Text(if (selected.size != 0) stringResource(R.string.confirm) else stringResource(R.string.spend))
                 }
             }
         },
@@ -171,7 +173,7 @@ fun CoinsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "OUTPUT ${index + 1}", color = MaterialTheme.colorScheme.primary,
+                                stringResource(R.string.output_number, index + 1), color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
                                 Formats.getDisplayAmount(coin.amount),

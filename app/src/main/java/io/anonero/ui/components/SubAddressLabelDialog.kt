@@ -26,12 +26,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import io.anonero.R
 import io.anonero.util.ShakeConfig
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
@@ -96,7 +98,7 @@ fun SubAddressLabelDialog(label: String, onSave: (String) -> Unit, onCancel: () 
         ),
         title = {
             Text(
-                text = "Set subaddress label",
+                text = stringResource(R.string.set_subaddress_label),
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontSize = 16.sp
                 )

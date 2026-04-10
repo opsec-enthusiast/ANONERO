@@ -1,6 +1,7 @@
 package io.anonero.ui.onboard
 
 import AnonNeroTheme
+import AnonOutlineButton
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.anonero.R
+import androidx.compose.ui.res.stringResource
 
 
 @Composable
@@ -98,7 +100,7 @@ fun SetupPassphrase(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "PASSPHRASE ENCRYPTION",
+                    text = stringResource(R.string.passphrase_encryption),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -113,7 +115,7 @@ fun SetupPassphrase(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "PASSPHRASE",
+                            text = stringResource(R.string.passphrase),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -138,7 +140,7 @@ fun SetupPassphrase(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = "CONFIRM PASSPHRASE",
+                            text = stringResource(R.string.confirm_passphrase),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -157,7 +159,7 @@ fun SetupPassphrase(
                             isError = passPhraseConfirm != passPhrase,
                             supportingText = {
                                 if (passPhraseConfirm != passPhrase) {
-                                    Text(text = "Passphrases do not match")
+                                    Text(text = stringResource(R.string.passphrases_do_not_match))
                                 }
                             },
                             onValueChange = {
@@ -169,7 +171,7 @@ fun SetupPassphrase(
                 )
             }
 
-            OutlinedButton(
+            AnonOutlineButton(
                 enabled = passPhraseMatched && passPhrase.length >= 4,
                 onClick = {
                     oNextPressed(passPhrase)
@@ -179,10 +181,8 @@ fun SetupPassphrase(
                     .padding(
                         horizontal = 12.dp
                     ),
-                shape = MaterialTheme.shapes.medium,
-                contentPadding = PaddingValues(12.dp)
             ) {
-                Text("NEXT")
+                Text(stringResource(R.string.next))
             }
         }
     }

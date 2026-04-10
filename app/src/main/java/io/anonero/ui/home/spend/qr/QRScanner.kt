@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
@@ -34,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sparrowwallet.hummingbird.ResultType
 import com.sparrowwallet.hummingbird.URDecoder
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.model.AnonUrRegistryTypes
 import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
@@ -249,10 +251,10 @@ fun URQRScanner(
                 )
             } else {
                 val message = when (detectedUR) {
-                    AnonUrRegistryTypes.XMR_OUTPUT.type -> "Importing outputs"
-                    AnonUrRegistryTypes.XMR_KEY_IMAGE.type -> "Importing key images"
-                    AnonUrRegistryTypes.XMR_TX_SIGNED.type -> "Importing signed transaction"
-                    AnonUrRegistryTypes.XMR_TX_UNSIGNED.type -> "Importing unsigned transaction"
+                    AnonUrRegistryTypes.XMR_OUTPUT.type -> stringResource(R.string.importing_outputs)
+                    AnonUrRegistryTypes.XMR_KEY_IMAGE.type -> stringResource(R.string.importing_key_images)
+                    AnonUrRegistryTypes.XMR_TX_SIGNED.type -> stringResource(R.string.importing_signed_transaction)
+                    AnonUrRegistryTypes.XMR_TX_UNSIGNED.type -> stringResource(R.string.importing_unsigned_transaction)
                     else -> ""
                 }
                 Box(

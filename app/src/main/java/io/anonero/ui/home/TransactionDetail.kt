@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -52,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import io.anonero.R
 import io.anonero.model.TransactionInfo
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
@@ -148,7 +150,7 @@ fun TransactionDetailScreen(
             ),
             title = {
                 Text(
-                    text = "Set transaction description",
+                    text = stringResource(R.string.set_transaction_description),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontSize = 16.sp
                     )
@@ -201,7 +203,7 @@ fun TransactionDetailScreen(
                         ),
                     onClick = {
                         saveNote()
-                    }) { Text("Save") }
+                    }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
                 Button(
@@ -218,7 +220,7 @@ fun TransactionDetailScreen(
                     )
                 ) {
                     Text(
-                        "Dismiss",
+                        stringResource(R.string.dismiss),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSecondary.copy(
                                 alpha = 0.8f
@@ -264,13 +266,13 @@ fun TransactionDetailScreen(
                 }
                 item {
                     DetailItem(
-                        title = "DESTINATION",
+                        title = stringResource(R.string.destination),
                         subtitle = destinations
                     )
                 }
                 item {
                     DetailItem(
-                        title = "DESCRIPTION",
+                        title = stringResource(R.string.description),
                         subtitle = notes.text,
                         trailing = {
                             IconButton(onClick = {
@@ -286,13 +288,13 @@ fun TransactionDetailScreen(
                 }
                 item {
                     DetailItem(
-                        title = "TRANSACTION ID",
+                        title = stringResource(R.string.transaction_id),
                         subtitle = transactionInfo?.hash ?: "____"
                     )
                 }
                 item {
                     DetailItem(
-                        title = "TRANSACTION FEE",
+                        title = stringResource(R.string.transaction_fee),
                         subtitle = if (transactionInfo?.fee != null) {
                             Formats.getDisplayAmount(transactionInfo?.fee!!)
                         } else {
@@ -302,20 +304,20 @@ fun TransactionDetailScreen(
                 }
                 item {
                     DetailItem(
-                        title = "TRANSACTION KEY",
+                        title = stringResource(R.string.transaction_key),
                         subtitle = transactionKey
                     )
                 }
                 item {
                     DetailItem(
-                        title = "CONFIRMATION BLOCK",
+                        title = stringResource(R.string.confirmation_block),
                         subtitle = "${transactionInfo?.blockheight ?: "____"}"
                     )
                 }
                 item {
                     DetailItem(
                         modifier = Modifier.padding(bottom = 24.dp),
-                        title = "TIME",
+                        title = stringResource(R.string.time),
                         subtitle = Formats.formatTransactionTime(
                             transactionInfo!!.timestamp,
                             "HH:mm dd/MM/yyy"

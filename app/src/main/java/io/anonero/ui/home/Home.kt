@@ -111,11 +111,11 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                 showBatteryManagerDialog = false
             },
             title = {
-                Text("Battery Optimization")
+                Text(stringResource(R.string.battery_optimization_title))
             },
             text = {
                 Text(
-                    stringResource(R.string.in_order_for_to_function_properly),
+                    "In order for ΛИ0ИΞR0 to function properly in the background, it is recommended to disable battery optimization.\\nYou can change this setting anytime in Android's app settings.\\n\\nWould you like to proceed?"
                 )
             },
             confirmButton = {
@@ -128,7 +128,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                         showBatteryManagerDialog = false
                     }
                 ) {
-                    Text("Enable")
+                    Text(stringResource(R.string.enable))
                 }
             },
             dismissButton = {
@@ -138,7 +138,7 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
                     }
                 ) {
                     Text(
-                        "Cancel",
+                        stringResource(R.string.cancel),
                         style = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSecondary)
                     )
                 }

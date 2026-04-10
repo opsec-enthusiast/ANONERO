@@ -3,6 +3,7 @@ package io.anonero.ui.home.settings
 import AnonNeroTheme
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -59,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -74,6 +76,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import io.anonero.AnonConfig
+import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.services.AnonWalletHandler
 import io.anonero.services.TorService
@@ -264,7 +267,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         }
                     },
                     title = {
-                        Text("Proxy")
+                        Text(stringResource(id = R.string.proxy))
                     },
                 )
                 Box(modifier = Modifier.height(4.dp)) {
@@ -308,13 +311,13 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                         containerColor = Color.Transparent
                     ),
                     headlineContent = {
-                        Text("Manual Proxy")
+                        Text(stringResource(id = R.string.manual_proxy))
                     },
                     trailingContent = {
                         Switch(
                             checked = useManualProxy,
                             thumbContent = {
-                                Text(if (useManualProxy) "ON" else "OFF")
+                                Text(if (useManualProxy) stringResource(id = R.string.on) else stringResource(id = R.string.off))
                             },
                             onCheckedChange = { onState ->
                                 proxyViewModel.enableTor(!onState)
@@ -354,7 +357,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     ),
                     placeholder = {
                         Text(
-                            text = "proxy address",
+                            text = stringResource(id = R.string.proxy_address),
                             color = labelColor
                         )
                     },
@@ -378,7 +381,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     ),
                     placeholder = {
                         Text(
-                            text = "port",
+                            text = stringResource(id = R.string.proxy_port),
                             color = labelColor
                         )
                     },
@@ -400,7 +403,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                                 scope.launch(Dispatchers.Main) {
                                     Toast.makeText(
                                         AnonConfig.context,
-                                        "Proxy updated",
+                                        AnonConfig.context?.getString(R.string.proxy_updated) ?: "Proxy updated",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -416,7 +419,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     shape = MaterialTheme.shapes.medium,
                     contentPadding = PaddingValues(12.dp)
                 ) {
-                    Text("Update External Proxy")
+                    Text(stringResource(id = R.string.update_external_proxy))
                 }
 
             if (!useManualProxy) {
@@ -435,7 +438,7 @@ fun ProxySettings(onBackPress: () -> Unit = {}) {
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Using built in tor",
+                        stringResource(id = R.string.using_built_in_tor),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onBackground.copy(
                                 alpha = 0.8f
@@ -472,7 +475,7 @@ fun TorLogs() {
     ) {
         item {
             Text(
-                "Tor Logs", textAlign = TextAlign.Center, modifier = Modifier
+                stringResource(id = R.string.tor_logs), textAlign = TextAlign.Center, modifier = Modifier
                     .fillMaxWidth()
                     .padding(
                         vertical = 12.dp,

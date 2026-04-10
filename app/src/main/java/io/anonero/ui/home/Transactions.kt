@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -171,7 +172,7 @@ fun TransactionScreen(
             }) {
             LockScreen(
                 mode = LockScreenMode.LOCK_SCREEN,
-                modifier = Modifier.fillMaxHeight(0.95f),
+                modifier = Modifier.fillMaxSize(),
                 onUnLocked = { _, shortCut ->
                     scope.launch {
                         walletState.setBackGroundSync(false)
@@ -557,6 +558,7 @@ fun TransactionScreen(
                             tint = color
                         )
                     }
+                    val context = LocalContext.current
                     LockButton(
                         onLock = {
                             scope.launch {
@@ -612,19 +614,19 @@ fun TransactionScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Coin Control") },
+                                text = { Text(stringResource(R.string.coin_control)) },
                                 onClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Refresh") },
+                                text = { Text(stringResource(R.string.refresh)) },
                                 onClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Resync BlockChain") },
+                                text = { Text(stringResource(R.string.resync_blockchain)) },
                                 onClick = {
                                     showMenu = false
                                     val result = walletState.resyncBlockchain()
@@ -639,7 +641,7 @@ fun TransactionScreen(
                                     } else {
                                         scope.launch {
                                             toastState.show(
-                                                "Resync initiated… this may take a while.",
+                                                context.getString(R.string.resync_initiated_this_may_take_a_while),
                                                 type = ToastType.Success,
                                             )
                                         }
@@ -648,25 +650,25 @@ fun TransactionScreen(
                             )
                             if (AnonConfig.viewOnly) {
                                 DropdownMenuItem(
-                                    text = { Text("Show Outputs") },
+                                    text = { Text(stringResource(R.string.show_outputs)) },
                                     onClick = {
                                         qrScannerParam =
                                             SpendQRExchangeParam(
                                                 exportType = ExportType.OUTPUT,
-                                                title = "OUTPUTS",
-                                                ctaText = "SCAN KEY IMAGES",
+                                                title = context.getString(R.string.outputs),
+                                                ctaText = context.getString(R.string.scan_key_images),
                                             )
                                     }
                                 )
                             }
                             if (!AnonConfig.viewOnly) {
                                 DropdownMenuItem(
-                                    text = { Text("Export Key Images") },
+                                    text = { Text(stringResource(R.string.export_key_images)) },
                                     onClick = {
                                         qrScannerParam =
                                             SpendQRExchangeParam(
                                                 exportType = ExportType.IMAGE,
-                                                title = "KEY IMAGES",
+                                                title = context.getString(R.string.key_images),
                                                 ctaText = "",
                                             )
                                     }
@@ -710,7 +712,7 @@ fun TransactionScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "Pull to start refresh",
+                                stringResource(R.string.pull_to_start_refresh),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(
                                     top = 16.dp, bottom = 8.dp
@@ -853,7 +855,7 @@ fun LockButton(onLock: () -> Unit, loading: Boolean = false) {
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
         } else {
-            Icon(Icons.Default.Lock, contentDescription = "Lock")
+            Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.lock))
         }
     }
 }

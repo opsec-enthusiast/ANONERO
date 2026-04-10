@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.asLiveData
 import io.anonero.AnonConfig
@@ -127,7 +128,7 @@ fun TorSplash(
                         trackColor = Color.White.copy(alpha = 0.2f)
                     )
                     Text(
-                        text = "INITIALIZING TOR ...", color = Color.White
+                        text = stringResource(R.string.initializing_tor), color = Color.White
                     )
                 }
             }
