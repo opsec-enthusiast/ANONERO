@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -16,8 +15,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -27,16 +29,21 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.asLiveData
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import io.anonero.AnonConfig
 import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.TorService
+import io.anonero.services.NavEvent
 import io.anonero.services.WalletState
 import io.anonero.services.startAnonService
+import io.anonero.ui.home.LockScreen
+import io.anonero.ui.home.LockScreenMode
 import io.anonero.ui.home.graph.homeGraph
 import io.anonero.ui.home.graph.routes.Home
+import io.anonero.ui.home.graph.routes.HomeScreenRoute
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.ui.onboard.graph.onboardingGraph
@@ -46,10 +53,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.qualifier.named
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 private const val TAG = "MainActivity"
@@ -60,6 +69,7 @@ class MainActivity : ComponentActivity() {
     private val walletState: WalletState by inject()
     private val torService: TorService by inject()
     val anonPrefs: SharedPreferences by inject(named(WALLET_PREFERENCES))
+    private val backgroundSyncInProgress = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
@@ -96,17 +106,45 @@ class MainActivity : ComponentActivity() {
                     navController.addOnDestinationChangedListener { x, destination, d ->
                         Timber.tag(TAG).d("destination changed to ${destination.route}")
                     }
-                    NavHost(
-                        navController = navController, popExitTransition = {
-                        ExitTransition.None
-                    }, popEnterTransition = {
-                        EnterTransition.None
-                    }, startDestination = if (walletExist) Home else LandingScreenRoute
-                    ) {
-                        //landing screen and onboarding screens
-                        onboardingGraph(navController, onboardViewModel)
-                        //home bottom navigation
-                        homeGraph(navController)
+                    val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
+                    LaunchedEffect(Unit) {
+                        walletState.navEvent.collect { event ->
+                            when (event) {
+                                is NavEvent.GoHome -> navController.navigate(HomeScreenRoute()) {
+                                    popUpTo(Home) { inclusive = false }
+                                }
+                            }
+                        }
+                    }
+                    Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+                        NavHost(
+                            navController = navController, popExitTransition = {
+                            ExitTransition.None
+                        }, popEnterTransition = {
+                            EnterTransition.None
+                        }, startDestination = if (walletExist) Home else LandingScreenRoute
+                        ) {
+                            //landing screen and onboarding screens
+                            onboardingGraph(navController, onboardViewModel)
+                            //home bottom navigation
+                            homeGraph(navController)
+                        }
+                        if (showLockScreen) {
+                            LockScreen(
+                                mode = LockScreenMode.LOCK_SCREEN,
+                                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                                onUnLocked = { _, _ ->
+                                    // Clear backgroundSync immediately on main thread
+                                    // so the lock screen dismisses instantly, then
+                                    // update wallet state in the background
+                                    backgroundSyncInProgress.set(false)
+                                    walletState.setBackGroundSync(false)
+                                    scope.launch(Dispatchers.IO) {
+                                        walletState.update()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -127,7 +165,6 @@ class MainActivity : ComponentActivity() {
     }
 
     fun startNotificationService() {
-        // Check if the permission is already granted
         if (ContextCompat.checkSelfPermission(
                 this, Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
@@ -147,6 +184,30 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val wallet = WalletManager.instance?.wallet ?: return
+        if (!wallet.isInitialized || walletState.backgroundSync) return
+        if (!backgroundSyncInProgress.compareAndSet(false, true)) return
+        walletState.setBackGroundSync(true)
+        scope.launch(Dispatchers.IO) {
+            walletState.blockUpdates(true)
+            try {
+                if (wallet.startBackgroundSync()) {
+                    walletState.emitNavEvent(NavEvent.GoHome)
+                } else {
+                    walletState.setBackGroundSync(false)
+                }
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "startBackgroundSync error")
+                walletState.setBackGroundSync(false)
+            } finally {
+                walletState.blockUpdates(false)
+                backgroundSyncInProgress.set(false)
+            }
+        }
+    }
+
     override fun onDestroy() {
         scope.launch(Dispatchers.IO) {
             WalletManager.instance?.wallet?.let {
@@ -160,9 +221,6 @@ class MainActivity : ComponentActivity() {
         }
         scope.cancel()
         super.onDestroy()
-        //fix app retain state after close
         Process.killProcess(Process.myPid())
     }
 }
-
-

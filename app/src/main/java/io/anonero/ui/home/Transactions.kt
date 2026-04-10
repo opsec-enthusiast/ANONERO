@@ -144,7 +144,6 @@ fun TransactionScreen(
     val balance by transactionsViewModel.balance.observeAsState()
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior { true }
-    var showLockScreen by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var scanFailure by remember { mutableStateOf<String?>(null) }
     var spendDialog by remember { mutableStateOf<String?>(null) }
@@ -155,40 +154,10 @@ fun TransactionScreen(
     var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     val walletState = koinInject<WalletState>()
+    val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
     val scope = rememberCoroutineScope()
     val toastState = rememberToasterState()
     val activity = LocalActivity.current;
-
-    if (showLockScreen) {
-        Dialog(
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                dismissOnClickOutside = false,
-                dismissOnBackPress = false,
-                decorFitsSystemWindows = false
-            ),
-            onDismissRequest = {
-                showLockScreen = false
-            }) {
-            LockScreen(
-                mode = LockScreenMode.LOCK_SCREEN,
-                modifier = Modifier.fillMaxSize(),
-                onUnLocked = { _, shortCut ->
-                    scope.launch {
-                        walletState.setBackGroundSync(false)
-                        if (shortCut != LockScreenShortCut.HOME) {
-                            navigateToShortCut(shortCut)
-                            delay(130)
-                        }
-                        showLockScreen = false
-                        withContext(Dispatchers.IO) {
-                            walletState.update()
-                        }
-                    }
-                }
-            )
-        }
-    }
 
     if (broadcastSignedTxPath != null) {
         AlertDialog(
@@ -559,27 +528,26 @@ fun TransactionScreen(
                         )
                     }
                     val context = LocalContext.current
-                    LockButton(
-                        onLock = {
-                            scope.launch {
-                                try {
-                                    settingBSync = true
-                                    walletState.blockUpdates(true)
-                                    withContext(Dispatchers.IO) {
-                                        WalletManager.instance?.wallet?.let { wallet: Wallet ->
-                                            if (wallet.startBackgroundSync()) {
-                                                walletState.setBackGroundSync(true)
-                                                showLockScreen = true
-                                            }
-                                        }
-                                    }
-                                } finally {
-                                    walletState.blockUpdates(false)
-                                    settingBSync = false
-                                }
-                            }
-                        }, loading = settingBSync
-                    )
+//                    LockButton(
+//                        onLock = {
+//                            scope.launch {
+//                                try {
+//                                    settingBSync = true
+//                                    walletState.blockUpdates(true)
+//                                    withContext(Dispatchers.IO) {
+//                                        WalletManager.instance?.wallet?.let { wallet: Wallet ->
+//                                            if (wallet.startBackgroundSync()) {
+//                                                walletState.setBackGroundSync(true)
+//                                            }
+//                                        }
+//                                    }
+//                                } finally {
+//                                    walletState.blockUpdates(false)
+//                                    settingBSync = false
+//                                }
+//                            }
+//                        }, loading = settingBSync
+//                    )
                     IconButton(
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = Color.White
