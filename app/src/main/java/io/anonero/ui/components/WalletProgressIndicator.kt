@@ -38,13 +38,13 @@ fun networkConnected(): State<Boolean> {
         initialValue = run {
             val cm = ContextCompat.getSystemService(context, ConnectivityManager::class.java)
             val caps = cm?.getNetworkCapabilities(cm.activeNetwork)
-            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
         }
     ) {
         val cm = ContextCompat.getSystemService(context, ConnectivityManager::class.java)
             ?: return@produceState
         val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
             .build()
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) { value = true }
