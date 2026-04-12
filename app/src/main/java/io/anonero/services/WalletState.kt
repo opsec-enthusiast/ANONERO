@@ -29,6 +29,7 @@ sealed class NavEvent {
 
 class WalletState {
     private var _blockUpdates = false
+    val hideAmountsFlow = MutableStateFlow(false)
     private val _isLoading = MutableStateFlow(false)
     private var _isSyncing = false
     private val _backgroundSync = MutableStateFlow(false)
@@ -148,6 +149,10 @@ class WalletState {
 
     fun blockUpdates(update: Boolean) {
         _blockUpdates = update
+    }
+
+    fun toggleHideAmounts() {
+        hideAmountsFlow.update { !it }
     }
 
     fun setBackGroundSync(startBackgroundSync: Boolean) {

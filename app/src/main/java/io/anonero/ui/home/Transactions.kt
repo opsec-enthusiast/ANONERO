@@ -159,6 +159,7 @@ fun TransactionScreen(
     val torService = koinInject<TorService>()
     val anonPrefs = koinInject<android.content.SharedPreferences>(named(WALLET_PREFERENCES))
     val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
+    val hideAmounts by walletState.hideAmountsFlow.asLiveData().observeAsState(false)
     val scope = rememberCoroutineScope()
     val toastState = rememberToasterState()
     val activity = LocalActivity.current;
@@ -683,7 +684,7 @@ fun TransactionScreen(
                                 vertical = 32.dp
                             )
                             .combinedClickable(
-                                onClick = {},
+                                onClick = { walletState.toggleHideAmounts() },
                                 onLongClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
@@ -691,7 +692,8 @@ fun TransactionScreen(
                             .fillParentMaxWidth()
                     ) {
                         Text(
-                            Formats.getDisplayAmount(balance ?: 0),
+                            if (hideAmounts) Formats.maskAmount(balance ?: 0)
+                            else Formats.getDisplayAmount(balance ?: 0),
                             style = MaterialTheme.typography
                                 .displaySmall,
                             modifier = Modifier.fillParentMaxWidth(),
@@ -702,7 +704,7 @@ fun TransactionScreen(
                 items(transactions.size, key = { transactions[it].getListKey() }) {
                     with(sharedTransitionScope) {
                         TransactionItem(
-                            transactions[it], modifier = Modifier
+                            transactions[it], hideAmounts = hideAmounts, modifier = Modifier
                                 .clickable {
                                     onItemClick(transactions[it])
                                 }
@@ -722,7 +724,7 @@ fun TransactionScreen(
 
 
 @Composable
-fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
+fun TransactionItem(tx: TransactionInfo, hideAmounts: Boolean = false, modifier: Modifier = Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
     val amount = if (isIncoming) tx.amount else tx.amount
     val confirmations = tx.confirmations
@@ -777,7 +779,8 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 }
         }
         Text(
-            Formats.getDisplayAmount(amount),
+            if (hideAmounts) Formats.maskAmount(amount)
+            else Formats.getDisplayAmount(amount),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleLarge
         )

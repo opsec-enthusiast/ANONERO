@@ -21,6 +21,11 @@ object Formats {
     }
 
 
+    fun maskAmount(amount: Long): String {
+        val plain = getDisplayAmount(amount)
+        return "#".repeat(plain.length)
+    }
+
     fun getDisplayAmount(amount: Long): String {
 
         if (amount == 0L) return "0.00000000"
