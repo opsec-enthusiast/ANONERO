@@ -12,6 +12,8 @@ import io.anonero.model.node.DaemonInfo
 import io.anonero.ui.util.getAllUsedSubAddresses
 import io.anonero.ui.util.getLatestSubAddress
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -21,11 +23,16 @@ data class SyncProgress(val progress: Float, val left: Long)
 
 private const val TAG = "WalletState"
 
+sealed class NavEvent {
+    data object GoHome : NavEvent()
+}
+
 class WalletState {
     private var _blockUpdates = false
+    val hideAmountsFlow = MutableStateFlow(false)
     private val _isLoading = MutableStateFlow(false)
     private var _isSyncing = false
-    private var _backgroundSync = false
+    private val _backgroundSync = MutableStateFlow(false)
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
     private val _subAddresses = MutableStateFlow<List<Subaddress>>(listOf())
     private val _balanceInfo = MutableStateFlow<Long?>(null)
@@ -35,6 +42,9 @@ class WalletState {
     private val _coins = MutableStateFlow<List<CoinsInfo>>(arrayListOf())
     private val _syncProgress = MutableStateFlow<SyncProgress?>(null)
     private val _connectedDaemon = MutableStateFlow<DaemonInfo?>(null)
+    private val _connectionStatus = MutableStateFlow<Wallet.ConnectionStatus?>(null)
+    private val _navEvent = MutableSharedFlow<NavEvent>(extraBufferCapacity = 1)
+    private var _previousConnectionStatus: Wallet.ConnectionStatus? = null
 
     val transactions: Flow<List<TransactionInfo>> = _transactions
 
@@ -42,7 +52,8 @@ class WalletState {
     val unLockedBalance: Flow<Long?> = _unLockedBalance
     val isLoading: Flow<Boolean> = _isLoading
     val isSyncing get():Boolean = _isSyncing
-    val backgroundSync get():Boolean = _backgroundSync
+    val backgroundSync get():Boolean = _backgroundSync.value
+    val backgroundSyncFlow: Flow<Boolean> = _backgroundSync
 
     val walletStatus: Flow<Wallet.Status?> = _walletStatus
     val syncProgress: Flow<SyncProgress?> = _syncProgress
@@ -56,6 +67,8 @@ class WalletState {
     }
 
     val daemonInfo: Flow<DaemonInfo?> = _connectedDaemon
+    val connectionStatus: Flow<Wallet.ConnectionStatus?> = _connectionStatus
+    val navEvent = _navEvent.asSharedFlow()
 
     fun update() {
         if (_blockUpdates) return
@@ -103,11 +116,25 @@ class WalletState {
                 _coins.update { (wallet.coins?.all ?: listOf()).fastFilter { !it.spent } }
             }
         }
-        setLoading(false)
     }
 
     fun setLoading(b: Boolean) {
         this._isLoading.update { b }
+    }
+
+    fun emitNavEvent(event: NavEvent) {
+        _navEvent.tryEmit(event)
+    }
+
+    fun setConnectionStatus(status: Wallet.ConnectionStatus) {
+        val previous = _previousConnectionStatus
+        _connectionStatus.update { status }
+        _previousConnectionStatus = status
+        if (previous == Wallet.ConnectionStatus.ConnectionStatus_Disconnected &&
+            status == Wallet.ConnectionStatus.ConnectionStatus_Connected) {
+            setLoading(true)
+            getWallet?.startRefresh()
+        }
     }
 
     fun updateDaemon(daemonInfo: DaemonInfo) {
@@ -115,16 +142,21 @@ class WalletState {
     }
 
     fun syncUpdate(syncProgress: SyncProgress) {
-        _syncProgress.update { syncProgress }
-        _isSyncing = !(syncProgress.progress == 1f || syncProgress.left == 0L)
+        val done = syncProgress.progress == 1f || syncProgress.left == 0L
+        _syncProgress.update { if (done) null else syncProgress }
+        _isSyncing = !done
     }
 
     fun blockUpdates(update: Boolean) {
         _blockUpdates = update
     }
 
+    fun toggleHideAmounts() {
+        hideAmountsFlow.update { !it }
+    }
+
     fun setBackGroundSync(startBackgroundSync: Boolean) {
-        _backgroundSync = startBackgroundSync
+        _backgroundSync.update { startBackgroundSync }
     }
 
     fun getNewAddress() {

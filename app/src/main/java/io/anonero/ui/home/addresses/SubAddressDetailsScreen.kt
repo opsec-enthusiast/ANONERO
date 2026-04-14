@@ -193,7 +193,7 @@ fun SubAddressDetailScreen(
             items(transactions.size) {
                 with(sharedTransitionScope) {
                     TransactionItem(
-                        transactions[it], Modifier
+                        transactions[it], modifier = Modifier
                             .clickable {
                                 onTransactionClick(transactions[it])
                             }

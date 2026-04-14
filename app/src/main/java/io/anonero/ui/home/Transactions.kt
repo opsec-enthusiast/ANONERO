@@ -84,7 +84,6 @@ import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.icons.AnonIcons
 import io.anonero.model.TransactionInfo
-import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.components.WalletProgressIndicator
@@ -98,8 +97,6 @@ import io.anonero.ui.home.spend.qr.ImportEvents
 import io.anonero.ui.home.spend.qr.QRExchangeScreen
 import io.anonero.ui.home.spend.qr.SpendQRExchangeParam
 import io.anonero.ui.home.spend.qr.URQRScanner
-import io.anonero.ui.theme.DangerColor
-import io.anonero.ui.theme.DarkOrange
 import io.anonero.util.Formats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -107,9 +104,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import org.koin.core.qualifier.named
+import io.anonero.services.TorService
+import io.anonero.util.WALLET_PREFERENCES
+import io.anonero.util.WALLET_USE_TOR
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
+import androidx.compose.ui.res.painterResource
 
 
 class TransactionsViewModel : ViewModel() {
@@ -144,7 +146,6 @@ fun TransactionScreen(
     val balance by transactionsViewModel.balance.observeAsState()
     val transactions by transactionsViewModel.transactions.observeAsState(listOf())
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior { true }
-    var showLockScreen by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var scanFailure by remember { mutableStateOf<String?>(null) }
     var spendDialog by remember { mutableStateOf<String?>(null) }
@@ -155,40 +156,13 @@ fun TransactionScreen(
     var qrScannerParam by remember { mutableStateOf<SpendQRExchangeParam?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     val walletState = koinInject<WalletState>()
+    val torService = koinInject<TorService>()
+    val anonPrefs = koinInject<android.content.SharedPreferences>(named(WALLET_PREFERENCES))
+    val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
+    val hideAmounts by walletState.hideAmountsFlow.asLiveData().observeAsState(false)
     val scope = rememberCoroutineScope()
     val toastState = rememberToasterState()
     val activity = LocalActivity.current;
-
-    if (showLockScreen) {
-        Dialog(
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                dismissOnClickOutside = false,
-                dismissOnBackPress = false,
-                decorFitsSystemWindows = false
-            ),
-            onDismissRequest = {
-                showLockScreen = false
-            }) {
-            LockScreen(
-                mode = LockScreenMode.LOCK_SCREEN,
-                modifier = Modifier.fillMaxSize(),
-                onUnLocked = { _, shortCut ->
-                    scope.launch {
-                        walletState.setBackGroundSync(false)
-                        if (shortCut != LockScreenShortCut.HOME) {
-                            navigateToShortCut(shortCut)
-                            delay(130)
-                        }
-                        showLockScreen = false
-                        withContext(Dispatchers.IO) {
-                            walletState.update()
-                        }
-                    }
-                }
-            )
-        }
-    }
 
     if (broadcastSignedTxPath != null) {
         AlertDialog(
@@ -479,7 +453,8 @@ fun TransactionScreen(
     val showIndefiniteLoading by walletState.isLoading.asLiveData().observeAsState(false)
     val refreshState = rememberPullToRefreshState();
     val view = LocalView.current;
-    val daemonStatus by walletState.daemonInfo.asLiveData().observeAsState(null)
+    val torConnected by torService.socksFlow.asLiveData().observeAsState(torService.socks != null)
+    val useTor = anonPrefs.getBoolean(WALLET_USE_TOR, true)
     val hazeState = rememberHazeState()
 
 
@@ -527,60 +502,6 @@ fun TransactionScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            navigateTo(SettingsNodeRoute)
-                        }
-                    ) {
-                        var color: Color = when (daemonStatus?.connectionStatus) {
-                            null -> {
-                                DarkOrange
-                            }
-
-                            Wallet.ConnectionStatus.ConnectionStatus_Disconnected -> {
-                                Color.Red
-                            }
-
-                            Wallet.ConnectionStatus.ConnectionStatus_Connected -> {
-                                Color.Green
-                            }
-
-                            Wallet.ConnectionStatus.ConnectionStatus_WrongVersion -> {
-                                DangerColor
-                            }
-
-                        }
-                        if (showIndefiniteLoading) {
-                            color = DarkOrange
-                        }
-                        Icon(
-                            AnonIcons.Server,
-                            contentDescription = "Node Status",
-                            tint = color
-                        )
-                    }
-                    val context = LocalContext.current
-                    LockButton(
-                        onLock = {
-                            scope.launch {
-                                try {
-                                    settingBSync = true
-                                    walletState.blockUpdates(true)
-                                    withContext(Dispatchers.IO) {
-                                        WalletManager.instance?.wallet?.let { wallet: Wallet ->
-                                            if (wallet.startBackgroundSync()) {
-                                                walletState.setBackGroundSync(true)
-                                                showLockScreen = true
-                                            }
-                                        }
-                                    }
-                                } finally {
-                                    walletState.blockUpdates(false)
-                                    settingBSync = false
-                                }
-                            }
-                        }, loading = settingBSync
-                    )
-                    IconButton(
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = Color.White
                         ),
@@ -590,7 +511,39 @@ fun TransactionScreen(
                     ) {
                         Icon(AnonIcons.Scan, contentDescription = "Scan")
                     }
-
+                    IconButton(
+                        onClick = {
+                            navigateTo(SettingsNodeRoute)
+                        }
+                    ) {
+                        val torIconColor = if (useTor && torConnected == false) Color.Red else Color.White
+                        Icon(
+                            painterResource(R.drawable.ic_tor),
+                            contentDescription = "Tor Status",
+                            tint = torIconColor
+                        )
+                    }
+                    val context = LocalContext.current
+//                    LockButton(
+//                        onLock = {
+//                            scope.launch {
+//                                try {
+//                                    settingBSync = true
+//                                    walletState.blockUpdates(true)
+//                                    withContext(Dispatchers.IO) {
+//                                        WalletManager.instance?.wallet?.let { wallet: Wallet ->
+//                                            if (wallet.startBackgroundSync()) {
+//                                                walletState.setBackGroundSync(true)
+//                                            }
+//                                        }
+//                                    }
+//                                } finally {
+//                                    walletState.blockUpdates(false)
+//                                    settingBSync = false
+//                                }
+//                            }
+//                        }, loading = settingBSync
+//                    )
                     IconButton(
                         colors = IconButtonDefaults.iconButtonColors(
                             contentColor = Color.White
@@ -731,7 +684,7 @@ fun TransactionScreen(
                                 vertical = 32.dp
                             )
                             .combinedClickable(
-                                onClick = {},
+                                onClick = { walletState.toggleHideAmounts() },
                                 onLongClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
@@ -739,7 +692,8 @@ fun TransactionScreen(
                             .fillParentMaxWidth()
                     ) {
                         Text(
-                            Formats.getDisplayAmount(balance ?: 0),
+                            if (hideAmounts) Formats.maskAmount(balance ?: 0)
+                            else Formats.getDisplayAmount(balance ?: 0),
                             style = MaterialTheme.typography
                                 .displaySmall,
                             modifier = Modifier.fillParentMaxWidth(),
@@ -750,7 +704,7 @@ fun TransactionScreen(
                 items(transactions.size, key = { transactions[it].getListKey() }) {
                     with(sharedTransitionScope) {
                         TransactionItem(
-                            transactions[it], modifier = Modifier
+                            transactions[it], hideAmounts = hideAmounts, modifier = Modifier
                                 .clickable {
                                     onItemClick(transactions[it])
                                 }
@@ -770,7 +724,7 @@ fun TransactionScreen(
 
 
 @Composable
-fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
+fun TransactionItem(tx: TransactionInfo, hideAmounts: Boolean = false, modifier: Modifier = Modifier) {
     val isIncoming = tx.direction == TransactionInfo.Direction.Direction_In
     val amount = if (isIncoming) tx.amount else tx.amount
     val confirmations = tx.confirmations
@@ -825,7 +779,8 @@ fun TransactionItem(tx: TransactionInfo, modifier: Modifier = Modifier) {
                 }
         }
         Text(
-            Formats.getDisplayAmount(amount),
+            if (hideAmounts) Formats.maskAmount(amount)
+            else Formats.getDisplayAmount(amount),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleLarge
         )

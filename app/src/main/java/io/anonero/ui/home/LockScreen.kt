@@ -191,17 +191,37 @@ fun LockScreen(
                         }
                     } else {
                         //if wallet is already open, stop background sync from lock screen
-                        try {
-                            walletState.blockUpdates(true)
-                            if (WalletManager.instance?.wallet?.stopBackgroundSync(pin) == true) {
-                                onUnLocked(pin, shortCut)
-                            } else {
-                                withContext(Dispatchers.Main) {
-                                    showError()
+
+                        // Verify PIN locally against stored hash — instant, no network needed.
+                        val prefsHash = prefs.getString(PREFS_PIN_HASH, "")
+                        val pinHash = CrazyPassEncoder.encode(
+                            pin.toByteArray().let { bytes ->
+                                if (bytes.size < 32) bytes + ByteArray(32 - bytes.size)
+                                else bytes
+                            }
+                        )
+                        if (prefsHash != pinHash) {
+                            withContext(Dispatchers.Main) { showError() }
+                        } else {
+                            // PIN correct — unlock UI immediately so the user reaches home
+                            // screen regardless of network state. The connection bar will
+                            // show disconnected until sync resumes.
+                            onUnLocked(pin, shortCut)
+
+                            // stopBackgroundSync + startRefresh run in the background.
+                            // If there is no network, stopBackgroundSync may block until
+                            // connectivity returns, but the user is already on home screen.
+                            scope.launch(Dispatchers.IO) {
+                                walletState.blockUpdates(true)
+                                try {
+                                    WalletManager.instance?.wallet?.stopBackgroundSync(pin)
+                                } catch (e: Exception) {
+                                    Timber.tag(TAG).e(e, "stopBackgroundSync failed")
+                                } finally {
+                                    walletState.blockUpdates(false)
+                                    WalletManager.instance?.wallet?.startRefresh()
                                 }
                             }
-                        } finally {
-                            walletState.blockUpdates(false)
                         }
                     }
                 } catch (e: Exception) {

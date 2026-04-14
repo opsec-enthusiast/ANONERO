@@ -120,7 +120,6 @@ class AnonWalletHandler(
             }
             if (wallet.isInitialized) {
                 wallet.refreshHistory()
-                walletState.setLoading(false)
                 wallet.setTrustedDaemon(true)
                 wallet.startRefresh()
                 walletState.update()
