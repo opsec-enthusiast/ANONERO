@@ -21,12 +21,16 @@ fun NavGraphBuilder.homeGraph(navController: NavHostController) {
             HomeScreenComposable(mainNavController = navController)
         }
         composable<LockScreenRoute> {
+            val walletState = org.koin.compose.koinInject<io.anonero.services.WalletState>()
             LockScreen(
                 onUnLocked = { _, shortCut ->
-                    navController.navigate(HomeScreenRoute(shortCut)) {
+                    navController.navigate(HomeScreenRoute()) {
                         popUpTo(LockScreenRoute) {
                             inclusive = true
                         }
+                    }
+                    if (shortCut != io.anonero.ui.home.LockScreenShortCut.HOME) {
+                        walletState.emitUnlockShortcut(shortCut)
                     }
                 }
             )
