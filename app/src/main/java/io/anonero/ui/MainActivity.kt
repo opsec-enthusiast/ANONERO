@@ -190,6 +190,10 @@ class MainActivity : ComponentActivity() {
         if (!wallet.isInitialized || walletState.backgroundSync) return
         if (!backgroundSyncInProgress.compareAndSet(false, true)) return
         walletState.setBackGroundSync(true)
+        if (AnonConfig.viewOnly) {
+            backgroundSyncInProgress.set(false)
+            return
+        }
         scope.launch(Dispatchers.IO) {
             walletState.blockUpdates(true)
             try {
