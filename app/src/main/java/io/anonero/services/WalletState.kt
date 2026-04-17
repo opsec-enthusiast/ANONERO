@@ -33,6 +33,7 @@ class WalletState {
     private val _isLoading = MutableStateFlow(false)
     private var _isSyncing = false
     private val _backgroundSync = MutableStateFlow(false)
+    private val _incomingTx = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
     private val _subAddresses = MutableStateFlow<List<Subaddress>>(listOf())
     private val _balanceInfo = MutableStateFlow<Long?>(null)
@@ -69,6 +70,7 @@ class WalletState {
     val daemonInfo: Flow<DaemonInfo?> = _connectedDaemon
     val connectionStatus: Flow<Wallet.ConnectionStatus?> = _connectionStatus
     val navEvent = _navEvent.asSharedFlow()
+    val incomingTx = _incomingTx.asSharedFlow()
 
     fun update() {
         if (_blockUpdates) return
@@ -101,13 +103,19 @@ class WalletState {
                     }
                 }
             }
-            _transactions.update {
-                (wallet.history?.all?.sortedWith(comparator = { o1, o2 ->
-                    o2.timestamp.compareTo(
-                        o1.timestamp
-                    )
-                }) ?: listOf()).fastDistinctBy {
-                    it.getListKey()
+            val oldTxCount = _transactions.value.size
+            val updatedTxs = (wallet.history?.all?.sortedWith(comparator = { o1, o2 ->
+                o2.timestamp.compareTo(o1.timestamp)
+            }) ?: listOf()).fastDistinctBy {
+                it.getListKey()
+            }
+            _transactions.update { updatedTxs }
+            if (oldTxCount > 0 && updatedTxs.size > oldTxCount) {
+                val hasNewIncoming = updatedTxs.take(updatedTxs.size - oldTxCount).any {
+                    it.direction == TransactionInfo.Direction.Direction_In
+                }
+                if (hasNewIncoming) {
+                    _incomingTx.tryEmit(Unit)
                 }
             }
             if (!backgroundSync) {
