@@ -36,11 +36,11 @@ import io.anonero.AnonConfig
 import io.anonero.model.WalletManager
 import io.anonero.services.AnonNeroService
 import io.anonero.services.TorService
-import io.anonero.services.NavEvent
 import io.anonero.services.WalletState
 import io.anonero.services.startAnonService
 import io.anonero.ui.home.LockScreen
 import io.anonero.ui.home.LockScreenMode
+import io.anonero.ui.home.LockScreenShortCut
 import io.anonero.ui.home.graph.homeGraph
 import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.home.graph.routes.HomeScreenRoute
@@ -107,15 +107,6 @@ class MainActivity : ComponentActivity() {
                         Timber.tag(TAG).d("destination changed to ${destination.route}")
                     }
                     val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
-                    LaunchedEffect(Unit) {
-                        walletState.navEvent.collect { event ->
-                            when (event) {
-                                is NavEvent.GoHome -> navController.navigate(HomeScreenRoute()) {
-                                    popUpTo(Home) { inclusive = false }
-                                }
-                            }
-                        }
-                    }
                     Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
                         NavHost(
                             navController = navController, popExitTransition = {
@@ -133,12 +124,17 @@ class MainActivity : ComponentActivity() {
                             LockScreen(
                                 mode = LockScreenMode.LOCK_SCREEN,
                                 modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                                onUnLocked = { _, _ ->
-                                    // Clear backgroundSync immediately on main thread
-                                    // so the lock screen dismisses instantly, then
-                                    // update wallet state in the background
+                                onUnLocked = { _, shortCut ->
                                     backgroundSyncInProgress.set(false)
-                                    walletState.setBackGroundSync(false)
+                                    if (shortCut != LockScreenShortCut.HOME) {
+                                        walletState.emitUnlockShortcut(shortCut)
+                                        scope.launch {
+                                            kotlinx.coroutines.delay(250)
+                                            walletState.setBackGroundSync(false)
+                                        }
+                                    } else {
+                                        walletState.setBackGroundSync(false)
+                                    }
                                     scope.launch(Dispatchers.IO) {
                                         walletState.update()
                                     }
@@ -189,6 +185,7 @@ class MainActivity : ComponentActivity() {
         val wallet = WalletManager.instance?.wallet ?: return
         if (!wallet.isInitialized || walletState.backgroundSync) return
         if (!backgroundSyncInProgress.compareAndSet(false, true)) return
+        walletState.emitUnlockShortcut(LockScreenShortCut.HOME)
         walletState.setBackGroundSync(true)
         if (AnonConfig.viewOnly) {
             backgroundSyncInProgress.set(false)
@@ -197,9 +194,7 @@ class MainActivity : ComponentActivity() {
         scope.launch(Dispatchers.IO) {
             walletState.blockUpdates(true)
             try {
-                if (wallet.startBackgroundSync()) {
-                    walletState.emitNavEvent(NavEvent.GoHome)
-                } else {
+                if (!wallet.startBackgroundSync()) {
                     walletState.setBackGroundSync(false)
                 }
             } catch (e: Exception) {

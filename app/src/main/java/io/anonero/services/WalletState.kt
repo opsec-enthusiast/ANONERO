@@ -11,21 +11,20 @@ import io.anonero.model.WalletManager
 import io.anonero.model.node.DaemonInfo
 import io.anonero.ui.util.getAllUsedSubAddresses
 import io.anonero.ui.util.getLatestSubAddress
+import io.anonero.ui.home.LockScreenShortCut
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
 data class SyncProgress(val progress: Float, val left: Long)
 
 private const val TAG = "WalletState"
-
-sealed class NavEvent {
-    data object GoHome : NavEvent()
-}
 
 class WalletState {
     private var _blockUpdates = false
@@ -44,8 +43,9 @@ class WalletState {
     private val _syncProgress = MutableStateFlow<SyncProgress?>(null)
     private val _connectedDaemon = MutableStateFlow<DaemonInfo?>(null)
     private val _connectionStatus = MutableStateFlow<Wallet.ConnectionStatus?>(null)
-    private val _navEvent = MutableSharedFlow<NavEvent>(extraBufferCapacity = 1)
     private var _previousConnectionStatus: Wallet.ConnectionStatus? = null
+    private val _unlockShortcut = Channel<LockScreenShortCut>(capacity = 1)
+    val unlockShortcut = _unlockShortcut.receiveAsFlow()
 
     val transactions: Flow<List<TransactionInfo>> = _transactions
 
@@ -69,7 +69,6 @@ class WalletState {
 
     val daemonInfo: Flow<DaemonInfo?> = _connectedDaemon
     val connectionStatus: Flow<Wallet.ConnectionStatus?> = _connectionStatus
-    val navEvent = _navEvent.asSharedFlow()
     val incomingTx = _incomingTx.asSharedFlow()
 
     fun update() {
@@ -130,8 +129,8 @@ class WalletState {
         this._isLoading.update { b }
     }
 
-    fun emitNavEvent(event: NavEvent) {
-        _navEvent.tryEmit(event)
+    fun emitUnlockShortcut(shortcut: LockScreenShortCut) {
+        _unlockShortcut.trySend(shortcut)
     }
 
     fun setConnectionStatus(status: Wallet.ConnectionStatus) {
