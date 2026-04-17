@@ -153,6 +153,9 @@ class WalletState {
         val done = syncProgress.progress == 1f || syncProgress.left == 0L
         _syncProgress.update { if (done) null else syncProgress }
         _isSyncing = !done
+        if (done) {
+            _connectionStatus.update { Wallet.ConnectionStatus.ConnectionStatus_Connected }
+        }
     }
 
     fun blockUpdates(update: Boolean) {
