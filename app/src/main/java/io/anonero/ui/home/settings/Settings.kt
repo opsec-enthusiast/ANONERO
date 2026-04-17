@@ -260,15 +260,6 @@ fun SettingsPage(
                             thickness = 2.5.dp
                         )
                     }
-                    item {
-                        SettingsMenuItem(title = stringResource(R.string.settings_logs), onClick = {
-                            navigateTo(SettingsLogs)
-                        })
-                        HorizontalDivider(
-                            thickness = 2.5.dp
-                        )
-                    }
-
                 }
             }
             Column(
@@ -285,7 +276,8 @@ fun SettingsPage(
                         ),
                         fontSize = 12.sp
                     ),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable { navigateTo(SettingsLogs) }
                 )
             }
         }
