@@ -128,7 +128,7 @@
     <string name="settings_export_backup">Export Backup</string>
     <string name="settings_secure_wipe">Secure Wipe</string>
     <string name="settings_logs">Logs</string>
-    <string name="settings_app_version">%1$s %2$s (%3$d)</string>
+    <string name="settings_app_version">%1$s %2$s</string>
     <string name="total">Total</string>
     <string name="finish">FINISH</string>
     <string name="broadcast_tx">BROADCAST TX</string>
