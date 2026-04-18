@@ -260,15 +260,6 @@ fun SettingsPage(
                             thickness = 2.5.dp
                         )
                     }
-                    item {
-                        SettingsMenuItem(title = stringResource(R.string.settings_logs), onClick = {
-                            navigateTo(SettingsLogs)
-                        })
-                        HorizontalDivider(
-                            thickness = 2.5.dp
-                        )
-                    }
-
                 }
             }
             Column(
@@ -278,14 +269,15 @@ fun SettingsPage(
                     .padding(bottom = 64.dp)
             ) {
                 Text(
-                    stringResource(R.string.settings_app_version, stringResource(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                    stringResource(R.string.settings_app_version, stringResource(R.string.app_name), BuildConfig.VERSION_NAME),
                     style = MaterialTheme.typography.labelLarge.copy(
                         color = MaterialTheme.colorScheme.onSecondary.copy(
                             alpha = 0.6f,
                         ),
                         fontSize = 12.sp
                     ),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable { navigateTo(SettingsLogs) }
                 )
             }
         }

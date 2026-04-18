@@ -71,6 +71,8 @@ import io.anonero.ui.home.settings.SettingsPage
 import io.anonero.ui.home.spend.ReviewTransactionScreen
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.util.isIgnoringBatteryOptimizations
+import org.koin.compose.koinInject
+import io.anonero.services.WalletState
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("BatteryLife")
@@ -83,16 +85,29 @@ fun HomeScreenComposable(modifier: Modifier = Modifier, mainNavController: NavHo
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: TransactionsRoute
     var showBatteryManagerDialog by remember { mutableStateOf(false) }
+    val walletState = koinInject<WalletState>()
 
-    val homeScreenRoute =
-        mainNavController?.currentBackStackEntryAsState()?.value?.toRoute<HomeScreenRoute>()
-
-    val startDestination: Any = when (homeScreenRoute?.lockScreenShortCut) {
-        LockScreenShortCut.HOME -> TransactionsRoute
-        LockScreenShortCut.RECEIVE -> ReceiveRoute
-        LockScreenShortCut.SEND -> SendScreenRoute(address = "")
-        null -> TransactionsRoute
+    val startDestination: Any = TransactionsRoute
+    
+    LaunchedEffect(Unit) {
+        walletState.unlockShortcut.collect { shortcut ->
+            when (shortcut) {
+                LockScreenShortCut.HOME -> bottomNavController.navigate(TransactionsRoute) {
+                    popUpTo(TransactionsRoute) { inclusive = true }
+                    launchSingleTop = true
+                }
+                LockScreenShortCut.RECEIVE -> bottomNavController.navigate(ReceiveRoute) {
+                    popUpTo(TransactionsRoute) { inclusive = false }
+                    launchSingleTop = true
+                }
+                LockScreenShortCut.SEND -> bottomNavController.navigate(SendScreenRoute(address = "")) {
+                    popUpTo(TransactionsRoute) { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
+        }
     }
+    
     LaunchedEffect(currentRoute) {
         if (getRoutes().find { it.getRouteAsString == currentRoute } != null) {
             showBottomNavigation = true

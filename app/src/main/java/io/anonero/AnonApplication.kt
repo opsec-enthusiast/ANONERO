@@ -21,6 +21,7 @@ import timber.log.Timber.DebugTree
 
 
 const val FOREGROUND_CHANNEL = "anon_foreground"
+const val TX_CHANNEL = "anon_transactions"
 private const val TAG = "AnonApplication"
 
 class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
@@ -81,6 +82,13 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
         )
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(foregroundChannel)
+        notificationManager.createNotificationChannel(
+            NotificationChannel(
+                TX_CHANNEL,
+                "Incoming Transactions",
+                NotificationManager.IMPORTANCE_HIGH,
+            )
+        )
     }
 
     override fun onTerminate() {

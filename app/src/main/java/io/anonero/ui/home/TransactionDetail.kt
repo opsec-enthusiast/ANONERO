@@ -40,6 +40,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -267,7 +269,8 @@ fun TransactionDetailScreen(
                 item {
                     DetailItem(
                         title = stringResource(R.string.destination),
-                        subtitle = destinations
+                        subtitle = destinations,
+                        copyable = true
                     )
                 }
                 item {
@@ -289,7 +292,8 @@ fun TransactionDetailScreen(
                 item {
                     DetailItem(
                         title = stringResource(R.string.transaction_id),
-                        subtitle = transactionInfo?.hash ?: "____"
+                        subtitle = transactionInfo?.hash ?: "____",
+                        copyable = true
                     )
                 }
                 item {
@@ -305,7 +309,8 @@ fun TransactionDetailScreen(
                 item {
                     DetailItem(
                         title = stringResource(R.string.transaction_key),
-                        subtitle = transactionKey
+                        subtitle = transactionKey,
+                        copyable = true
                     )
                 }
                 item {
@@ -335,13 +340,22 @@ fun DetailItem(
     modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
+    copyable: Boolean = false,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    val clipboardManager = LocalClipboardManager.current
+    val view = LocalView.current
     ListItem(
-        modifier = modifier.padding(
-        horizontal = 8.dp,
-        vertical = 4.dp
-    ),
+        modifier = modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .then(
+                if (copyable && subtitle.isNotEmpty() && subtitle != "____") {
+                    Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(subtitle))
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    }
+                } else Modifier
+            ),
         trailingContent = trailing,
         headlineContent = {
             Text(

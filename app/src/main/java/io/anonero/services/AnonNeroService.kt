@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import io.anonero.FOREGROUND_CHANNEL
+import io.anonero.TX_CHANNEL
 import io.anonero.R
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
@@ -90,6 +91,11 @@ class AnonNeroService : Service() {
             while (scope.isActive) {
                 updateNotificationState()
                 delay(1000)
+            }
+        }
+        scope.launch {
+            walletState.incomingTx.collect {
+                postIncomingTxNotification()
             }
         }
         scope.launch {
@@ -227,6 +233,18 @@ class AnonNeroService : Service() {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
+    }
+
+    private fun postIncomingTxNotification() {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(applicationContext, TX_CHANNEL)
+            .setSmallIcon(R.drawable.anon_notification)
+            .setContentTitle("[ΛИ0ИΞR0]")
+            .setContentText("Transaction received")
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        nm.notify(NOTIFICATION_ID + 1, notification)
     }
 
     override fun onDestroy() {

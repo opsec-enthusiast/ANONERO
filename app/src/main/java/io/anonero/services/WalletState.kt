@@ -11,11 +11,14 @@ import io.anonero.model.WalletManager
 import io.anonero.model.node.DaemonInfo
 import io.anonero.ui.util.getAllUsedSubAddresses
 import io.anonero.ui.util.getLatestSubAddress
+import io.anonero.ui.home.LockScreenShortCut
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
@@ -23,16 +26,13 @@ data class SyncProgress(val progress: Float, val left: Long)
 
 private const val TAG = "WalletState"
 
-sealed class NavEvent {
-    data object GoHome : NavEvent()
-}
-
 class WalletState {
     private var _blockUpdates = false
     val hideAmountsFlow = MutableStateFlow(false)
     private val _isLoading = MutableStateFlow(false)
     private var _isSyncing = false
     private val _backgroundSync = MutableStateFlow(false)
+    private val _incomingTx = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
     private val _subAddresses = MutableStateFlow<List<Subaddress>>(listOf())
     private val _balanceInfo = MutableStateFlow<Long?>(null)
@@ -43,8 +43,9 @@ class WalletState {
     private val _syncProgress = MutableStateFlow<SyncProgress?>(null)
     private val _connectedDaemon = MutableStateFlow<DaemonInfo?>(null)
     private val _connectionStatus = MutableStateFlow<Wallet.ConnectionStatus?>(null)
-    private val _navEvent = MutableSharedFlow<NavEvent>(extraBufferCapacity = 1)
     private var _previousConnectionStatus: Wallet.ConnectionStatus? = null
+    private val _unlockShortcut = Channel<LockScreenShortCut>(capacity = 1)
+    val unlockShortcut = _unlockShortcut.receiveAsFlow()
 
     val transactions: Flow<List<TransactionInfo>> = _transactions
 
@@ -68,7 +69,7 @@ class WalletState {
 
     val daemonInfo: Flow<DaemonInfo?> = _connectedDaemon
     val connectionStatus: Flow<Wallet.ConnectionStatus?> = _connectionStatus
-    val navEvent = _navEvent.asSharedFlow()
+    val incomingTx = _incomingTx.asSharedFlow()
 
     fun update() {
         if (_blockUpdates) return
@@ -101,13 +102,19 @@ class WalletState {
                     }
                 }
             }
-            _transactions.update {
-                (wallet.history?.all?.sortedWith(comparator = { o1, o2 ->
-                    o2.timestamp.compareTo(
-                        o1.timestamp
-                    )
-                }) ?: listOf()).fastDistinctBy {
-                    it.getListKey()
+            val oldTxCount = _transactions.value.size
+            val updatedTxs = (wallet.history?.all?.sortedWith(comparator = { o1, o2 ->
+                o2.timestamp.compareTo(o1.timestamp)
+            }) ?: listOf()).fastDistinctBy {
+                it.getListKey()
+            }
+            _transactions.update { updatedTxs }
+            if (oldTxCount > 0 && updatedTxs.size > oldTxCount) {
+                val hasNewIncoming = updatedTxs.take(updatedTxs.size - oldTxCount).any {
+                    it.direction == TransactionInfo.Direction.Direction_In
+                }
+                if (hasNewIncoming) {
+                    _incomingTx.tryEmit(Unit)
                 }
             }
             if (!backgroundSync) {
@@ -122,8 +129,8 @@ class WalletState {
         this._isLoading.update { b }
     }
 
-    fun emitNavEvent(event: NavEvent) {
-        _navEvent.tryEmit(event)
+    fun emitUnlockShortcut(shortcut: LockScreenShortCut) {
+        _unlockShortcut.trySend(shortcut)
     }
 
     fun setConnectionStatus(status: Wallet.ConnectionStatus) {
@@ -145,6 +152,9 @@ class WalletState {
         val done = syncProgress.progress == 1f || syncProgress.left == 0L
         _syncProgress.update { if (done) null else syncProgress }
         _isSyncing = !done
+        if (done) {
+            _connectionStatus.update { Wallet.ConnectionStatus.ConnectionStatus_Connected }
+        }
     }
 
     fun blockUpdates(update: Boolean) {
