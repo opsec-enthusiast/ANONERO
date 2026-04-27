@@ -131,15 +131,11 @@ class ProxySettingsViewModel(
         updateProxyState()
         viewModelScope.launch {
             torService.socksFlow.collect {
-                //user did not set any proxy,
-                //tor socks is ready
-                //user did not disabled built in tor
-                // then set the current proxy to tor proxy
-                if (anonWalletHandler.getProxy() == null
-                    && anonPrefs.getBoolean(WALLET_USE_TOR, true)
+                if (anonPrefs.getBoolean(WALLET_USE_TOR, true)
                     && torService.socks != null
                 ) {
-                    enableTor(true)
+                    val socks = torService.socks!!
+                    setProxy(socks.address.value, socks.port.value)
                 }
             }
         }
@@ -159,6 +155,9 @@ class ProxySettingsViewModel(
                 }
                 anonWalletHandler.setProxy(proxy = proxy, port = port)
                 updateProxyState()
+                if (!anonPrefs.getBoolean(WALLET_USE_TOR, true)) {
+                    torService.stop()
+                }
                 _proxyLoading.postValue(false)
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e)
@@ -183,14 +182,13 @@ class ProxySettingsViewModel(
     }
 
     fun enableTor(enable: Boolean) {
-        val socks = torService.socks
-        if (enable && socks != null) {
-            _useManualProxy.postValue(false)
-            setProxy(socks.address.value, socks.port.value)
+        if (enable) {
             anonPrefs.edit { putBoolean(WALLET_USE_TOR, true) }
+            _useManualProxy.postValue(false)
+            torService.start()
         } else {
-            _useManualProxy.postValue(true)
             anonPrefs.edit { putBoolean(WALLET_USE_TOR, false) }
+            _useManualProxy.postValue(true)
         }
     }
 }
