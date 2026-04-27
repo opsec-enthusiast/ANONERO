@@ -41,6 +41,7 @@ import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 
@@ -82,6 +83,13 @@ fun TorSplash(
                         isAppReady = true
                     }
                 }
+            }
+        }
+        // Timeout: proceed after 20s even if Tor hasn't connected
+        LaunchedEffect(Unit) {
+            delay(20000)
+            if (!isAppReady) {
+                isAppReady = true
             }
         }
     }
