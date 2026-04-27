@@ -3,6 +3,7 @@ package io.anonero.services
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -16,6 +17,7 @@ import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
 import io.anonero.model.node.NodeFields
 import io.anonero.store.NodesRepository
+import io.anonero.ui.MainActivity
 import io.anonero.util.Formats
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
@@ -100,10 +102,8 @@ class AnonNeroService : Service() {
         }
         scope.launch {
             walletState.syncProgress.collect {
-                val torSate = if (torService.socks != null
-                    && prefs.getBoolean(WALLET_USE_TOR, true)
-                ) {
-                    " | Using Tor Proxy: ${torService.socks?.port.toString()}"
+                val torSate = if (torService.socks != null) {
+                    " | Tor Daemon: ${torService.socks?.port.toString()}"
                 } else {
                     ""
                 }
@@ -121,8 +121,8 @@ class AnonNeroService : Service() {
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val wallet = WalletManager.instance?.wallet
         val daemon = prefs.getString(NodeFields.RPC_HOST.value, "") ?: ""
-        var torSate = if (torService.socks != null && prefs.getBoolean(WALLET_USE_TOR, true)) {
-            " | Using Tor Proxy: ${torService.socks?.port.toString()}"
+        var torSate = if (torService.socks != null) {
+            " | Tor Daemon: ${torService.socks?.port.toString()}"
         } else {
             ""
         }
@@ -201,27 +201,21 @@ class AnonNeroService : Service() {
         progress: SyncProgress? = null
     ): Notification {
 
-        //TODO: Add pending intent to open the app
-//        val mainActivityIndent = Intent(this, MainActivity::class.java)
-//            .apply {
-//                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-//                putExtra("notification", true)
-//            }
-//
-////        val resultPendingIntent: PendingIntent? = TaskStackBuilder.create(this).run {
-////            addNextIntentWithParentStack(mainActivityIndent)
-////            getPendingIntent(
-////                0,
-////                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-////            )
-////        }
+        val mainActivityIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, mainActivityIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         return NotificationCompat.Builder(this.applicationContext, FOREGROUND_CHANNEL)
             .setSmallIcon(R.drawable.anon_notification)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setAutoCancel(false)
-            .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+            .setContentIntent(pendingIntent)
             .setContentTitle(title)
             .setContentText(content)
             .apply {
@@ -232,16 +226,26 @@ class AnonNeroService : Service() {
             .setGroup("BackgroundService")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
-
     }
 
     private fun postIncomingTxNotification() {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val mainActivityIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 1, mainActivityIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(applicationContext, TX_CHANNEL)
             .setSmallIcon(R.drawable.anon_notification)
             .setContentTitle("[ΛИ0ИΞR0]")
             .setContentText("Transaction received")
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
         nm.notify(NOTIFICATION_ID + 1, notification)

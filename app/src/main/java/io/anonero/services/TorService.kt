@@ -78,6 +78,7 @@ class TorService(prefs: SharedPreferences) {
     }
 
     fun stop() {
+        _socks = null
         scope.launch {
             runtime.stopDaemonAsync()
         }
