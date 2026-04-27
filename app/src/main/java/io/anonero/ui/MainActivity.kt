@@ -43,7 +43,6 @@ import io.anonero.ui.home.LockScreenMode
 import io.anonero.ui.home.LockScreenShortCut
 import io.anonero.ui.home.graph.homeGraph
 import io.anonero.ui.home.graph.routes.Home
-import io.anonero.ui.home.graph.routes.HomeScreenRoute
 import io.anonero.ui.onboard.OnboardViewModel
 import io.anonero.ui.onboard.graph.LandingScreenRoute
 import io.anonero.ui.onboard.graph.onboardingGraph
@@ -53,12 +52,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.qualifier.named
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 private const val TAG = "MainActivity"
@@ -69,16 +66,11 @@ class MainActivity : ComponentActivity() {
     private val walletState: WalletState by inject()
     private val torService: TorService by inject()
     val anonPrefs: SharedPreferences by inject(named(WALLET_PREFERENCES))
-    private val backgroundSyncInProgress = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashscreen = installSplashScreen()
         var isAppReady by mutableStateOf(false)
         super.onCreate(savedInstanceState)
-        if (intent.hasExtra("notification")) {
-            walletState.setBackGroundSync(false)
-            walletState.update()
-        }
 
         val scrimColor = Color.Black.copy(alpha = 0.1f).toArgb()
         splashscreen.setKeepOnScreenCondition { isAppReady }
@@ -124,8 +116,7 @@ class MainActivity : ComponentActivity() {
                             LockScreen(
                                 mode = LockScreenMode.LOCK_SCREEN,
                                 modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                                onUnLocked = { _, shortCut ->
-                                    backgroundSyncInProgress.set(false)
+                                onUnLocked = { pin, shortCut ->
                                     if (shortCut != LockScreenShortCut.HOME) {
                                         walletState.emitUnlockShortcut(shortCut)
                                         scope.launch {
@@ -136,7 +127,7 @@ class MainActivity : ComponentActivity() {
                                         walletState.setBackGroundSync(false)
                                     }
                                     scope.launch(Dispatchers.IO) {
-                                        walletState.update()
+                                        walletState.exitBackgroundSync(pin)
                                     }
                                 }
                             )
@@ -182,29 +173,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        val wallet = WalletManager.instance?.wallet ?: return
-        if (!wallet.isInitialized || walletState.backgroundSync) return
-        if (!backgroundSyncInProgress.compareAndSet(false, true)) return
-        walletState.emitUnlockShortcut(LockScreenShortCut.HOME)
-        walletState.setBackGroundSync(true)
-        if (AnonConfig.viewOnly) {
-            backgroundSyncInProgress.set(false)
-            return
-        }
-        scope.launch(Dispatchers.IO) {
-            walletState.blockUpdates(true)
-            try {
-                if (!wallet.startBackgroundSync()) {
-                    walletState.setBackGroundSync(false)
-                }
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "startBackgroundSync error")
-                walletState.setBackGroundSync(false)
-            } finally {
-                walletState.blockUpdates(false)
-                backgroundSyncInProgress.set(false)
-            }
-        }
+        scope.launch { walletState.enterBackgroundSync() }
     }
 
     override fun onDestroy() {

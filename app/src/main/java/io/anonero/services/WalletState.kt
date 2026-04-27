@@ -20,17 +20,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 data class SyncProgress(val progress: Float, val left: Long)
 
 private const val TAG = "WalletState"
 
 class WalletState {
-    private var _blockUpdates = false
+    private var _blockUpdates = AtomicBoolean(false)
     val hideAmountsFlow = MutableStateFlow(false)
     private val _isLoading = MutableStateFlow(false)
-    private var _isSyncing = false
+    private var _isSyncing = AtomicBoolean(false)
     private val _backgroundSync = MutableStateFlow(false)
     private val _incomingTx = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
@@ -43,16 +47,17 @@ class WalletState {
     private val _syncProgress = MutableStateFlow<SyncProgress?>(null)
     private val _connectedDaemon = MutableStateFlow<DaemonInfo?>(null)
     private val _connectionStatus = MutableStateFlow<Wallet.ConnectionStatus?>(null)
-    private var _previousConnectionStatus: Wallet.ConnectionStatus? = null
+    private val _previousConnectionStatus = AtomicReference<Wallet.ConnectionStatus?>(null)
     private val _unlockShortcut = Channel<LockScreenShortCut>(capacity = 1)
     val unlockShortcut = _unlockShortcut.receiveAsFlow()
+    private val bgSyncMutex = Mutex()
 
     val transactions: Flow<List<TransactionInfo>> = _transactions
 
     val balanceInfo: Flow<Long?> = _balanceInfo
     val unLockedBalance: Flow<Long?> = _unLockedBalance
     val isLoading: Flow<Boolean> = _isLoading
-    val isSyncing get():Boolean = _isSyncing
+    val isSyncing get():Boolean = _isSyncing.get()
     val backgroundSync get():Boolean = _backgroundSync.value
     val backgroundSyncFlow: Flow<Boolean> = _backgroundSync
 
@@ -72,7 +77,7 @@ class WalletState {
     val incomingTx = _incomingTx.asSharedFlow()
 
     fun update() {
-        if (_blockUpdates) return
+        if (_blockUpdates.get()) return
         getWallet?.let { wallet ->
             if (wallet.isInitialized) {
                 _balanceInfo.update { wallet.balance }
@@ -132,11 +137,60 @@ class WalletState {
     fun emitUnlockShortcut(shortcut: LockScreenShortCut) {
         _unlockShortcut.trySend(shortcut)
     }
+    
+    suspend fun enterBackgroundSync(): Boolean = bgSyncMutex.withLock {
+        val wallet = getWallet ?: return false
+        if (!wallet.isInitialized || backgroundSync) return false
+        emitUnlockShortcut(LockScreenShortCut.HOME)
+        _backgroundSync.value = true
+        if (AnonConfig.viewOnly) return true
+        _blockUpdates.set(true)
+        try {
+            if (wallet.startBackgroundSync()) {
+                Timber.tag(TAG).i("Entered background sync")
+                return true
+            }
+            _backgroundSync.value = false
+            Timber.tag(TAG).e("startBackgroundSync returned false")
+            return false
+        } catch (e: Exception) {
+            _backgroundSync.value = false
+            Timber.tag(TAG).e(e, "startBackgroundSync error")
+            return false
+        } finally {
+            _blockUpdates.set(false)
+        }
+    }
+
+    suspend fun exitBackgroundSync(pin: String): Boolean = bgSyncMutex.withLock {
+        val wallet = getWallet ?: return false
+        if (AnonConfig.viewOnly) {
+            _backgroundSync.value = false
+            update()
+            return true
+        }
+        _blockUpdates.set(true)
+        try {
+            if (wallet.stopBackgroundSync(pin)) {
+                _backgroundSync.value = false
+                update()
+                wallet.startRefresh()
+                Timber.tag(TAG).i("Exited background sync")
+                return true
+            }
+            Timber.tag(TAG).e("stopBackgroundSync returned false")
+            return false
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "stopBackgroundSync error")
+            return false
+        } finally {
+            _blockUpdates.set(false)
+        }
+    }
 
     fun setConnectionStatus(status: Wallet.ConnectionStatus) {
-        val previous = _previousConnectionStatus
+        val previous = _previousConnectionStatus.getAndSet(status)
         _connectionStatus.update { status }
-        _previousConnectionStatus = status
         if (previous == Wallet.ConnectionStatus.ConnectionStatus_Disconnected &&
             status == Wallet.ConnectionStatus.ConnectionStatus_Connected) {
             setLoading(true)
@@ -151,14 +205,10 @@ class WalletState {
     fun syncUpdate(syncProgress: SyncProgress) {
         val done = syncProgress.progress == 1f || syncProgress.left == 0L
         _syncProgress.update { if (done) null else syncProgress }
-        _isSyncing = !done
+        _isSyncing.set(!done)
         if (done) {
             _connectionStatus.update { Wallet.ConnectionStatus.ConnectionStatus_Connected }
         }
-    }
-
-    fun blockUpdates(update: Boolean) {
-        _blockUpdates = update
     }
 
     fun toggleHideAmounts() {

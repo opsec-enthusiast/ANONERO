@@ -56,10 +56,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
-import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.icons.AnonIcons
-import io.anonero.model.WalletManager
 import io.anonero.services.WalletState
 import io.anonero.ui.MainActivity
 import io.anonero.ui.viewmodels.AppViewModel
@@ -205,20 +203,6 @@ fun LockScreen(
                             withContext(Dispatchers.Main) { showError() }
                         } else {
                             onUnLocked(pin, shortCut)
-
-                            if (!AnonConfig.viewOnly) {
-                                scope.launch(Dispatchers.IO) {
-                                    walletState.blockUpdates(true)
-                                    try {
-                                        WalletManager.instance?.wallet?.stopBackgroundSync(pin)
-                                    } catch (e: Exception) {
-                                        Timber.tag(TAG).e(e, "stopBackgroundSync failed")
-                                    } finally {
-                                        walletState.blockUpdates(false)
-                                        WalletManager.instance?.wallet?.startRefresh()
-                                    }
-                                }
-                            }
                         }
                     }
                 } catch (e: Exception) {
