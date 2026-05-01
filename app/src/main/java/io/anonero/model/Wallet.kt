@@ -15,11 +15,9 @@
  */
 package io.anonero.model
 
-import android.util.Pair
 import timber.log.Timber
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Collections
 import java.util.Date
 import java.util.Locale
 
@@ -278,19 +276,6 @@ class Wallet {
         }
     }
 
-    fun estimateTransactionFee(
-        destinations: List<Pair<String, Long>>,
-        priority: PendingTransaction.Priority
-    ): Long {
-        val _priority = priority.ordinal
-        return estimateTransactionFee(destinations, _priority)
-    }
-
-    private external fun estimateTransactionFee(
-        destinations: List<Pair<String, Long>>,
-        priority: Int
-    ): Long
-
     fun createSweepTransaction(
         dstAddr: String,
         priority: PendingTransaction.Priority,
@@ -315,35 +300,29 @@ class Wallet {
     @Throws(Exception::class)
     fun createTransaction(
         dst_addr: String?,
-        amount: Long,
-        sweepAll: Boolean = false,
-        mixin_count: Int = 0,
-        priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Default,
-        selectedUtxos: List<CoinsInfo> = arrayListOf()
+    	amount: Long,
+    	sweepAll: Boolean = false,
+    	mixin_count: Int = 0,
+    	priority: PendingTransaction.Priority = PendingTransaction.Priority.Priority_Default,
+    	selectedUtxos: List<CoinsInfo> = arrayListOf()
     ): PendingTransaction {
-        disposePendingTransaction()
+    	disposePendingTransaction()
         val priority: Int = priority.ordinal
-        val preferredInputs: java.util.ArrayList<String>
-        if (selectedUtxos.isEmpty()) {
-            // no inputs manually selected, we are sending from home screen most likely, or user somehow broke the app
-            preferredInputs = selectUtxos(amount, false)
-        } else {
-            preferredInputs = selectedUtxos.map { it.key }.toCollection(ArrayList())
-            if(!sweepAll){
-                checkSelectedAmounts(preferredInputs, amount, false)
-            }
-        }
-        val txHandle =
-            (if (sweepAll) createSweepTransaction(
-                dst_addr!!, "", mixin_count, priority,
-                accountIndex, preferredInputs
+    	val preferredInputs = selectedUtxos.map { it.key }.toCollection(ArrayList())
+    	if (selectedUtxos.isNotEmpty() && !sweepAll) {
+            checkSelectedAmounts(preferredInputs, amount, false)
+    	}
+    	val txHandle =
+            if (sweepAll) createSweepTransaction(
+            	dst_addr!!, "", mixin_count, priority,
+            	accountIndex, preferredInputs
             ) else createTransactionJ(
-                dst_addr!!, "", amount, mixin_count, priority,
-                accountIndex, preferredInputs
-            ))
-        pendingTransaction = PendingTransaction(txHandle)
-        unsignedTransaction = null
-        return pendingTransaction!!
+            	dst_addr!!, "", amount, mixin_count, priority,
+             	accountIndex, preferredInputs
+            )
+    	pendingTransaction = PendingTransaction(txHandle)
+    	unsignedTransaction = null
+    	return pendingTransaction!!
     }
 
     fun send(pendingTransaction: PendingTransaction): Boolean {
@@ -352,63 +331,6 @@ class Wallet {
 
 
     @Throws(java.lang.Exception::class)
-    fun selectUtxos(amount: Long, sendAll: Boolean): java.util.ArrayList<String> {
-        if(balance <= 0){
-            throw java.lang.Exception("insufficient wallet balance")
-        }
-        val basicFeeEstimate = try {
-            calculateBasicFee(amount)
-        } catch (e: Exception) {
-            Timber.tag("Wallet").e(e)
-             return arrayListOf()
-        }
-        val amountWithBasicFee = amount + basicFeeEstimate
-        val selectedUtxos = java.util.ArrayList<String>()
-        val seenTxs = java.util.ArrayList<String>()
-        val utxos: List<CoinsInfo> = getUtxos()
-        var amountSelected: Long = 0
-            Collections.sort(utxos)
-        //loop through each utxo
-        for (coinsInfo in utxos) {
-            WalletManager.instance?.wallet?.refreshCoins()
-            if (!coinsInfo.spent) { //filter out spent and locked outputs
-                if (sendAll) {
-                    // if send all, add all utxos and set amount to send all
-                    selectedUtxos.add(coinsInfo.key)
-                    amountSelected = SWEEP_ALL
-                } else {
-                    //if amount selected is still less than amount needed, and the utxos tx hash hasn't already been seen, add utxo
-                    if (amountSelected <= amountWithBasicFee && !seenTxs.contains(coinsInfo.key)) {
-                        selectedUtxos.add(coinsInfo.key)
-                        // we don't want to spend multiple utxos from the same transaction, so we prevent that from happening here.
-                        seenTxs.add(coinsInfo.key)
-                        amountSelected += coinsInfo.amount
-                    }
-                }
-            }
-        }
-
-        if (amountSelected < amountWithBasicFee && !sendAll) {
-            throw java.lang.Exception("insufficient wallet balance")
-        }
-
-        return selectedUtxos
-    }
-
-    private fun calculateBasicFee(amount: Long): Long {
-        val destinations = java.util.ArrayList<Pair<String, Long>>()
-        destinations.add(
-            Pair(
-                "87MRtZPrWUCVUgcFHdsVb5MoZUcLtqfD3FvQVGwftFb8eSdMnE39JhAJcbuSW8X2vRaRsB9RQfuCpFciybJFHaz3QYPhCLw",
-                amount
-            )
-        )
-        // destination string doesn't actually matter here, so i'm using the donation address. amount also technically doesn't matter
-        // priority also isn't accounted for in the Monero C++ code. maybe this is a bug by the core Monero team, or i'm using an outdated method.
-        return this.estimateTransactionFee(destinations, PendingTransaction.Priority.Priority_Low)
-    }
-
-
     fun getUtxos(): List<CoinsInfo> {
         return coins?.all ?: listOf()
     }
