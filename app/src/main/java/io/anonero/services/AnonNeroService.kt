@@ -260,6 +260,7 @@ class AnonNeroService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Timber.tag(TAG).i("onTaskRemoved: ")
+        torService.dispose()
         updateJob?.cancel()
         job.cancel()
         super.onTaskRemoved(rootIntent)

@@ -187,6 +187,7 @@ class MainActivity : ComponentActivity() {
                 Timber.tag(TAG).e(it)
             }
         }
+        torService.dispose()
         scope.cancel()
         super.onDestroy()
         Process.killProcess(Process.myPid())
