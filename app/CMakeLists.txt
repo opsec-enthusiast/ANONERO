@@ -252,3 +252,4 @@ target_link_libraries(  anonero
 
                        ${log-lib}
                        )
+target_link_options( anonero PRIVATE "-Wl,--exclude-libs,ALL" )
