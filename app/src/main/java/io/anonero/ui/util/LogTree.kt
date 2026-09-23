@@ -1,5 +1,7 @@
 package io.anonero.ui.util
 
+import android.util.Log
+import io.anonero.BuildConfig
 import io.anonero.store.AnonLog
 import io.anonero.store.LogRepository
 import kotlinx.coroutines.CoroutineScope
@@ -19,32 +21,22 @@ class AnonLogTree(
 
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Every persisted line rewrites the whole log store, so release builds keep info and
+    // above; debug-level lines (per-block sync, QR payloads) stay in debug builds only.
+    override fun isLoggable(tag: String?, priority: Int) =
+        BuildConfig.DEBUG || priority >= Log.INFO
+
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        // Timber has already appended t's stack trace to message
+        val item = AnonLog(date = Date().time, message = message, priority = priority, tag = tag ?: "Anon")
         ioScope.launch {
             try {
-                appendLog(tag, message, t, priority)
+                logRepository.addItem(item)
             } catch (e: Exception) {
-                Timber.tag(TAG).e(e)
+                // a failed write must not crash the app, and must not go through Timber:
+                // that re-enters this tree and loops
+                Log.w(TAG, "log write failed", e)
             }
-        }
-    }
-
-
-    private fun appendLog(tag: String?, message: String, t: Throwable?, priority: Int) {
-        var errorMessage = message
-        t?.let { throwable ->
-            errorMessage = "${message}\n ${throwable.stackTraceToString()}\n"
-        }
-
-        ioScope.launch {
-            logRepository.addItem(
-                AnonLog(
-                    date = Date().time,
-                    message = errorMessage,
-                    priority = priority,
-                    tag = tag ?: "Anon"
-                )
-            )
         }
     }
 

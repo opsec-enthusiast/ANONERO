@@ -177,15 +177,15 @@ class Wallet {
             daemonAddress = ""
         }
         message = "${message}\nupper_transaction_size_limit = 0 (probably)"
-        if (daemonUsername != null) {
-            Timber.tag(TAG).i(daemonUsername)
-        } else {
+        // Daemon credentials are never logged. They used to be printed verbatim here,
+        // which persisted them into the on-disk log that the Logs screen offers for
+        // sharing -- a user with a user:pass node who shared logs handed out their
+        // node credentials with them.
+        if (daemonUsername == null) {
             message = "${message}\ndaemon_username == null"
             daemonUsername = ""
         }
-        if (daemonPassword != null) {
-            Timber.tag(TAG).i(daemonPassword)
-        } else {
+        if (daemonPassword == null) {
             message = "${message}daemon_password == null"
             daemonPassword = ""
         }

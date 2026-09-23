@@ -37,7 +37,7 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
     override fun unconfirmedMoneyReceived(txId: String?, amount: Long) {}
 
     override fun newBlock(height: Long) {
-        Timber.tag(name).i("newBlock: %s", height)
+        Timber.tag(name).d("newBlock: %s", height)
         updateSyncProgress(height)
     }
 
@@ -67,13 +67,16 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
         val daemonHeight = wallet.getDaemonBlockChainHeight()
         val chainHeight = wallet.getBlockChainHeight()
         /// height
-        Timber.tag(name)
-            .i("refreshed() status:${status} daemonHeight:$daemonHeight chainHeight:$chainHeight ")
+        // runs every ~10s: routine passes are debug-only, reconnects stay in release logs
+        val summary = "refreshed() status:${status} daemonHeight:$daemonHeight chainHeight:$chainHeight"
+        Timber.tag(name).d(summary)
         if (status === Wallet.ConnectionStatus.ConnectionStatus_Disconnected || status == null) {
+            Timber.tag(name).i("restarting connection: $summary")
             tryRestartConnection()
         } else {
             val heightDiff = daemonHeight - chainHeight
             if (heightDiff >= 2) {
+                Timber.tag(name).i("restarting connection: $summary")
                 tryRestartConnection()
             } else {
                 if (!wallet.isSynchronized) {
