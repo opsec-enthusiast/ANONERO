@@ -71,6 +71,14 @@ class MainActivity : ComponentActivity() {
         val splashscreen = installSplashScreen()
         var isAppReady by mutableStateOf(false)
         super.onCreate(savedInstanceState)
+        // Everything this window ever shows -- seed, balance, addresses, the signing
+        // review -- otherwise lands in the recents thumbnail, which the system writes
+        // to disk, and is capturable by any screen-capture-privileged app. One flag
+        // closes all of it.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
 
         val scrimColor = Color.Black.copy(alpha = 0.1f).toArgb()
         splashscreen.setKeepOnScreenCondition { isAppReady }
