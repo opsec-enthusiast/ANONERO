@@ -55,7 +55,7 @@ import io.anonero.ui.home.graph.routes.SettingsLogs
 import io.anonero.ui.home.graph.routes.SettingsNodeRoute
 import io.anonero.ui.home.graph.routes.SettingsViewSeedRoute
 import io.anonero.ui.onboard.PinSetup
-import io.anonero.util.CrazyPassEncoder
+import io.anonero.util.PinHash
 import io.anonero.util.PREFS_PIN_HASH
 import io.anonero.util.WALLET_PREFERENCES
 import org.koin.compose.koinInject
@@ -120,16 +120,7 @@ fun SettingsPage(
                            type = ToastType.Success,
                        )
                        prefs.edit(commit = true) {
-                           putString(
-                               PREFS_PIN_HASH,
-                               CrazyPassEncoder.encode(
-                                   it.toByteArray().let { bytes ->
-                                       if (bytes.size < 32) {
-                                           bytes + ByteArray(32 - bytes.size)
-                                       } else bytes
-                                   }
-                               )
-                           )
+                           putString(PREFS_PIN_HASH, PinHash.hash(it))
                        }
                    }catch (e: Exception) {
                        toastState.show("Error changing PIN. Check logs for more details",

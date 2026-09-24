@@ -8,7 +8,7 @@ import io.anonero.R
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.Wallet
 import io.anonero.model.WalletManager
-import io.anonero.util.CrazyPassEncoder
+import io.anonero.util.PinHash
 import io.anonero.util.KeyStoreHelper
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.PREFS_PIN_HASH
@@ -67,16 +67,8 @@ class OnboardViewModel(private val prefs: SharedPreferences) : ViewModel() {
                 putString(PREFS_PASSPHRASE_HASH, crazyPass)
             }
 
-            //adds padding to the pin if it's less than 32 bytes
-            val pinHash = CrazyPassEncoder.encode(
-                pin.toByteArray().let { bytes ->
-                    if (bytes.size < 32) {
-                        bytes + ByteArray(32 - bytes.size)
-                    } else bytes
-                }
-            )
             prefs.edit {
-                putString(PREFS_PIN_HASH, pinHash)
+                putString(PREFS_PIN_HASH, PinHash.hash(pin))
             }
             walllet = anonWallet
             delay(500)
