@@ -13,7 +13,10 @@ import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 object EncryptUtil {
@@ -21,6 +24,26 @@ object EncryptUtil {
     const val DEFAULT_ITR = 11000
     const val SALT_PREFIX = "Salted__"
     const val BUFFER_SIZE = 4096
+
+    // v2 backups: PBKDF2-HMAC-SHA256 at the OWASP floor and authenticated encryption.
+    // v1 was 11k iterations of the same KDF into unauthenticated AES-CBC -- crackable
+    // at hobbyist cost for weak passphrases, and silently restorable after tampering.
+    // The magic byte-string is the version: files starting Salted__ are v1 and stay
+    // restorable forever, files starting ANONBAK2 are v2. Pure javax.crypto, so this
+    // restores unchanged wherever a backup is carried.
+    private const val V2_MAGIC = "ANONBAK2"
+    private const val V2_ITERATIONS = 600_000
+    private const val V2_SALT_BYTES = 16
+    private const val V2_IV_BYTES = 12
+    private const val V2_TAG_BITS = 128
+
+    private fun v2Key(passphrase: String, salt: ByteArray): SecretKeySpec =
+        SecretKeySpec(
+            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                .generateSecret(PBEKeySpec(passphrase.toCharArray(), salt, V2_ITERATIONS, 256))
+                .encoded,
+            "AES",
+        )
 
 
     fun encrypt(
@@ -82,34 +105,50 @@ object EncryptUtil {
 
     }
 
+    /** Writes a v2 backup: ANONBAK2 || salt(16) || iv(12) || GCM ciphertext+tag. */
     fun encryptFile(key: String, inputFile: File, outputFile: File) {
-        val salt = SecureRandom().generateSeed(8)
-        // Derive 48 byte key
-        var keySpec: SecretKeySpec?
-        var ivSpec: IvParameterSpec?
-        PKCS5S2ParametersGenerator(SHA256Digest()).let { generator ->
-            generator.init(key.toByteArray(), salt, DEFAULT_ITR)
-            (generator.generateDerivedMacParameters(48 * 8) as KeyParameter).key.let { secretKey ->
-                val bytes = secretKey.copyOfRange(0, 32)
-                keySpec = SecretKeySpec(bytes, "AES")
-                ivSpec = IvParameterSpec(secretKey.copyOfRange(32, secretKey.size))
-                generator.password.fill('*'.code.toByte())
-                secretKey.fill('*'.code.toByte())
+        val salt = ByteArray(V2_SALT_BYTES).also { SecureRandom().nextBytes(it) }
+        val iv = ByteArray(V2_IV_BYTES).also { SecureRandom().nextBytes(it) }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, v2Key(key, salt), GCMParameterSpec(V2_TAG_BITS, iv))
+        FileInputStream(inputFile).use { input ->
+            FileOutputStream(outputFile).use { fileOut ->
+                fileOut.write(V2_MAGIC.toByteArray())
+                fileOut.write(salt)
+                fileOut.write(iv)
+                CipherOutputStream(BufferedOutputStream(fileOut), cipher).use { encrypted ->
+                    input.copyTo(encrypted, BUFFER_SIZE)
+                }
             }
         }
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
-        val fileInputStream = FileInputStream(inputFile)
-        val fileOutputStream = FileOutputStream(outputFile)
-        val cipherOutputStream = CipherOutputStream(BufferedOutputStream(fileOutputStream), cipher)
-        fileOutputStream.write((SALT_PREFIX.toByteArray() + salt))
-        fileInputStream.copyTo(cipherOutputStream, BUFFER_SIZE)
-        fileInputStream.close()
-        cipherOutputStream.close()
-
     }
 
+    /**
+     * Restores either format. v2 is authenticated: a tampered or truncated file, or a
+     * wrong passphrase, fails the GCM tag check and throws instead of yielding garbage
+     * -- or worse, plausible garbage. v1 files restore exactly as they always did.
+     */
     fun decryptFile(key: String, inputFile: File, outputFile: File) {
+        val magic = ByteArray(8)
+        FileInputStream(inputFile).use { it.read(magic) }
+        if (magic.decodeToString() == V2_MAGIC) return decryptFileV2(key, inputFile, outputFile)
+        decryptFileV1(key, inputFile, outputFile)
+    }
+
+    private fun decryptFileV2(key: String, inputFile: File, outputFile: File) {
+        FileInputStream(inputFile).use { input ->
+            input.skip(V2_MAGIC.length.toLong())
+            val salt = ByteArray(V2_SALT_BYTES).also { input.read(it) }
+            val iv = ByteArray(V2_IV_BYTES).also { input.read(it) }
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, v2Key(key, salt), GCMParameterSpec(V2_TAG_BITS, iv))
+            CipherInputStream(BufferedInputStream(input), cipher).use { decrypted ->
+                outputFile.outputStream().use { decrypted.copyTo(it, BUFFER_SIZE) }
+            }
+        }
+    }
+
+    private fun decryptFileV1(key: String, inputFile: File, outputFile: File) {
         val fis = FileInputStream(inputFile)
         val prefix = ByteArray(16)
         fis.read(prefix)
