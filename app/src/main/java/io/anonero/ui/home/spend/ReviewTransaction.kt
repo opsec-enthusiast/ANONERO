@@ -56,6 +56,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.model.PendingTransaction
+import io.anonero.model.SigningSummary
 import io.anonero.model.UnsignedTransaction
 import io.anonero.model.WalletManager
 import io.anonero.ui.home.graph.routes.ReviewTransactionRoute
@@ -71,6 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 
@@ -86,7 +88,11 @@ data class ReviewModel(
     val amount: Long,
     val fee: Long,
     val total: Long,
-    val txId: String
+    val txId: String,
+    /** Rows parsed from wallet2's confirmation sentence; imported unsigned sets only. */
+    val summary: SigningSummary? = null,
+    /** The raw sentence, shown only when it could not be parsed into rows. */
+    val confirmationMessage: String? = null,
 )
 
 private const val TAG = "ReviewTransaction"
@@ -114,13 +120,20 @@ class ReviewTransactionViewModel : ViewModel() {
 
         if (unsignedTransaction != null) {
             this.unsignedTransaction = unsignedTransaction
+            // Rows come from wallet2's own summary of the outputs sign() will construct,
+            // never from the set's advisory destination list. If the sentence cannot be
+            // parsed it is shown raw; the advisory getters are not a fallback.
+            val message = unsignedTransaction.confirmationMessage
+            val summary = SigningSummary.parse(message)
             reviewModel.postValue(
                 ReviewModel(
-                    address = unsignedTransaction.address ?: "",
-                    amount = unsignedTransaction.amount,
-                    fee = unsignedTransaction.fee,
-                    total = unsignedTransaction.fee + unsignedTransaction.amount,
-                    txId = unsignedTransaction.firstTxId
+                    address = summary?.destinations?.firstOrNull()?.address ?: "",
+                    amount = summary?.amount ?: 0L,
+                    fee = summary?.fee ?: 0L,
+                    total = summary?.let { it.amount + it.fee } ?: 0L,
+                    txId = unsignedTransaction.firstTxId,
+                    summary = summary,
+                    confirmationMessage = if (summary == null) message else null,
                 )
             )
         } else if (pendingTransaction != null) {
@@ -420,95 +433,134 @@ fun ReviewTransactionScreen(
                             .padding(horizontal = 8.dp)
                     ) {
                         LazyColumn {
-                            item {
-                                ListItem(
-                                    headlineContent = { Text(stringResource(R.string.address), style = titleStyle) },
-                                    supportingContent = {
-                                        Text(
-                                            reviewModel!!.address ?: reviewParams.toAddress,
-                                            style = subTitleStyle
-                                        )
+                            val summary = reviewModel!!.summary
+                            val rawSummary = reviewModel!!.confirmationMessage
+                            if (rawSummary != null) {
+                                // wallet2's sentence could not be parsed into rows; show it as-is and
+                                // nothing else -- the advisory getters are never a fallback
+                                item {
+                                    ListItem(
+                                        headlineContent = { Text("What will be signed", style = titleStyle) },
+                                        supportingContent = { Text(rawSummary, style = subTitleStyle) }
+                                    )
+                                }
+                            } else {
+                                val destinations = summary?.destinations
+                                if (destinations != null) {
+                                    // every output wallet2 will sign, from its own summary
+                                    destinations.forEachIndexed { index, destination ->
+                                        item {
+                                            ListItem(
+                                                headlineContent = {
+                                                    Text(
+                                                        if (destinations.size == 1) stringResource(R.string.address)
+                                                        else "${stringResource(R.string.address)} ${index + 1} of ${destinations.size}",
+                                                        style = titleStyle
+                                                    )
+                                                },
+                                                supportingContent = {
+                                                    Text(
+                                                        if (destinations.size == 1) destination.address
+                                                        else "${destination.address}\n${Formats.getDisplayAmount(destination.amount)}",
+                                                        style = subTitleStyle
+                                                    )
+                                                }
+                                            )
+                                        }
                                     }
-                                )
-                            }
-                            item {
-                                ListItem(
-                                    headlineContent = { Text(stringResource(R.string.amount), style = titleStyle) },
-                                    supportingContent = {
-                                        Text(
-                                            Formats.getDisplayAmount(
-                                                reviewModel!!.amount
-                                            ),
-                                            style = subTitleStyle
-                                        )
-                                    }
-                                )
-                            }
-                            item {
-
-                                ListItem(
-                                    headlineContent = { Text(stringResource(R.string.fee), style = titleStyle) },
-                                    supportingContent = {
-                                        Text(
-                                            Formats.getDisplayAmount(
-                                                reviewModel!!.fee
-                                            ),
-                                            style = subTitleStyle
-                                        )
-                                    }
-                                )
-                            }
-                            item {
-                                ListItem(
-                                    headlineContent = { Text(stringResource(R.string.total), style = titleStyle) },
-                                    supportingContent = {
-                                        Text(
-                                            Formats.getDisplayAmount(
-                                                reviewModel!!.total
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(
-                                                    vertical = 24.dp
+                                } else {
+                                    item {
+                                        ListItem(
+                                            headlineContent = { Text(stringResource(R.string.address), style = titleStyle) },
+                                            supportingContent = {
+                                                Text(
+                                                    reviewModel!!.address ?: reviewParams.toAddress,
+                                                    style = subTitleStyle
                                                 )
+                                            }
                                         )
                                     }
-                                )
+                                }
+                                item {
+                                    ListItem(
+                                        headlineContent = { Text(stringResource(R.string.amount), style = titleStyle) },
+                                        supportingContent = {
+                                            Text(
+                                                Formats.getDisplayAmount(
+                                                    reviewModel!!.amount
+                                                ),
+                                                style = subTitleStyle
+                                            )
+                                        }
+                                    )
+                                }
+                                item {
+
+                                    ListItem(
+                                        headlineContent = { Text(stringResource(R.string.fee), style = titleStyle) },
+                                        supportingContent = {
+                                            Text(
+                                                Formats.getDisplayAmount(
+                                                    reviewModel!!.fee
+                                                ),
+                                                style = subTitleStyle
+                                            )
+                                        }
+                                    )
+                                }
+                                item {
+                                    ListItem(
+                                        headlineContent = { Text(stringResource(R.string.total), style = titleStyle) },
+                                        supportingContent = {
+                                            Text(
+                                                Formats.getDisplayAmount(
+                                                    reviewModel!!.total
+                                                ),
+                                                textAlign = TextAlign.Center,
+                                                style = MaterialTheme.typography.titleLarge,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(
+                                                        vertical = 24.dp
+                                                    )
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                         AnonOutlineButton(
                             onClick = {
 
                                 if (viewModel.isUnsignedTransaction()) {
+                                    if (signing) return@AnonOutlineButton
+                                    signing = true
                                     scope.launch {
-                                        val unsignedTransaction = File(
-                                            AnonConfig.context?.cacheDir,
-                                            AnonConfig.IMPORT_UNSIGNED_TX_FILE
-                                        );
                                         val signedTransaction = File(
                                             AnonConfig.context?.cacheDir,
                                             AnonConfig.EXPORT_SIGNED_TX_FILE
-                                        );
+                                        )
                                         Timber.tag(TAG)
-                                            .i("Signing Unsigned Transaction: ${unsignedTransaction.path} to ${signedTransaction.path}")
-                                        signing = true
-                                        val success =
-                                            WalletManager.instance?.wallet?.signAndExportJ(
-                                                unsignedTransaction.absolutePath,
-                                                signedTransaction.absolutePath,
-                                            )
-                                        if (success == "Signed") {
+                                            .i("Signing reviewed transaction set to ${signedTransaction.path}")
+                                        // sign the object that was reviewed, not a re-read of the
+                                        // file; ring signatures are CPU-heavy, so off the main thread
+                                        val tx = viewModel.unsignedTransaction
+                                        val signed = try {
+                                            withContext(Dispatchers.Default) {
+                                                tx?.sign(signedTransaction.absolutePath) == true
+                                            }
+                                        } finally {
+                                            // always release the button, or a failed sign leaves
+                                            // it disabled with no way to retry
+                                            signing = false
+                                        }
+                                        if (signed) {
                                             readyToBroadcast = true
                                             Timber.tag(TAG)
-                                                .i("Signing result: $success")
-                                            Timber.tag(TAG)
                                                 .i(
-                                                    "Signing Signed Transaction: exists ? ${signedTransaction.exists()} | " +
+                                                    "Signed transaction written: exists ? ${signedTransaction.exists()} | " +
                                                             " size: ${signedTransaction.length()}"
                                                 )
-                                            signing = false
                                             qrScannerParam = SpendQRExchangeParam(
                                                 exportType = ExportType.SIGNED_TX,
                                                 title = "SIGNED TX",
@@ -516,6 +568,14 @@ fun ReviewTransactionScreen(
                                             )
                                         } else {
                                             readyToBroadcast = false
+                                            val reason = tx?.errorString?.takeIf { it.isNotBlank() }
+                                                ?: "unknown error"
+                                            Timber.tag(TAG).e("Signing failed: %s", reason)
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Signing failed: $reason",
+                                                android.widget.Toast.LENGTH_LONG,
+                                            ).show()
                                         }
                                     }.invokeOnCompletion { error ->
                                         if (error != null) {

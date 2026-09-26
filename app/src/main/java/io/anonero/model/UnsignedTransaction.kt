@@ -37,6 +37,9 @@ class UnsignedTransaction internal constructor(override var handle: Long) : Stag
     val errorString: String?
         external get
 
+    val txCount: Long
+        external get
+
 
     val address: String?
         external get
@@ -50,13 +53,30 @@ class UnsignedTransaction internal constructor(override var handle: Long) : Stag
         external get
 
     val firstTxId: String
-        get() {
-            val id = firstTxIdJ
-            return id
-        }
+        get() = firstTxIdJ ?: ""
 
-    val firstTxIdJ: String
-        external get //    public native long getTxCount();
+    // nullable: the JNI returns nullptr for a set with no payment ids; the old
+    // non-null declaration made that an NPE on access
+    val firstTxIdJ: String?
+        external get
+
+    /**
+     * wallet2's summary of what sign() will produce, built at load time from the real
+     * outputs (splitted_dsts) rather than the advisory dests the scalar getters read.
+     * It is the text monero-wallet-cli shows before signing.
+     */
+    val confirmationMessage: String
+        get() = confirmationMessageJ() ?: ""
+
+    private external fun confirmationMessageJ(): String?
+
+    /**
+     * Signs THIS loaded object to [outputPath]. Wallet.signAndExportJ re-loads the
+     * unsigned file from disk and signs whatever is there; this signs what was reviewed.
+     */
+    fun sign(outputPath: String): Boolean = signJ(outputPath)
+
+    private external fun signJ(outputPath: String): Boolean
 
     companion object {
         init {

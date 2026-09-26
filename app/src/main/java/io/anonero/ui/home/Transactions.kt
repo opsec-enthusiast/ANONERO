@@ -364,7 +364,9 @@ fun TransactionScreen(
                     }
 
                     null -> {
-
+                        it.exceptionOrNull()?.message?.let { error ->
+                            toastState.show(error, type = ToastType.Warning, duration = 6.seconds)
+                        }
                     }
 
                     ImportEvents.IMPORT_KEY_IMAGES -> {

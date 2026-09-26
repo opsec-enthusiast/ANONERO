@@ -140,6 +140,12 @@ class QRScannerVM : ViewModel() {
                             val unsignedTransaction =
                                 wallet.loadUnsignedTransaction(filePath)
                             if (unsignedTransaction.status == UnsignedTransaction.Status.Status_Ok) {
+                                //reject a set that is not exactly one tx
+                                val count = unsignedTransaction.txCount
+                                if (count != 1L) {
+                                    Timber.tag(TAG).e("Unsigned transaction set has %d transactions", count)
+                                    return Result.failure(Exception("Unsigned transaction set contains $count transactions, expected 1"))
+                                }
                                 return Result.success(ImportEvents.IMPORT_UNSIGNED_TX)
                             } else {
                                 Timber.tag(TAG).e("Failed to import unsigned transaction")

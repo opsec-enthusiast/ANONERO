@@ -1834,7 +1834,7 @@ Java_io_anonero_model_UnsignedTransaction_getAddress(JNIEnv *env, jobject instan
     Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
 
     std::vector<std::string> arr = tx->recipientAddress();
-    if (0 > arr.size() - 1)
+    if (arr.empty())  // size_t: "0 > size() - 1" underflowed on empty input and never fired
         return env->NewStringUTF("");
 
     return env->NewStringUTF(arr[0].c_str());
@@ -1845,7 +1845,7 @@ JNIEXPORT jlong JNICALL
 Java_io_anonero_model_UnsignedTransaction_getAmount(JNIEnv *env, jobject instance) {
     Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
     std::vector<uint64_t> arr = tx->amount();
-    if (0 > arr.size() - 1)
+    if (arr.empty())  // size_t: "0 > size() - 1" underflowed on empty input and never fired
         return 0;
     return static_cast<jlong>(arr[0]);
 }
@@ -1855,7 +1855,7 @@ JNIEXPORT jlong JNICALL
 Java_io_anonero_model_UnsignedTransaction_getFee(JNIEnv *env, jobject instance) {
     Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
     std::vector<uint64_t> arr = tx->fee();
-    if (0 > arr.size() - 1)
+    if (arr.empty())  // size_t: "0 > size() - 1" underflowed on empty input and never fired
         return 0;
     return static_cast<jlong>(arr[0]);
 }
@@ -1875,6 +1875,27 @@ JNIEXPORT jlong JNICALL
 Java_io_anonero_model_UnsignedTransaction_getTxCount(JNIEnv *env, jobject instance) {
     Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
     return tx->txCount();
+}
+
+// wallet2's own summary of the set, built at load time from splitted_dsts -- the
+// outputs sign() actually constructs -- not from the advisory dests the getters
+// above read. Same text monero-wallet-cli prints before signing.
+JNIEXPORT jstring JNICALL
+Java_io_anonero_model_UnsignedTransaction_confirmationMessageJ(JNIEnv *env, jobject instance) {
+    Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
+    return env->NewStringUTF(tx->confirmationMessage().c_str());
+}
+
+// Signs THIS loaded object. Wallet.signAndExportJ re-loads the unsigned file from
+// disk and signs whatever is there at that moment; this signs what was reviewed.
+JNIEXPORT jboolean JNICALL
+Java_io_anonero_model_UnsignedTransaction_signJ(JNIEnv *env, jobject instance,
+                                                jstring output_file) {
+    Monero::UnsignedTransaction *tx = getHandle<Monero::UnsignedTransaction>(env, instance);
+    const char *_output_file = env->GetStringUTFChars(output_file, nullptr);
+    bool success = tx->sign(_output_file);
+    env->ReleaseStringUTFChars(output_file, _output_file);
+    return static_cast<jboolean>(success);
 }
 
 
