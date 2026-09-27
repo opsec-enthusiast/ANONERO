@@ -47,6 +47,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +73,7 @@ import io.anonero.AnonConfig
 import io.anonero.R
 import io.anonero.model.NeroKeyPayload
 import io.anonero.model.WalletManager
+import io.anonero.services.WalletState
 import io.anonero.ui.components.qr.QrCodeColors
 import io.anonero.ui.components.qr.QrCodeView
 import io.anonero.util.KeyStoreHelper
@@ -125,6 +127,14 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
     var passPhraseDialog by remember { mutableStateOf(true) }
     var passPhrase by remember { mutableStateOf("") }
     var neroPayload by remember { mutableStateOf("") }
+    // nothing secret is composed until the passphrase checks out: the blur behind the
+    // dialog is a no-op below Android 12
+    var verified by remember { mutableStateOf(false) }
+
+    // the Nero keys sheet is its own window and would stay above the lock screen
+    val walletState = koinInject<WalletState>()
+    val locked by walletState.backgroundSyncFlow.collectAsState(walletState.backgroundSync)
+    LaunchedEffect(locked) { if (locked) neroPayload = "" }
     val errorShake = rememberShakeController()
     val scope = rememberCoroutineScope()
     val view = LocalView.current
@@ -137,7 +147,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
 
     fun exportForNero() {
         val wallet = WalletManager.instance?.wallet ?: return
-        if (passPhrase.isEmpty()) {
+        if (!verified) {
             passPhraseDialog = true
             return
         }
@@ -161,6 +171,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                 val legacy = getLegacySeed(passPhrase)?.split(" ")
                 if (seed != null) {
                     seedWords = seed
+                    verified = true
                     passPhraseDialog = false
                 }
                 if (legacy != null) {
@@ -183,7 +194,7 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
 
         }
     }
-    if (neroPayload.isNotEmpty()) {
+    if (neroPayload.isNotEmpty() && !locked) {
         ModalBottomSheet(
             sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
@@ -439,12 +450,11 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                             )
                         },
                         supportingContent = {
-                            SelectionContainer {
-                                Text(
-                                    text = "${wallet?.getSecretViewKey()}",
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
+                            // private keys are not selectable: a copy lands in the clipboard and its history
+                            Text(
+                                text = if (verified) "${wallet?.getSecretViewKey()}" else "••••••••",
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
                         }
                     )
                 }
@@ -463,12 +473,10 @@ fun SeedSettingsPage(onBackPress: () -> Unit = {}) {
                             )
                         },
                         supportingContent = {
-                            SelectionContainer {
-                                Text(
-                                    text = "${wallet?.getSecretSpendKey()}",
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
+                            Text(
+                                text = if (verified) "${wallet?.getSecretSpendKey()}" else "••••••••",
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
                         }
                     )
                 }

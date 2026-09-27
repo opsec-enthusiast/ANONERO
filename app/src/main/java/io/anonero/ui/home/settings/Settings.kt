@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +48,7 @@ import io.anonero.AnonConfig
 import io.anonero.BuildConfig
 import io.anonero.R
 import io.anonero.model.WalletManager
+import io.anonero.services.WalletState
 import io.anonero.ui.home.LockScreen
 import io.anonero.ui.home.LockScreenMode
 import io.anonero.ui.home.graph.routes.ProxySettingsRoute
@@ -79,7 +82,19 @@ fun SettingsPage(
     var showLockScreen by remember { mutableStateOf(false) }
     var newPinDialog by remember { mutableStateOf(false) }
 
-    if (showLockScreen) {
+    // Dialogs are windows of their own and draw above the lock screen overlay. If the
+    // wallet locks while one is open, close it: otherwise whoever picks the phone up
+    // next finds the new-PIN prompt on top of the lock and sets a PIN of their own.
+    val walletState = koinInject<WalletState>()
+    val locked by walletState.backgroundSyncFlow.collectAsState(walletState.backgroundSync)
+    LaunchedEffect(locked) {
+        if (locked) {
+            showLockScreen = false
+            newPinDialog = false
+        }
+    }
+
+    if (showLockScreen && !locked) {
         Dialog(
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
@@ -100,7 +115,7 @@ fun SettingsPage(
             )
         }
     }
-    if (newPinDialog) {
+    if (newPinDialog && !locked) {
         Dialog(
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
