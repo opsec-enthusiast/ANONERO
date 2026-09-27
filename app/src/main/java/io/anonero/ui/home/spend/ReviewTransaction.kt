@@ -238,9 +238,16 @@ fun ReviewTransactionScreen(
         fontSize = 14.sp
     )
 
-    BackHandler {
-        onBackPressed()
+    // After a broadcast, back must leave the flow: popping to Send showed the filled-in
+    // form again, one tap from sending the same payment twice. Mid-broadcast it waits.
+    val leave = {
+        when (broadcastState) {
+            BroadcastState.SUCCESS     -> onFinished()
+            BroadcastState.IN_PROGRESS -> Unit
+            else                       -> onBackPressed()
+        }
     }
+    BackHandler { leave() }
 
     if (qrScannerParam != null) {
         QRExchangeScreen(
@@ -324,13 +331,7 @@ fun ReviewTransactionScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            if (broadcastState == BroadcastState.SUCCESS) {
-                                onFinished.invoke()
-                            } else {
-                                onBackPressed.invoke()
-                            }
-                        }
+                        onClick = { leave() }
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }

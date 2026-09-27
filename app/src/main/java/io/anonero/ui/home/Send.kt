@@ -386,7 +386,10 @@ fun SendScreen(
             }
         ) {
             CoinsScreen(
-                selected = coins.map { it.key }.toSet(),
+                // CoinsScreen and setCoins identify coins by pub_key; passing the key image
+                // matched nothing, silently cleared the selection and could turn the send
+                // into a sweep of every output
+                selected = coins.map { it.pub_key }.toSet(),
                 onBackPress = {
                     showCoinSelection = false
                 },
