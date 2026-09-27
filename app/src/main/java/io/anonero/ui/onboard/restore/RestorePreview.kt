@@ -36,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,6 +99,12 @@ fun RestorePreview(
     val scope = rememberCoroutineScope()
     val errorShake = rememberShakeController()
     val view = LocalView.current
+
+    // The extracted backup (anon.json holds the plaintext seed) must not outlive this
+    // screen, whether the user backs out or the restore fails.
+    DisposableEffect(Unit) {
+        onDispose { BackupHelper.cleanCacheDir() }
+    }
 
     fun restoreFromBackup() {
         scope.launch(Dispatchers.IO) {

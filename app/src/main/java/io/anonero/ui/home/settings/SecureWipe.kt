@@ -71,6 +71,7 @@ import io.anonero.util.ShakeConfig
 import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.rememberShakeController
 import io.anonero.util.shake
+import io.anonero.util.backup.BackupHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -119,6 +120,8 @@ class SecureWipeViewModel(
             _wipeProgressMessage.postValue("Clearing Logs")
             delay(1000)
             logRepository.clear()
+            // cache holds the last exported backup and any extracted restore
+            BackupHelper.cleanCacheDir()
             AnonConfig.disposeState()
             _wipeProgress.postValue(.8f)
             _wipeProgressMessage.postValue("Logs Cleared")

@@ -199,6 +199,11 @@ object BackupHelper {
         } catch (e: Exception) {
             Timber.tag(TAG).e(e)
             throw e;
+        } finally {
+            // the decrypted zip holds the seed in the clear; the extracted copy that the
+            // restore needs is removed when the preview screen goes away
+            destFile.delete()
+            decryptedDestFile.delete()
         }
         return backup;
     }
