@@ -93,14 +93,23 @@ private const val TAG = "ExportBackUp"
 class ExportBackUpViewModel : ViewModel() {
 
     private val backupFile = MutableLiveData<File?>(null)
+    private val backupError = MutableLiveData<String?>(null)
 
     val backupFileLive: LiveData<File?> = backupFile
+    val backupErrorLive: LiveData<String?> = backupError
 
     fun createBackUp(passPhrase: String): Job {
         return viewModelScope.launch(Dispatchers.IO) {
-            val path = BackupHelper.createBackUp(passPhrase, AnonConfig.context!!)
-            Timber.tag(TAG).i("Backup created :$path")
-            backupFile.postValue(File(path))
+            try {
+                val path = BackupHelper.createBackUp(passPhrase, AnonConfig.context!!)
+                Timber.tag(TAG).i("Backup created :$path")
+                backupFile.postValue(File(path))
+            } catch (e: Exception) {
+                // never let a backup failure crash the app; surface it and let the
+                // user retry
+                Timber.tag(TAG).e(e, "backup failed")
+                backupError.postValue(e.message ?: "backup failed")
+            }
         }
     }
 }
@@ -119,6 +128,12 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
     val view = LocalView.current
     val context = LocalContext.current
     val backupFile by exportViewModel.backupFileLive.observeAsState()
+    val backupError by exportViewModel.backupErrorLive.observeAsState()
+    LaunchedEffect(backupError) {
+        backupError?.let {
+            android.widget.Toast.makeText(context, "Backup failed: $it", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 
     val backgroundBlur: Float by animateFloatAsState(
         if (passPhraseDialog) 6f else 0f,

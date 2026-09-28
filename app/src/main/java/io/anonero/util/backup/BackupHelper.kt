@@ -102,7 +102,16 @@ object BackupHelper {
         val tmpBackupFile = File(tmpBackupDir, "anon.json")
         tmpBackupFile.writeText(json)
         val walletDir = File(context.filesDir, "wallets")
-        walletDir.copyRecursively(tmpBackupDir, true)
+        // Quiesce background sync before copying the wallet dir: MoneroHandlerThread
+        // calls wallet.store() on every refresh, and a store() landing mid-copy throws
+        // (and, uncaught, crashed the backup). Pause + settle, copy, then resume.
+        wallet.pauseRefresh()
+        wallet.store()
+        try {
+            walletDir.copyRecursively(tmpBackupDir, true)
+        } finally {
+            if (wallet.isInitialized) wallet.startRefresh()
+        }
         val list = tmpBackupDir.listFiles()
         val files = list?.map { it.absolutePath }?.toTypedArray()
         val backupCacheDir = File(context.cacheDir, "backup")
