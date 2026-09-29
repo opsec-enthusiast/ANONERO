@@ -173,10 +173,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun stopNotificationService() {
-        Intent(applicationContext, AnonNeroService::class.java).also {
-            it.action = "stop"
-            ContextCompat.startForegroundService(applicationContext, it)
-        }
+        stopService(Intent(applicationContext, AnonNeroService::class.java))
     }
 
     override fun onUserLeaveHint() {

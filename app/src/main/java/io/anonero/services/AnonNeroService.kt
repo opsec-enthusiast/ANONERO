@@ -69,11 +69,6 @@ class AnonNeroService : Service() {
         if (intent?.action == "start") {
             start()
         }
-        if (intent?.action == "stop") {
-            stopForeground(STOP_FOREGROUND_REMOVE) // Properly removes the notification
-            stopSelf() // Stops the service completely
-            return START_NOT_STICKY
-        }
         return START_STICKY
     }
 
