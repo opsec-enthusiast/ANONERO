@@ -45,7 +45,7 @@ class AnonWalletHandler(
         scope.launch {
             torService.socksFlow.collect {
                 val wallet = WalletManager.instance?.wallet
-                if (prefs.getBoolean(WALLET_USE_TOR, false) && wallet?.isInitialized == true) {
+                if (prefs.getBoolean(WALLET_USE_TOR, true) && wallet?.isInitialized == true) {
                     setProxy(it.address.toString(), it.port.value)
                 }
             }

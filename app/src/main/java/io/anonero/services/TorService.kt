@@ -11,9 +11,11 @@ import io.matthewnelson.kmp.tor.runtime.core.OnEvent
 import io.matthewnelson.kmp.tor.runtime.core.TorEvent
 import io.matthewnelson.kmp.tor.runtime.core.config.TorOption
 import io.matthewnelson.kmp.tor.runtime.core.net.IPSocketAddress
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,7 +28,12 @@ private const val TAG = "TorService"
 
 class TorService(prefs: SharedPreferences) {
 
-    val scope = CoroutineScope(SupervisorJob())
+    // A Tor action throws when the daemon dies or is stopped mid-action (the app being
+    // killed for an update, Android reclaiming the process). Log it instead of crashing:
+    // the UI already shows Tor as not connected.
+    val scope = CoroutineScope(SupervisorJob() + CoroutineExceptionHandler { _, e ->
+        Timber.tag(TAG).w(e, "Tor action failed")
+    })
 
     private val _socksSharedFlow =
         MutableSharedFlow<IPSocketAddress>(replay = 1)
@@ -37,11 +44,15 @@ class TorService(prefs: SharedPreferences) {
             extraBufferCapacity = 50
         )
     private var _socks: IPSocketAddress? = null
+
+    // set by start()/restart(), cleared by stop()/dispose(): Tor is supposed to be running
+    @Volatile
+    private var wanted = false
     val socks get() = _socks
     val socksFlow get() = _socksSharedFlow
     val torLogs: Flow<String> get() = _torLogs.asSharedFlow()
 
-    val runtime = TorRuntime.Builder(environment = AnonConfig.getTorConfig(scope)) {
+    val runtime: TorRuntime = TorRuntime.Builder(environment = AnonConfig.getTorConfig(scope)) {
 
         TorEvent.entries().forEach { event ->
             if (event == TorEvent.ERR)
@@ -52,6 +63,17 @@ class TorService(prefs: SharedPreferences) {
         RuntimeEvent.entries().forEach { event ->
             observerStatic(event, OnEvent.Executor.Immediate) { data ->
                 _torLogs.tryEmit(data.toString())
+            }
+        }
+        observerStatic(RuntimeEvent.STATE) { state ->
+            // the daemon went down without stop() -- killed, or a start that failed: drop the
+            // dead port and start again; the new port reaches the wallet through socksFlow
+            if (state.daemon.isOff && wanted) {
+                _socks = null
+                scope.launch {
+                    delay(10_000)
+                    if (wanted) runtime.startDaemonAsync()
+                }
             }
         }
         observerStatic(RuntimeEvent.LISTENERS) {
@@ -72,12 +94,14 @@ class TorService(prefs: SharedPreferences) {
     }
 
     fun start() {
+        wanted = true
         scope.launch {
             runtime.startDaemonAsync()
         }
     }
 
     fun stop() {
+        wanted = false
         _socks = null
         scope.launch {
             runtime.stopDaemonAsync()
@@ -86,12 +110,14 @@ class TorService(prefs: SharedPreferences) {
 
 
     fun restart() {
+        wanted = true
         scope.launch {
             runtime.restartDaemonAsync()
         }
     }
 
     fun dispose() {
+        wanted = false
         scope.launch {
             runtime.stopDaemonAsync()
         }.invokeOnCompletion {
