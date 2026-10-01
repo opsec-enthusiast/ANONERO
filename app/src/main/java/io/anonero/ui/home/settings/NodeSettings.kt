@@ -212,7 +212,7 @@ class NodeSettingsViewModel(
                 )
 
                 editor.apply()
-                torService.start()
+                walletHandler.applyProxy()
                 walletHandler.updateDaemon(node)
                 walletState.setLoading(false)
                 walletState.update()

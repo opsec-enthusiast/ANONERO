@@ -81,21 +81,8 @@ class AnonWalletHandler(
             val rpcPort = prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
             val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
-            val proxyHost = prefs.getString(WALLET_PROXY, "")
-            val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
-            val useTor = prefs.getBoolean(WALLET_USE_TOR, true)
-            if (useTor || proxyHost.isNullOrBlank()) {
-                torService.start();
-                while (torService.socks == null) {
-                    delay(200)
-                }
-                val socket = torService.socks
-                WalletManager.instance?.setProxy("${socket?.value}")
-            } else if (proxyHost.isNotEmpty() && proxyPort != -1) {
-                WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
-            } else {
-                throw Exception("no proxy")
-            }
+            // no node (offline signer): nothing to route, leave Tor off
+            if (host?.isNotEmpty() == true) applyProxy()
             if (host?.isNotEmpty() == true) {
                 val nodeObj = JSONObject()
                     .apply {
@@ -129,6 +116,28 @@ class AnonWalletHandler(
             walletState.setLoading(false)
         }
 
+    }
+
+    /**
+     * Routes the wallet through Tor (waiting for its socks port) or the manual proxy. Call it
+     * before the wallet first talks to a node, or that traffic goes out unproxied.
+     */
+    suspend fun applyProxy() {
+        val proxyHost = prefs.getString(WALLET_PROXY, "")
+        val proxyPort = prefs.getInt(WALLET_PROXY_PORT, -1)
+        val useTor = prefs.getBoolean(WALLET_USE_TOR, true)
+        if (useTor || proxyHost.isNullOrBlank()) {
+            torService.start();
+            while (torService.socks == null) {
+                delay(200)
+            }
+            val socket = torService.socks
+            WalletManager.instance?.setProxy("${socket?.value}")
+        } else if (proxyHost.isNotEmpty() && proxyPort != -1) {
+            WalletManager.instance?.setProxy("${proxyHost}:$proxyPort")
+        } else {
+            throw Exception("no proxy")
+        }
     }
 
     fun updateDaemon(node: Node?) {
