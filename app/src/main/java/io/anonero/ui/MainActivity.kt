@@ -195,6 +195,9 @@ class MainActivity : ComponentActivity() {
         torService.dispose()
         scope.cancel()
         super.onDestroy()
+        // the service is START_STICKY: left started, Android reads the kill below as a crash
+        // and restarts the app headless a second later, notification and Tor included
+        stopNotificationService()
         Process.killProcess(Process.myPid())
     }
 }
