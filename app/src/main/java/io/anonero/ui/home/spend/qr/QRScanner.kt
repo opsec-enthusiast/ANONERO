@@ -122,10 +122,11 @@ class QRScannerVM : ViewModel() {
                             val status = wallet.importKeyImages(filePath);
                             delay(1_520)
                             Timber.tag(TAG).i("Import key images status $status")
-                            if (status) {
+                            if (status?.lowercase() == "imported") {
                                 return Result.success(ImportEvents.IMPORT_KEY_IMAGES)
                             } else {
-                                return Result.failure(Exception("Failed to import key images"))
+                                Timber.tag(TAG).e("Failed to import key images: %s", status)
+                                return Result.failure(Exception("Failed to import key images: $status"))
                             }
                         } finally {
                             _loaderState.postValue(false);

@@ -374,7 +374,8 @@ class Wallet {
     external fun importOutputs(filename: String?): String?
     external fun exportKeyImages(filename: String?, all: Boolean): Boolean
     external fun hasUnknownKeyImages(): Boolean
-    external fun importKeyImages(filename: String?): Boolean
+    // the JNI side returns "Imported" or the wallet error string, like importOutputs
+    external fun importKeyImages(filename: String?): String?
     fun loadUnsignedTransaction(inputFile: String?): UnsignedTransaction {
         val unsignedTx: Long = loadUnsignedTx(inputFile)
         unsignedTransaction = UnsignedTransaction(unsignedTx)
