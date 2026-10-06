@@ -104,9 +104,12 @@ class QRScannerVM : ViewModel() {
                             _loaderState.postValue(false);
                             if (status?.lowercase() == "imported") {
                                 Timber.tag(TAG).i("Imported outputs")
+                                //save the imported outputs
+                                wallet.store()
                                 return Result.success(ImportEvents.IMPORT_OUTPUTS)
                             } else {
-                                return Result.failure(Exception("Failed to import outputs"))
+                                Timber.tag(TAG).e("Failed to import outputs: %s", status)
+                                return Result.failure(Exception("Failed to import outputs: $status"))
                             }
                         } catch (error: Exception) {
                             return Result.failure(error)
@@ -149,8 +152,9 @@ class QRScannerVM : ViewModel() {
                                 }
                                 return Result.success(ImportEvents.IMPORT_UNSIGNED_TX)
                             } else {
-                                Timber.tag(TAG).e("Failed to import unsigned transaction")
-                                return Result.failure(Exception("Failed to import unsigned transaction"))
+                                val error = unsignedTransaction.errorString
+                                Timber.tag(TAG).e("Failed to import unsigned transaction: %s", error)
+                                return Result.failure(Exception("Failed to import unsigned transaction: $error"))
                             }
                         } finally {
                             _loaderState.postValue(false);

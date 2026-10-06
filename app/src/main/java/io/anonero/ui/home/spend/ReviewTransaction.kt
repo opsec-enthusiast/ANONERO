@@ -548,7 +548,10 @@ fun ReviewTransactionScreen(
                                         val tx = viewModel.unsignedTransaction
                                         val signed = try {
                                             withContext(Dispatchers.Default) {
-                                                tx?.sign(signedTransaction.absolutePath) == true
+                                                val ok = tx?.sign(signedTransaction.absolutePath) == true
+                                                //save the wallet after signing
+                                                if (ok) WalletManager.instance?.wallet?.store()
+                                                ok
                                             }
                                         } finally {
                                             // always release the button, or a failed sign leaves
@@ -572,9 +575,13 @@ fun ReviewTransactionScreen(
                                             val reason = tx?.errorString?.takeIf { it.isNotBlank() }
                                                 ?: "unknown error"
                                             Timber.tag(TAG).e("Signing failed: %s", reason)
+                                            //tell the user how to resync outputs
+                                            val hint = if (reason.contains("omit more outputs"))
+                                                "\nOn NERO open the menu, tap Show Outputs, scan it here, then send again."
+                                            else ""
                                             android.widget.Toast.makeText(
                                                 context,
-                                                "Signing failed: $reason",
+                                                "Signing failed: $reason$hint",
                                                 android.widget.Toast.LENGTH_LONG,
                                             ).show()
                                         }
