@@ -36,6 +36,8 @@ class WalletState {
     private val _isLoading = MutableStateFlow(false)
     private var _isSyncing = AtomicBoolean(false)
     private val _backgroundSync = MutableStateFlow(false)
+    // ANON with no node set: the offline signer
+    private val _offline = MutableStateFlow(false)
     private val _incomingTx = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     private val _transactions = MutableStateFlow<List<TransactionInfo>>(listOf())
     private val _subAddresses = MutableStateFlow<List<Subaddress>>(listOf())
@@ -60,6 +62,8 @@ class WalletState {
     val isSyncing get():Boolean = _isSyncing.get()
     val backgroundSync get():Boolean = _backgroundSync.value
     val backgroundSyncFlow: Flow<Boolean> = _backgroundSync
+    val offline get():Boolean = _offline.value
+    val offlineFlow: Flow<Boolean> = _offline
 
     val walletStatus: Flow<Wallet.Status?> = _walletStatus
     val syncProgress: Flow<SyncProgress?> = _syncProgress
@@ -213,6 +217,10 @@ class WalletState {
 
     fun toggleHideAmounts() {
         hideAmountsFlow.update { !it }
+    }
+
+    fun setOffline(offline: Boolean) {
+        _offline.update { offline }
     }
 
     fun setBackGroundSync(startBackgroundSync: Boolean) {

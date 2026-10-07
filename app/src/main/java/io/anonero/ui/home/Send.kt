@@ -282,6 +282,8 @@ fun SendScreen(
     val unLockedAmount = Formats.getDisplayAmount(
         unlockedBalance ?: 0L
     )
+    val offline by walletState.offlineFlow.asLiveData().observeAsState(walletState.offline)
+    val shownAmount = if (offline) Formats.maskAmount(unlockedBalance ?: 0L) else unLockedAmount
 
     LaunchedEffect(paymentUri) {
         if (paymentUri != null && paymentUri.coins.isNotEmpty()) {
@@ -554,13 +556,13 @@ fun SendScreen(
                         },
                     )
                     Text(
-                        if (sweep) "${stringResource(R.string.sweeping_balance)} $unLockedAmount ${
+                        if (sweep) "${stringResource(R.string.sweeping_balance)} $shownAmount ${
                             stringResource(
                                 R.string.minus_fees
-                            )}" else "${stringResource(R.string.available_balance)} $unLockedAmount ",
+                            )}" else "${stringResource(R.string.available_balance)} $shownAmount ",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
+                            .clickable(enabled = !offline) {
                                 amountField = if (!sweep) {
                                     sendViewModel.setSpendType(SpendType.SWEEP)
                                     unLockedAmount

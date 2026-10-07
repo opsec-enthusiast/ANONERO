@@ -223,6 +223,8 @@ class Wallet {
 
     external fun setTrustedDaemon(trusted: Boolean): Boolean
 
+    external fun setOffline(offline: Boolean)
+
     fun setProxy(address: String?): Boolean {
         return setProxyJ(address)
     }

@@ -124,7 +124,9 @@ class AnonNeroService : Service() {
         if (wallet != null) {
             val isSyncing = walletState.isSyncing
             if (!isSyncing) {
-                val notificationMessage = if (walletState.backgroundSync) {
+                val notificationMessage = if (walletState.offline) {
+                    if (walletState.backgroundSync) "Wallet Locked: Offline" else "Offline"
+                } else if (walletState.backgroundSync) {
                     "Wallet Locked: Synced: ${wallet.getBlockChainHeight()} "
                 } else if (!wallet.isInitialized) {
                     "Loading wallet..."

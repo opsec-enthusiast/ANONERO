@@ -242,34 +242,6 @@ class NodeSettingsViewModel(
         }
     }
 
-    fun disconnect() {
-        viewModelScope.launch(Dispatchers.IO) {
-            WalletManager.instance?.wallet?.pauseRefresh()
-            prefs.edit {
-                putString(
-                    NodeFields.RPC_HOST.value,
-                    null
-                )
-                putInt(
-                    NodeFields.RPC_PORT.value, 0
-
-                )
-                putString(
-                    NodeFields.RPC_USERNAME.value,
-                    null
-
-                )
-                putString(
-                    NodeFields.RPC_PASSWORD.value,
-                    null
-                )
-            }
-            walletHandler.updateDaemon(null)
-            walletState.update()
-            walletState.setLoading(false)
-        }
-    }
-
 }
 
 
@@ -417,10 +389,7 @@ fun NodeSettings(onBackPress: () -> Unit = {}) {
                         activeNode!!,
                         modifier = Modifier.animateItem(),
                         active = true,
-                        nodeSettingsVM = nodeSettingsVM,
-                        onDisconnect = {
-                            nodeSettingsVM.disconnect()
-                        })
+                        nodeSettingsVM = nodeSettingsVM)
                 }
             if (availableNodes.isNotEmpty())
                 item(key = "header") {
@@ -481,7 +450,6 @@ fun NodeListItem(
     modifier: Modifier = Modifier,
     active: Boolean = false,
     nodeSettingsVM: NodeSettingsViewModel,
-    onDisconnect: (node: Node) -> Unit = {},
     onConnect: (node: Node) -> Unit = {},
     onRemove: (node: Node) -> Unit = {},
 ) {
@@ -501,7 +469,7 @@ fun NodeListItem(
                 ),
                 shape = MaterialTheme.shapes.medium,
             )
-            .clickable {
+            .clickable(enabled = !active) {
                 menu = !menu
             },
         headlineContent = {
@@ -547,22 +515,20 @@ fun NodeListItem(
                     onDismissRequest = { menu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(if (active) "Disconnect" else "Connect") },
+                        text = { Text("Connect") },
                         onClick = {
-                            if (active) onDisconnect(node) else onConnect(node)
+                            onConnect(node)
                             menu = false
                         },
                     )
-                    if (!active) {
-                        HorizontalDivider()
-                        DropdownMenuItem(
-                            text = { Text("Remove") },
-                            onClick = {
-                                onRemove(node)
-                                menu = false
-                            },
-                        )
-                    }
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text("Remove") },
+                        onClick = {
+                            onRemove(node)
+                            menu = false
+                        },
+                    )
                 }
             }
         }

@@ -1006,6 +1006,13 @@ Java_io_anonero_model_Wallet_setTrustedDaemon(JNIEnv *env, jobject instance, jbo
     return static_cast<jboolean>(true);
 }
 
+//virtual void setOffline(bool offline) = 0;
+JNIEXPORT void JNICALL
+Java_io_anonero_model_Wallet_setOffline(JNIEnv *env, jobject instance, jboolean offline) {
+    Monero::Wallet *wallet = getHandle<Monero::Wallet>(env, instance);
+    wallet->setOffline(offline);
+}
+
 
 // TODO virtual bool trustedDaemon() const = 0;
 

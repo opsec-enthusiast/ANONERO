@@ -24,7 +24,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
+import android.content.Context
+import androidx.activity.compose.BackHandler
 import io.anonero.AnonConfig
+import io.anonero.model.node.NodeFields
 import io.anonero.R
 import io.anonero.ui.home.graph.routes.Home
 import io.anonero.ui.home.settings.LogViewer
@@ -76,6 +79,9 @@ data object OnboardNodeSetupScreen
 
 @Serializable
 data object OnboardRestoreScreen
+
+@Serializable
+data object OnboardRestoreNodeScreen
 
 @Serializable
 data class OnboardRestorePreviewScreen(val backUpPath: String)
@@ -172,12 +178,32 @@ fun NavGraphBuilder.onboardingGraph(
                     navController.navigate(it)
                 },
                 oNextPressed = {
-                    navController.navigate(
-                        Home
-                    ) {
-                        popUpTo(LandingScreenRoute)
+                    val prefs = AnonConfig.context?.getSharedPreferences(AnonConfig.PREFS, Context.MODE_PRIVATE)
+                    //a backup of an offline signer has no node
+                    if (prefs?.getString(NodeFields.RPC_HOST.value, "").isNullOrEmpty()) {
+                        navController.navigate(OnboardRestoreNodeScreen)
+                    } else {
+                        navController.navigate(
+                            Home
+                        ) {
+                            popUpTo(LandingScreenRoute)
+                        }
                     }
                 }
+            )
+        }
+        composable<OnboardRestoreNodeScreen> {
+            val toHome = {
+                navController.navigate(
+                    Home
+                ) {
+                    popUpTo(LandingScreenRoute)
+                }
+            }
+            BackHandler { toHome() }
+            SetupNodeComposable(
+                onBackPressed = toHome,
+                oNextPressed = toHome
             )
         }
         composable<OnboardPassPhraseScreen> {

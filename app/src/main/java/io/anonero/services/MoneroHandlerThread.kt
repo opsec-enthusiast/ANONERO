@@ -70,7 +70,10 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
         // runs every ~10s: routine passes are debug-only, reconnects stay in release logs
         val summary = "refreshed() status:${status} daemonHeight:$daemonHeight chainHeight:$chainHeight"
         Timber.tag(name).d(summary)
-        if (status === Wallet.ConnectionStatus.ConnectionStatus_Disconnected || status == null) {
+        if (walletState.offline) {
+            //no node to reconnect to
+            walletState.setLoading(false)
+        } else if (status === Wallet.ConnectionStatus.ConnectionStatus_Disconnected || status == null) {
             Timber.tag(name).i("restarting connection: $summary")
             tryRestartConnection()
         } else {

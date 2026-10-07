@@ -74,10 +74,14 @@ class AnonWalletHandler(
         wallet.setListener(handler)
         wallet.refreshHistory()
         handler?.start()
-        walletState.setLoading(true)
+        val host = prefs.getString(NodeFields.RPC_HOST.value, "")
+        val offline = !AnonConfig.viewOnly && host.isNullOrEmpty()
+        walletState.setOffline(offline)
+        wallet.setOffline(offline)
+        //nothing to load without a node
+        if (!host.isNullOrEmpty()) walletState.setLoading(true)
         walletState.update()
         try {
-            val host = prefs.getString(NodeFields.RPC_HOST.value, "")
             val rpcPort = prefs.getInt(NodeFields.RPC_PORT.value, Node.defaultRpcPort)
             val rpcUsername = prefs.getString(NodeFields.RPC_USERNAME.value, "")
             val rpcPassphrase = prefs.getString(NodeFields.RPC_PASSWORD.value, "")
@@ -147,6 +151,8 @@ class AnonWalletHandler(
         wallet?.pauseRefresh()
         try {
             if (node != null) {
+                walletState.setOffline(false)
+                wallet?.setOffline(false)
                 walletState.updateDaemon(
                     DaemonInfo(
                         daemon = "${node.host}:${node.rpcPort}",

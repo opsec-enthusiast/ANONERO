@@ -159,7 +159,10 @@ fun TransactionScreen(
     val torService = koinInject<TorService>()
     val anonPrefs = koinInject<android.content.SharedPreferences>(named(WALLET_PREFERENCES))
     val showLockScreen by walletState.backgroundSyncFlow.asLiveData().observeAsState(walletState.backgroundSync)
-    val hideAmounts by walletState.hideAmountsFlow.asLiveData().observeAsState(false)
+    val streetMode by walletState.hideAmountsFlow.asLiveData().observeAsState(false)
+    val offline by walletState.offlineFlow.asLiveData().observeAsState(walletState.offline)
+    //the offline signer cannot know its balance
+    val hideAmounts = streetMode || offline
     val scope = rememberCoroutineScope()
     val toastState = rememberToasterState()
     val activity = LocalActivity.current;
@@ -513,7 +516,7 @@ fun TransactionScreen(
                     ) {
                         Icon(AnonIcons.Scan, contentDescription = "Scan")
                     }
-                    IconButton(
+                    if (!offline) IconButton(
                         onClick = {
                             navigateTo(SettingsNodeRoute)
                         }
@@ -568,19 +571,19 @@ fun TransactionScreen(
                                 ),
                             onDismissRequest = { showMenu = false }
                         ) {
-                            DropdownMenuItem(
+                            if (!offline) DropdownMenuItem(
                                 text = { Text(stringResource(R.string.coin_control)) },
                                 onClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
                             )
-                            DropdownMenuItem(
+                            if (!offline) DropdownMenuItem(
                                 text = { Text(stringResource(R.string.refresh)) },
                                 onClick = {
                                     navigateTo(CoinsScreenRoute)
                                 }
                             )
-                            DropdownMenuItem(
+                            if (!offline) DropdownMenuItem(
                                 text = { Text(stringResource(R.string.resync_blockchain)) },
                                 onClick = {
                                     showMenu = false
@@ -688,7 +691,7 @@ fun TransactionScreen(
                             .combinedClickable(
                                 onClick = { walletState.toggleHideAmounts() },
                                 onLongClick = {
-                                    navigateTo(CoinsScreenRoute)
+                                    if (!offline) navigateTo(CoinsScreenRoute)
                                 }
                             )
                             .fillParentMaxWidth()

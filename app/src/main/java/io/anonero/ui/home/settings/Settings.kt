@@ -87,6 +87,7 @@ fun SettingsPage(
     // next finds the new-PIN prompt on top of the lock and sets a PIN of their own.
     val walletState = koinInject<WalletState>()
     val locked by walletState.backgroundSyncFlow.collectAsState(walletState.backgroundSync)
+    val offline by walletState.offlineFlow.collectAsState(walletState.offline)
     LaunchedEffect(locked) {
         if (locked) {
             showLockScreen = false
@@ -190,7 +191,7 @@ fun SettingsPage(
                             horizontal = 12.dp
                         )
                 ) {
-                    item {
+                    if (!offline) item {
                         Text(
                             stringResource(R.string.settings_connection),
                             style = settingsMenuHeaderStyle,
@@ -200,7 +201,7 @@ fun SettingsPage(
                             )
                         )
                     }
-                    item {
+                    if (!offline) item {
                         HorizontalDivider(
                             thickness = 2.5.dp
                         )
@@ -213,7 +214,7 @@ fun SettingsPage(
                             thickness = 2.5.dp
                         )
                     }
-                    item {
+                    if (!offline) item {
                         SettingsMenuItem(title = stringResource(R.string.settings_proxy_settings), onClick = {
                             navigateTo(ProxySettingsRoute)
                         })
