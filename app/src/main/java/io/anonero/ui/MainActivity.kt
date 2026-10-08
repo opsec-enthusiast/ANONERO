@@ -2,6 +2,7 @@ package io.anonero.ui
 
 import AnonNeroTheme
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.asLiveData
@@ -71,6 +73,15 @@ class MainActivity : ComponentActivity() {
         val splashscreen = installSplashScreen()
         var isAppReady by mutableStateOf(false)
         super.onCreate(savedInstanceState)
+        //a permission prompt does not count as leaving the app
+        ActivityCompat.setPermissionCompatDelegate(object : ActivityCompat.PermissionCompatDelegate {
+            override fun requestPermissions(activity: Activity, permissions: Array<String>, requestCode: Int): Boolean {
+                permissionPrompt = true
+                return false
+            }
+
+            override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) = false
+        })
         // Everything this window ever shows -- seed, balance, addresses, the signing
         // review -- otherwise lands in the recents thumbnail, which the system writes
         // to disk, and is capturable by any screen-capture-privileged app. One flag
@@ -176,9 +187,27 @@ class MainActivity : ComponentActivity() {
         stopService(Intent(applicationContext, AnonNeroService::class.java))
     }
 
+    //set while a permission prompt opened by the app is on screen
+    private var permissionPrompt = false
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        if (permissionPrompt) {
+            permissionPrompt = false
+            return
+        }
         scope.launch { walletState.enterBackgroundSync() }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionPrompt = false
+    }
+
+    //a system screen opened by the app does not count as leaving it
+    override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+        super.startActivityForResult(intent, requestCode, options)
     }
 
     override fun onDestroy() {
