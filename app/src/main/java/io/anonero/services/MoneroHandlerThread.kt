@@ -97,6 +97,8 @@ class MoneroHandlerThread(private val wallet: Wallet, private val walletState: W
 
     private fun tryRestartConnection() {
         wallet.init(0)
+        //init marks a remote node untrusted
+        wallet.setTrustedDaemon(true)
         wallet.startRefresh()
         walletState.update()
     }
