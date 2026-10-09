@@ -2,10 +2,11 @@ package io.anonero.ui.home.settings
 
 import AnonNeroTheme
 import AnonOutlineButton
-import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.view.HapticFeedbackConstants
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -61,7 +62,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
-import androidx.core.content.FileProvider
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -82,6 +82,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import timber.log.Timber
@@ -176,27 +177,35 @@ fun ExportBackUp(onBackPress: () -> Unit = {}) {
         }
     }
 
+    //write the backup to the place picked in the system save dialog
+    val saveBackup = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val file = backupFile
+        if (uri != null && file != null) {
+            scope.launch(Dispatchers.IO) {
+                val saved = try {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    } != null
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e)
+                    false
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        if (saved) "Backup saved" else "Could not save the backup",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
     fun exportToExternDir() {
-        if (backupFile == null) {
-            return
-        }
-        val fileUri: Uri = try {
-            FileProvider.getUriForFile(
-                context, // Context
-                "${context.packageName}.shareProvider", // Authority
-                backupFile!!
-            )
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e)
-            return
-        }
-        // Create the share intent
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_STREAM, fileUri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Grant permission to the receiving app
-        }
-        context.startActivity(shareIntent)
+        val file = backupFile ?: return
+        saveBackup.launch(file.name)
     }
     if (passPhraseDialog)
         AlertDialog(

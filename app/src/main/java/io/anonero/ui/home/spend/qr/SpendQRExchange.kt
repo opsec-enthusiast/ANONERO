@@ -1,11 +1,12 @@
 package io.anonero.ui.home.spend.qr
 
 import AnonNeroTheme
-import android.content.Intent
 import android.icu.text.SimpleDateFormat
-import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,7 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -169,6 +169,32 @@ fun QRExchangeScreen(
         viewModel.processExportType(params.exportType)
     }
 
+    //write the export to the place picked in the system save dialog
+    val saveExport = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val file = exportFile
+        if (uri != null && file != null) {
+            scope.launch(Dispatchers.IO) {
+                val saved = try {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    } != null
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e)
+                    false
+                }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        if (saved) "File saved" else "Could not save the file",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
     BackHandler {
         onBackPressed()
     }
@@ -258,45 +284,12 @@ fun QRExchangeScreen(
                         }
                         TextButton(
                             onClick = {
-                                scope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        val dir = File(context.cacheDir, "exports")
-                                            .apply {
-                                                if (!exists()) {
-                                                    mkdirs()
-                                                }
-                                            }
-                                        if (exportFile != null) {
-                                            val date = Date()
-                                            val sdf = SimpleDateFormat(
-                                                "dd_MM_yyyy' 'HH_mm_a",
-                                                Locale.getDefault()
-                                            )
-                                            val timeStamp: String = sdf.format(date)
-                                            val targetFile =
-                                                File(dir, "${timeStamp}_${exportFile!!.name}")
-                                            exportFile!!.copyTo(targetFile, overwrite = true)
-                                            val fileUri: Uri = try {
-                                                FileProvider.getUriForFile(
-                                                    context, // Context
-                                                    "${context.packageName}.shareProvider", // Authority
-                                                    targetFile
-                                                )
-                                            } catch (e: Exception) {
-                                                Timber.tag(TAG).e(e)
-                                                return@withContext
-                                            }
-                                            // Create the share intent
-                                            withContext(Dispatchers.Main) {
-                                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                    type = "text/plain"
-                                                    putExtra(Intent.EXTRA_STREAM, fileUri)
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Grant permission to the receiving app
-                                                }
-                                                context.startActivity(shareIntent)
-                                            }
-                                        }
-                                    }
+                                exportFile?.let {
+                                    val sdf = SimpleDateFormat(
+                                        "dd_MM_yyyy' 'HH_mm_a",
+                                        Locale.getDefault()
+                                    )
+                                    saveExport.launch("${sdf.format(Date())}_${it.name}")
                                 }
                             },
                             modifier = Modifier
