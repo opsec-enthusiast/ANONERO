@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.SharedPreferences
 import io.anonero.di.appModule
+import io.anonero.util.WalletKey
 import io.anonero.model.WalletManager
 import io.anonero.model.node.NodeFields
 import io.anonero.services.TorService
@@ -48,6 +49,11 @@ class AnonApplication : Application(), Thread.UncaughtExceptionHandler {
             torService.start()
         }
         AnonConfig.clearSpendCacheFiles(this)
+        // recover a keystore migration interrupted by a crash, before any wallet open
+        runCatching {
+            val walletFile = AnonConfig.getDefaultWalletFile(this)
+            WalletKey.recoverInterruptedMigration(this, walletFile.path, walletFile.name)
+        }
     }
 
     private fun plantLog() {

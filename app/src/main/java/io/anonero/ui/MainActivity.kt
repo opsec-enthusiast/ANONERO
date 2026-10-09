@@ -52,6 +52,7 @@ import io.anonero.util.WALLET_PREFERENCES
 import io.anonero.util.WALLET_USE_TOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -136,17 +137,25 @@ class MainActivity : ComponentActivity() {
                                 mode = LockScreenMode.LOCK_SCREEN,
                                 modifier = androidx.compose.ui.Modifier.fillMaxSize(),
                                 onUnLocked = { pin, shortCut ->
+                                    // The lock screen stays up until wallet2 has actually left
+                                    // background sync; hiding it first showed a wallet that
+                                    // looked unlocked but had no spend key.
+                                    // A shortcut navigates behind the lock screen first, as
+                                    // before, so the screen is ready when the lock lifts.
                                     if (shortCut != LockScreenShortCut.HOME) {
                                         walletState.emitUnlockShortcut(shortCut)
-                                        scope.launch {
-                                            kotlinx.coroutines.delay(250)
-                                            walletState.setBackGroundSync(false)
-                                        }
-                                    } else {
-                                        walletState.setBackGroundSync(false)
                                     }
                                     scope.launch(Dispatchers.IO) {
-                                        walletState.exitBackgroundSync(pin)
+                                        val exited = walletState.exitBackgroundSync(pin)
+                                        withContext(Dispatchers.Main) {
+                                            if (!exited) {
+                                                android.widget.Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Could not unlock the wallet. Try again, or restart the app.",
+                                                    android.widget.Toast.LENGTH_LONG,
+                                                ).show()
+                                            }
+                                        }
                                     }
                                 }
                             )

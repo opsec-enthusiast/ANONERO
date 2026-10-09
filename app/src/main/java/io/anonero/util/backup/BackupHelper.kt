@@ -19,6 +19,9 @@ import io.anonero.model.node.Node
 import io.anonero.model.node.NodeFields
 import io.anonero.store.NodesRepository
 import io.anonero.util.KeyStoreHelper
+import io.anonero.util.PREFS_PIN_HASH
+import io.anonero.util.WalletKey
+import io.anonero.util.PinHash
 import io.anonero.util.PREFS_PASSPHRASE_HASH
 import io.anonero.util.RESTORE_HEIGHT
 import io.anonero.util.WALLET_PREFERENCES
@@ -40,7 +43,11 @@ import java.util.zip.ZipOutputStream
 
 class NetworkMismatchException : Exception()
 object BackupHelper {
-    private const val BACKUP_VERSION = 2
+    // 3: wallet files inside the zip are keyed to the seed passphrase (portable).
+    // 2 and below: keyed to the PIN of the phone that made the backup -- which is also
+    // what a wallet that has not migrated to the Keystore still exports.
+    private const val BACKUP_VERSION = 3
+    private const val BACKUP_VERSION_PIN_KEYED = 2
     const val BUFFER = 2048
     private const val TAG = "BackUpHelper"
     val walletPrefs: SharedPreferences by inject(
@@ -83,8 +90,16 @@ object BackupHelper {
             nodes = nodeRepository.getAll()
         )
 
+        // The version tells restore which key opens the wallet files. A keystore-bound
+        // wallet's copy is re-keyed to the passphrase below (v3); a wallet that never
+        // migrated is still PIN-keyed and must say so (v2), or restore asks for a new PIN
+        // instead of the one the files are locked with. If the device secret exists but
+        // cannot be loaded, fail the export rather than write a backup nothing can open.
+        val walletName = AnonConfig.getDefaultWalletFile(context).name
+        val w = if (WalletKey.exists(context, walletName)) WalletKey.load(context, walletName) else null
         val backUpPayload = BackupPayload(
-            version = BACKUP_VERSION, backup = backup
+            version = if (w != null) BACKUP_VERSION else BACKUP_VERSION_PIN_KEYED,
+            backup = backup,
         )
         val json = Json.encodeToString(backUpPayload)
 
@@ -99,35 +114,61 @@ object BackupHelper {
         val timeStamp: String = sdf.format(date)
         val backupFile = File(context.cacheDir, "${R.string.app_name}_backup_$timeStamp.zip")
         tmpBackupDir.mkdirs()
-        val tmpBackupFile = File(tmpBackupDir, "anon.json")
-        tmpBackupFile.writeText(json)
-        val walletDir = File(context.filesDir, "wallets")
-        // Quiesce background sync before copying the wallet dir: MoneroHandlerThread
-        // calls wallet.store() on every refresh, and a store() landing mid-copy throws
-        // (and, uncaught, crashed the backup). Pause + settle, copy, then resume.
-        wallet.pauseRefresh()
-        wallet.store()
         try {
-            walletDir.copyRecursively(tmpBackupDir, true)
-        } finally {
-            if (wallet.isInitialized) wallet.startRefresh()
-        }
-        val list = tmpBackupDir.listFiles()
-        val files = list?.map { it.absolutePath }?.toTypedArray()
-        val backupCacheDir = File(context.cacheDir, "backup")
-        if (!backupCacheDir.exists()) {
-            backupCacheDir.mkdirs()
-        }
-        val backupFileEncrypted =
-            File(backupCacheDir, "${R.string.app_name}_backup_$timeStamp.anon")
+            val tmpBackupFile = File(tmpBackupDir, "anon.json")
+            tmpBackupFile.writeText(json)
+            val walletDir = File(context.filesDir, "wallets")
+            // Quiesce background sync before copying: MoneroHandlerThread calls store() on
+            // every refresh, and a store() landing mid-copy throws. Pause + settle, copy,
+            // then resume. The store() is what puts the live sync state into the cache file.
+            wallet.pauseRefresh()
+            wallet.store()
+            // keep the live wallet paused until the copy is re-keyed and closed
+            try {
+                walletDir.copyRecursively(tmpBackupDir, true)
+                // The live wallet is keyed to the device secret W, which exists only in this
+                // phone's Keystore, so a raw copy opens nowhere else. Re-key the COPY to the seed
+                // passphrase -- the same one that decrypts the zip -- so the backup restores on
+                // any device, with its full cache (history, sync state). The live wallet is never
+                // touched: nothing here can leave it in a state the Keystore cannot open. A legacy
+                // wallet that never migrated has no W and is still PIN-keyed; it is left as is.
+                if (w != null) {
+                    val manager = WalletManager.instance ?: throw Exception("Wallet manager not found")
+                    val copy = manager.openWalletUnmanaged(File(tmpBackupDir, walletName).path, w)
+                    try {
+                        if (!copy.status.isOk) {
+                            throw Exception("backup copy did not open: ${copy.status.errorString}")
+                        }
+                        if (!copy.setPassword(seedPassphrase)) {
+                            throw Exception("backup copy could not be re-keyed: ${copy.status.errorString}")
+                        }
+                        copy.store()
+                    } finally {
+                        manager.closeUnmanaged(copy)
+                    }
+                }
+            } finally {
+                if (wallet.isInitialized) wallet.startRefresh()
+            }
+            val list = tmpBackupDir.listFiles()
+            val files = list?.map { it.absolutePath }?.toTypedArray()
+            val backupCacheDir = File(context.cacheDir, "backup")
+            if (!backupCacheDir.exists()) {
+                backupCacheDir.mkdirs()
+            }
+            val backupFileEncrypted =
+                File(backupCacheDir, "${R.string.app_name}_backup_$timeStamp.anon")
 
-        if (files != null) {
-            zip(files, backupFile.absolutePath)
-            EncryptUtil.encryptFile(seedPassphrase, backupFile, backupFileEncrypted)
+            if (files != null) {
+                zip(files, backupFile.absolutePath)
+                EncryptUtil.encryptFile(seedPassphrase, backupFile, backupFileEncrypted)
+            }
+            return backupFileEncrypted.absolutePath
+        } finally {
+            // delete the unencrypted copies
             tmpBackupDir.deleteRecursively()
             backupFile.delete()
         }
-        return backupFileEncrypted.absolutePath
     }
 
     fun testBackUp(destinationDir: File): Boolean {
@@ -186,6 +227,50 @@ object BackupHelper {
         }
     }
 
+
+    /**
+     * Binds freshly-restored wallet files to this device. A version-3 backup's files are
+     * keyed to the seed passphrase; an older backup's files are keyed to the PIN of the
+     * phone that made it, which the caller has prompted for. Open with whichever works,
+     * re-encrypt to a fresh device secret, wrap it in the Keystore, and set the PIN gate.
+     * The full snapshot (tx history, sync state) is preserved -- no re-scan.
+     */
+    private fun bindRestoredWallet(passPhrase: String, pin: String): Boolean {
+        val context = AnonConfig.context!!
+        val walletFile = AnonConfig.getDefaultWalletFile(context)
+        val walletName = walletFile.name
+        val prefs = provideWalletSharedPrefs(context)
+        val manager = WalletManager.instance ?: return false
+        var opened = manager.openWallet(walletFile.path, passPhrase)
+        if (!opened.status.isOk) {
+            runCatching { manager.close(opened) }
+            opened = manager.openWallet(walletFile.path, pin)
+        }
+        if (!opened.status.isOk) {
+            Timber.tag(TAG).e(
+                "restore: neither passphrase nor PIN opened the restored wallet: %s",
+                opened.status.errorString
+            )
+            runCatching { manager.close(opened) }
+            return false
+        }
+        return try {
+            val w = WalletKey.newSecret()
+            if (!opened.setPassword(w)) {
+                throw Exception("setPassword failed: ${opened.status?.errorString}")
+            }
+            opened.store()
+            WalletKey.store(context, walletName, w)
+            prefs.edit(commit = true) { putString(PREFS_PIN_HASH, PinHash.hash(pin)) }
+            true
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "restore: failed to bind wallet to device")
+            false
+        } finally {
+            runCatching { manager.close(opened) }
+        }
+    }
+
     fun extractBackUp(backupPath: String, passPhrase: String): BackupPayload? {
         val destFile = File(AnonConfig.context?.cacheDir, "backup.anon").apply { createNewFile() }
         val decryptedDestFile =
@@ -217,7 +302,7 @@ object BackupHelper {
         return backup;
     }
 
-    suspend fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String): Boolean {
+    suspend fun restoreBackUp(backupPayload: BackupPayload, passPhrase: String, pin: String): Boolean {
         try {
 
             val extractDestination = File(AnonConfig.context?.cacheDir, "tmp_extract")
@@ -266,7 +351,11 @@ object BackupHelper {
                     entry.copyTo(File(anonDir, entry.name), true)
                 }
             }
-            return true
+            if (bindRestoredWallet(passPhrase, pin)) return true
+            // Copied but unbound files open nowhere. Left in place, the next launch finds
+            // a wallet it cannot unlock; removed, the user is back in onboarding to retry.
+            anonDir.deleteRecursively()
+            return false
         } catch (e: Exception) {
             Timber.tag(TAG).e(e)
             return false

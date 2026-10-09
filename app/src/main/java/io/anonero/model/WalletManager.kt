@@ -96,6 +96,15 @@ class WalletManager {
         return wallet
     }
 
+    /**
+     * Opens a second wallet without making it the managed live one -- for working on a
+     * copy while the real wallet stays open. Close it with [closeUnmanaged].
+     */
+    fun openWalletUnmanaged(path: String, password: String): Wallet =
+        Wallet(openWalletJ(path, password, networkType.value, AnonConfig.viewOnly))
+
+    fun closeUnmanaged(wallet: Wallet): Boolean = closeJ(wallet)
+
     private external fun openWalletJ(
         path: String,
         password: String,

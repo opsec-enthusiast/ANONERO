@@ -20,6 +20,7 @@ package io.anonero.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.security.keystore.KeyInfo;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -47,6 +48,12 @@ import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -163,6 +170,127 @@ public class KeyStoreHelper {
         }
         context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .remove(wallet).apply();
+    }
+
+    // --- Wallet secret W, wrapped by an AES-256-GCM key in the Keystore ---------------
+    // StrongBox (dedicated secure element) where the device has it, else the TEE, else a
+    // software key. The wrapped secret is stored beside the RSA one under a distinct
+    // prefix so the two never collide. AES-GCM is authenticated and is the algorithm
+    // StrongBox actually supports well; RSA-in-StrongBox is not portable across devices.
+
+    private static final String WALLET_SECRET_PREFIX = "walletSecret-";
+    private static final String AES_GCM = "AES/GCM/NoPadding";
+    private static final int GCM_TAG_BITS = 128;
+    private static final int GCM_IV_BYTES = 12;
+
+    private static SecretKey getOrCreateWalletSecretKey(String alias) throws GeneralSecurityException {
+        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        try { ks.load(null); } catch (Exception e) { throw new GeneralSecurityException(e); }
+        if (ks.containsAlias(alias)) return (SecretKey) ks.getKey(alias, null);
+        // Try StrongBox first (API 28+). A device without it throws, so fall back to
+        // TEE/software -- each attempt uses a fresh spec so the StrongBox flag can't leak
+        // into the fallback, and a partially-created alias is cleared before retrying.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                return generateWalletSecretKey(alias, true);
+            } catch (Exception strongBoxUnavailable) {
+                Timber.tag(TAG).i("StrongBox unavailable, using TEE/software key");
+                try { ks.deleteEntry(alias); } catch (Exception ignored) { }
+            }
+        }
+        return generateWalletSecretKey(alias, false);
+    }
+
+    private static SecretKey generateWalletSecretKey(String alias, boolean strongBox)
+            throws GeneralSecurityException {
+        KeyGenParameterSpec.Builder b = new KeyGenParameterSpec.Builder(
+                alias, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256);
+        if (strongBox) b.setIsStrongBoxBacked(true);
+        // the Keystore refuses W while the phone itself is locked: a seized locked phone gives
+        // up nothing even to code running as the app. Nothing needs W while locked -- background
+        // sync runs on the view key and wallet2 keeps the unwrapped W in memory for its saves.
+        // Android 15+ only: 12-14 delete this key when the screen lock is removed, wiping the wallet
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) b.setUnlockedDeviceRequired(true);
+        KeyGenerator kg = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES, SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        kg.init(b.build());
+        return kg.generateKey();
+    }
+
+    public static void saveWalletSecret(Context context, String wallet, String secret) throws GeneralSecurityException {
+        SecretKey key = getOrCreateWalletSecretKey(WALLET_SECRET_PREFIX + wallet);
+        Cipher cipher = Cipher.getInstance(AES_GCM);
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] iv = cipher.getIV();                 // system-generated for AndroidKeyStore GCM
+        byte[] ct = cipher.doFinal(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] out = new byte[iv.length + ct.length];
+        System.arraycopy(iv, 0, out, 0, iv.length);
+        System.arraycopy(ct, 0, out, iv.length, ct.length);
+        // commit, not apply: callers delete their rollback copy right after this returns,
+        // and a wallet re-keyed to a secret that never reached disk cannot be opened again
+        boolean written = context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(WALLET_SECRET_PREFIX + wallet, Base64.encodeToString(out, Base64.NO_WRAP)).commit();
+        if (!written) throw new GeneralSecurityException("wrapped wallet secret was not written");
+    }
+
+    public static String loadWalletSecret(Context context, String wallet) throws GeneralSecurityException {
+        String encoded = context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(WALLET_SECRET_PREFIX + wallet, "");
+        if (encoded.isEmpty()) throw new GeneralSecurityException("no wallet secret stored");
+        byte[] all = Base64.decode(encoded, Base64.NO_WRAP);
+        byte[] iv = Arrays.copyOfRange(all, 0, GCM_IV_BYTES);
+        byte[] ct = Arrays.copyOfRange(all, GCM_IV_BYTES, all.length);
+        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        try { ks.load(null); } catch (Exception e) { throw new GeneralSecurityException(e); }
+        SecretKey key = (SecretKey) ks.getKey(WALLET_SECRET_PREFIX + wallet, null);
+        if (key == null) throw new GeneralSecurityException("wallet key missing");
+        Cipher cipher = Cipher.getInstance(AES_GCM);
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_BITS, iv));
+        return new String(cipher.doFinal(ct), StandardCharsets.UTF_8);
+    }
+
+    public static boolean walletSecretExists(Context context, String wallet) {
+        return !context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE)
+                .getString(WALLET_SECRET_PREFIX + wallet, "").isEmpty();
+    }
+
+    public static void removeWalletSecret(Context context, String wallet) {
+        try {
+            KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+            ks.load(null);
+            ks.deleteEntry(WALLET_SECRET_PREFIX + wallet);
+        } catch (Exception ex) {
+            Timber.tag(TAG).e(ex);
+        }
+        context.getSharedPreferences(SecurityConstants.WALLET_PASS_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().remove(WALLET_SECRET_PREFIX + wallet).apply();
+    }
+
+    /** What actually protects W: "strongbox" | "tee" | "software" | "unknown". */
+    public static String walletSecretSecurityLevel(String wallet) {
+        try {
+            KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+            ks.load(null);
+            SecretKey key = (SecretKey) ks.getKey(WALLET_SECRET_PREFIX + wallet, null);
+            if (key == null) return "unknown";
+            SecretKeyFactory f = SecretKeyFactory.getInstance(
+                    key.getAlgorithm(), SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+            KeyInfo info = (KeyInfo) f.getKeySpec(key, KeyInfo.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                switch (info.getSecurityLevel()) {
+                    case KeyProperties.SECURITY_LEVEL_STRONGBOX: return "strongbox";
+                    case KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT: return "tee";
+                    case KeyProperties.SECURITY_LEVEL_SOFTWARE: return "software";
+                    default: return "unknown";
+                }
+            }
+            return info.isInsideSecureHardware() ? "tee" : "software";
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 
     public static void copyWalletUserPass(Context context, String srcWallet, String dstWallet) throws BrokenPasswordStoreException {

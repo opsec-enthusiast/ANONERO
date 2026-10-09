@@ -163,8 +163,13 @@ fun LockScreen(
                         }
                     } else if (mode == LockScreenMode.OPEN_WALLET) {
                         val result = appViewModel.openWallet(pin)
-                        prefs.edit(commit = true) {
-                            putString(PREFS_PIN_HASH, PinHash.hash(pin))
+                        // persist the gate hash only for a PIN that actually opened --
+                        // writing it for a wrong PIN would corrupt it. Hashed here, off the
+                        // main thread: 210k PBKDF2 rounds would freeze the UI.
+                        if (result) {
+                            prefs.edit(commit = true) {
+                                putString(PREFS_PIN_HASH, PinHash.hash(pin))
+                            }
                         }
                         withContext(Dispatchers.Main) {
                             if (result) {

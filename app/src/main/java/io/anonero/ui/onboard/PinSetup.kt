@@ -67,6 +67,7 @@ val keys = listOf(
 @Composable
 fun PinSetup(
     changePin: Boolean = false,
+    enterLabel: String? = null,
     onNext: (pin: String) -> Unit = {},
 ) {
     val view = LocalView.current
@@ -116,7 +117,7 @@ fun PinSetup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
-                Text(if (confirming) stringResource(R.string.confirm_pin) else if (changePin) stringResource(R.string.enter_new_pin) else stringResource(
+                Text(if (confirming) stringResource(R.string.confirm_pin) else enterLabel ?: if (changePin) stringResource(R.string.enter_new_pin) else stringResource(
                     R.string.enter_pin
                 ))
                 Spacer(modifier = Modifier.padding(top = 12.dp))

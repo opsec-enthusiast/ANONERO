@@ -61,6 +61,7 @@ import io.anonero.ui.onboard.PinSetup
 import io.anonero.util.PinHash
 import io.anonero.util.PREFS_PIN_HASH
 import io.anonero.util.WALLET_PREFERENCES
+import io.anonero.util.WalletKey
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
 import timber.log.Timber
@@ -130,22 +131,34 @@ fun SettingsPage(
             PinSetup(
                 changePin = true,
                 onNext = {
-                   try {
-                       WalletManager.instance?.wallet?.setPassword(it)
-                       toastState.show("PIN changed successfully",
-                           type = ToastType.Success,
-                       )
-                       prefs.edit(commit = true) {
-                           putString(PREFS_PIN_HASH, PinHash.hash(it))
-                       }
-                   }catch (e: Exception) {
-                       toastState.show("Error changing PIN. Check logs for more details",
-                           type = ToastType.Error
-                       )
-                       Timber.tag(TAG).e(e)
-                   }finally {
-                       newPinDialog = false
-                   }
+                    try {
+                        // A keystore-bound wallet is encrypted with the device secret W, so
+                        // changing the PIN only re-writes the gate hash and W is untouched.
+                        // A wallet whose migration has not happened yet is still encrypted
+                        // with the PIN itself: re-key it first, or the next open with the
+                        // new PIN fails and the user is locked out.
+                        val context = AnonConfig.context!!
+                        val walletName = AnonConfig.getDefaultWalletFile(context).name
+                        if (!WalletKey.exists(context, walletName)) {
+                            val wallet = WalletManager.instance?.wallet
+                                ?: throw Exception("wallet not open")
+                            if (!wallet.setPassword(it)) {
+                                throw Exception("setPassword failed: ${wallet.status.errorString}")
+                            }
+                        }
+                        prefs.edit(commit = true) {
+                            putString(PREFS_PIN_HASH, PinHash.hash(it))
+                        }
+                        toastState.show("PIN changed successfully", type = ToastType.Success)
+                    } catch (e: Exception) {
+                        toastState.show(
+                            "Error changing PIN. Check logs for more details",
+                            type = ToastType.Error
+                        )
+                        Timber.tag(TAG).e(e)
+                    } finally {
+                        newPinDialog = false
+                    }
                 }
             )
         }

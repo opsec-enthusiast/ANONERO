@@ -12,6 +12,7 @@ import io.anonero.model.node.DaemonInfo
 import io.anonero.ui.util.getAllUsedSubAddresses
 import io.anonero.ui.util.getLatestSubAddress
 import io.anonero.ui.home.LockScreenShortCut
+import io.anonero.util.WalletKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -166,6 +167,12 @@ class WalletState {
         }
     }
 
+    /**
+     * Leaves background sync and restores the spend key. [pin] must already have been
+     * verified against the PIN hash by the lock screen. wallet2 wants the wallet password,
+     * which for a keystore-bound wallet is the device secret, not the PIN; only a legacy
+     * wallet that never migrated is still keyed to the PIN.
+     */
     suspend fun exitBackgroundSync(pin: String): Boolean = bgSyncMutex.withLock {
         val wallet = getWallet ?: return false
         if (AnonConfig.viewOnly) {
@@ -175,7 +182,11 @@ class WalletState {
         }
         _blockUpdates.set(true)
         try {
-            if (wallet.stopBackgroundSync(pin)) {
+            val context = AnonConfig.context ?: return false
+            val walletName = AnonConfig.getDefaultWalletFile(context).name
+            val password =
+                if (WalletKey.exists(context, walletName)) WalletKey.load(context, walletName) else pin
+            if (wallet.stopBackgroundSync(password)) {
                 _backgroundSync.value = false
                 update()
                 wallet.startRefresh()

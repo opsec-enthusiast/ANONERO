@@ -95,6 +95,7 @@ fun RestorePreview(
     var backupPayload by remember { mutableStateOf<BackupPayload?>(null) }
     var passphraseDialog by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(true) }
+    var showPinSetup by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     val errorShake = rememberShakeController()
@@ -465,28 +466,9 @@ fun RestorePreview(
                         AnonOutlineButton(
                             enabled = !loading,
                             onClick = {
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        loading = true
-                                        loadingMessage = "Restoring wallet..."
-                                        val success =
-                                            BackupHelper.restoreBackUp(backupPayload!!, passPhrase)
-                                        if (success) {
-                                            BackupHelper.cleanCacheDir()
-                                            delay(1000)
-                                            withContext(Dispatchers.Main) {
-                                                oNextPressed()
-                                            }
-                                        }
-                                        loading = false
-                                    } catch (e: Exception) {
-                                        Timber.tag(TAG).e(e)
-                                        e.printStackTrace()
-                                    } finally {
-                                        loading = false
-                                    }
-                                }
-
+                                // restore needs a PIN: it opens a pre-v3 backup and gates
+                                // the device secret the restored wallet is bound to
+                                showPinSetup = true
                             },
                         ){
                             Text("Restore Wallet")
@@ -538,6 +520,36 @@ fun RestorePreview(
 
     }
 
+    if (showPinSetup) {
+        // A backup older than version 3 is keyed to the PIN of the phone that made it;
+        // that PIN opens it and becomes this phone's PIN too.
+        io.anonero.ui.onboard.PinSetup(
+            changePin  = false,
+            enterLabel = if ((backupPayload?.version ?: 0) < 3)
+                "Enter the PIN this backup was made with" else null,
+            onNext = { pin ->
+                showPinSetup = false
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        loading = true
+                        loadingMessage = "Restoring wallet..."
+                        val success = BackupHelper.restoreBackUp(backupPayload!!, passPhrase, pin)
+                        if (success) {
+                            BackupHelper.cleanCacheDir()
+                            delay(1000)
+                            withContext(Dispatchers.Main) { oNextPressed() }
+                        } else {
+                            withContext(Dispatchers.Main) { errorMessage = "Restore failed" }
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).e(e)
+                    } finally {
+                        loading = false
+                    }
+                }
+            },
+        )
+    }
 }
 
 
