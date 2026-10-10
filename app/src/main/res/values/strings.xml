@@ -47,6 +47,7 @@
     <string name="cancel">Cancel</string>
     <string name="enter_current_pin">ENTER CURRENT PIN</string>
     <string name="unlock_wallet">UNLOCK WALLET</string>
+    <string name="pin_try_again_in">TRY AGAIN IN %1$d:%2$02d</string>
     <string name="wallet_not_connected_to_node_please_check_network">Wallet not connected to node. please check network</string>
     <string name="address">Address</string>
     <string name="constructing_transaction">CONSTRUCTING TX...</string>

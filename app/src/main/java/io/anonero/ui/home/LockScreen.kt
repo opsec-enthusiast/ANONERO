@@ -2,6 +2,7 @@ package io.anonero.ui.home
 
 import AnonNeroTheme
 import android.content.SharedPreferences
+import android.os.SystemClock
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.LocalActivity
@@ -62,6 +63,7 @@ import io.anonero.services.WalletState
 import io.anonero.ui.MainActivity
 import io.anonero.ui.viewmodels.AppViewModel
 import io.anonero.util.PinHash
+import io.anonero.util.PinThrottle
 import io.anonero.util.PREFS_PIN_HASH
 import io.anonero.util.ShakeConfig
 import io.anonero.util.WALLET_PREFERENCES
@@ -121,6 +123,20 @@ fun LockScreen(
         pinKeys = keys.shuffleExcept(keys.indexOf(BackSpaceKey), keys.indexOf(ConfirmKey))
     }
 
+    // ms left on a PIN wait: read once (a wait outlives a restart; off the main thread, since a
+    // reboot makes it write), then counted down on the boot clock -- nothing runs without a wait
+    var lockedFor by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        lockedFor = withContext(Dispatchers.IO) { PinThrottle.waitLeft(prefs) }
+    }
+    LaunchedEffect(lockedFor > 0) {
+        val until = SystemClock.elapsedRealtime() + lockedFor
+        while (lockedFor > 0) {
+            delay(1_000)
+            lockedFor = (until - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+        }
+    }
+
     fun showError() {
         errorShake.shake(
             ShakeConfig(
@@ -144,10 +160,18 @@ fun LockScreen(
         val pin = currentPin.joinToString(separator = "")
         if (pin.length >= 4) {
             scope.launch(Dispatchers.IO) {
+                // counted before the check: killing the app mid-check must not skip it
+                val wait = PinThrottle.tryAttempt(prefs)
+                if (wait > 0) {
+                    lockedFor = wait
+                    withContext(Dispatchers.Main) { showError() }
+                    return@launch
+                }
                 try {
                     if (mode == LockScreenMode.VERYFY_PIN) {
                         val prefsHash = prefs.getString(PREFS_PIN_HASH, "")
                         if (PinHash.matches(pin, prefsHash)) {
+                            PinThrottle.reset(prefs)
                             // a legacy value is the reversible encoding; replace it now,
                             // while the PIN is in hand
                             if (PinHash.isLegacy(prefsHash)) {
@@ -167,6 +191,7 @@ fun LockScreen(
                         // writing it for a wrong PIN would corrupt it. Hashed here, off the
                         // main thread: 210k PBKDF2 rounds would freeze the UI.
                         if (result) {
+                            PinThrottle.reset(prefs)
                             prefs.edit(commit = true) {
                                 putString(PREFS_PIN_HASH, PinHash.hash(pin))
                             }
@@ -192,6 +217,7 @@ fun LockScreen(
                         if (!PinHash.matches(pin, prefsHash)) {
                             withContext(Dispatchers.Main) { showError() }
                         } else {
+                            PinThrottle.reset(prefs)
                             if (PinHash.isLegacy(prefsHash)) {
                                 prefs.edit(commit = true) {
                                     putString(PREFS_PIN_HASH, PinHash.hash(pin))
@@ -204,6 +230,9 @@ fun LockScreen(
                     Timber.tag(TAG).e(e)
                     Timber.tag(TAG).i("checkPin: %s", e.message)
                     showError()
+                } finally {
+                    // a correct PIN has cleared the wait by now; a wrong one shows it at once
+                    lockedFor = PinThrottle.waitLeft(prefs)
                 }
             }
         } else {
@@ -246,7 +275,10 @@ fun LockScreen(
             ) {
                 Spacer(modifier = Modifier.padding(top = 24.dp))
                 Text(
-                    if (mode == LockScreenMode.VERYFY_PIN)
+                    if (lockedFor > 0) {
+                        val seconds = (lockedFor + 999) / 1000
+                        stringResource(R.string.pin_try_again_in, seconds / 60, seconds % 60)
+                    } else if (mode == LockScreenMode.VERYFY_PIN)
                         stringResource(R.string.enter_current_pin)
                     else
                         stringResource(R.string.unlock_wallet)
@@ -275,7 +307,8 @@ fun LockScreen(
             Column(
                 modifier = Modifier
                     .weight(.8f)
-                    .wrapContentHeight(),
+                    .wrapContentHeight()
+                    .alpha(if (lockedFor > 0) 0.4f else 1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 LazyVerticalGrid(
@@ -302,6 +335,7 @@ fun LockScreen(
                                 .clip(shape = CircleShape)
                                 .combinedClickable(
                                     onClick = {
+                                        if (lockedFor > 0) return@combinedClickable
                                         if (key == BackSpaceKey && currentPin.isNotEmpty()) {
                                             currentPin.removeAt(currentPin.size - 1)
                                         } else if (key == ConfirmKey) {
